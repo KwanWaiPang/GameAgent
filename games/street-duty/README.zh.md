@@ -13,7 +13,7 @@
 | 画质 | `?q=low\|medium\|high\|ultra`。弱设备默认 `low`，一般桌面默认 `medium`。高和超清要手动指定 |
 | 预热 | `?prewarm=0` 跳过，`?prewarm=1` 强制。只有 `ultra` 默认预热（着色器编译大约 20 秒） |
 
-馆级架构见 [ARCHITECTURE.md](../../ARCHITECTURE.md)。
+馆级架构见 [ARCHITECTURE.zh.md](../../ARCHITECTURE.zh.md)。
 
 ## 玩法
 
@@ -82,7 +82,7 @@ ls assets/*.js
 |---|---|
 | [README.md](./README.md) | 英文说明 |
 | [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 引擎合同中文 |
-| [../../ARCHITECTURE.md](../../ARCHITECTURE.md) | 游戏馆架构 |
+| [../../ARCHITECTURE.zh.md](../../ARCHITECTURE.zh.md) | 游戏馆架构 |
 | [LICENSE](./LICENSE) | MIT |
 
 子系统：`render` · `materials` · `sky` · `world` · `physics` · `player` · `weapons` · `fx` · `ai` · `ui` · `audio`。

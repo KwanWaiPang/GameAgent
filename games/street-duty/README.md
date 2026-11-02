@@ -5,7 +5,7 @@
 
 Hub entry for a browser FPS built with Three.js r180 and WebGL2. This folder is a **local, playable port** of [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty) (MIT) — not an iframe or external link.
 
-Hub architecture: **[../../ARCHITECTURE.en.md](../../ARCHITECTURE.en.md)**
+Hub architecture: **[../../ARCHITECTURE.md](../../ARCHITECTURE.md)**
 
 It **coexists with** [`../fps/`](../fps/) (Tactical Assault). Do not replace one with the other.
 

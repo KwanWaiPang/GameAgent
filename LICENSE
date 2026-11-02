@@ -1,6 +1,19 @@
+Copyright (C) 2026 Kwan Wai-Pang
+
+Kwan Wai-Pang owns the copyright in the original Game Hub code. The MIT License
+below is the open-source permission Kwan Wai-Pang grants. It does not transfer
+that copyright. Anyone may use, copy, modify, and redistribute the original
+code under MIT, provided this notice is kept.
+
+This repository does not use the GNU GPL version 2 license shipped by
+hku-mars/FAST_LIO (https://github.com/hku-mars/FAST_LIO/blob/main/LICENSE).
+GPL-2.0-only cannot be combined with games/chess3d, which is GPL-3.0-only.
+Games written by other people keep their own copyright and license. Those
+notices are not replaced by this file.
+
 MIT License
 
-Copyright (c) 2026 游戏馆 · Game Hub contributors
+Copyright (C) 2026 Kwan Wai-Pang
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +37,8 @@ SOFTWARE.
 
 ## Aggregate notice / 聚合说明
 
-This repository is an **aggregate** of a hub shell plus independently licensed
-games. The MIT text above covers:
+This repository is an **aggregate**. Kwan Wai-Pang's MIT grant covers only code
+Kwan Wai-Pang wrote:
 
 - the hub (`index.html`, `css/`, `assets/`, documentation at the repo root)
 - original games that do not ship their own license file (including
@@ -40,6 +53,7 @@ Subdirectories that include their own license **keep that license**:
 | `games/street-duty/` | MIT |
 | `games/pocket/` | MIT |
 | `games/chess3d/` | **GNU GPL-3.0** (`games/chess3d/LICENSE.md`) |
+| `games/Hulao_Gate/` | MIT (`games/Hulao_Gate/LICENSE`) |
 
 `games/chess3d/` is GPL-3.0. Combining or redistributing that game with this
 aggregate must follow GPL-3.0 for the chess3d files (and any work that is a

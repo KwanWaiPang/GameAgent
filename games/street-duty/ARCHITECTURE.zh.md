@@ -3,7 +3,7 @@
 
 # 街战突击 · 引擎合同
 
-这是街战突击的协调合同：子系统归属、禁止跨目录改文件、事件表、表面类型。馆级结构和两款 FPS 的边界见仓库根目录 [ARCHITECTURE.md](../../ARCHITECTURE.md)。玩法与键位见 [README.zh.md](./README.zh.md)。
+这是街战突击的协调合同：子系统归属、禁止跨目录改文件、事件表、表面类型。馆级结构和两款 FPS 的边界见仓库根目录 [ARCHITECTURE.zh.md](../../ARCHITECTURE.zh.md)。玩法与键位见 [README.zh.md](./README.zh.md)。
 
 事件名和字段以英文合同 [ARCHITECTURE.md](./ARCHITECTURE.md) 为准。改合同时应两份一起改。
 

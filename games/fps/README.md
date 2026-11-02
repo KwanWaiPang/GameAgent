@@ -1,81 +1,81 @@
-[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
-[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-5c5348?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-c48a3a?style=for-the-badge)](./README.md)
 
-# 战术突击 · 3D · 游戏馆
+# Tactical Assault
 
-写实军事风第一人称射击（无血腥）。纯前端运行，本地 AI，支持两种模式。
+A realistic military first-person shooter without gore. It runs in the browser against a local AI, in two modes.
 
-开局手持 **AK-47**（弹匣 30 / 备弹 **200**）。场上五武器：
+You start with an **AK-47** (30-round magazine, **200** reserve). Five weapons appear in the match:
 
-| 武器 | 特性 |
-|------|------|
-| 手枪 | 副武器补枪，单发 26；爆头 ×1.85 |
-| AK-47 | 高伤扫射 24，后坐略高于 M4；爆头 ×2 |
-| M4 | 更稳更快，单发 18；控射点名 |
-| 霰弹枪 | 8 弹丸×10，近战爆发；弹丸爆头仅 ×1.35 |
-| 栓狙 | 躯干 48（约 2 枪）、爆头 ×2.5 可秒；开火后拉栓 |
+| Weapon | Notes |
+|---|---|
+| Pistol | Sidearm, 26 per shot; headshot ×1.85 |
+| AK-47 | High damage, 24, a bit more recoil than the M4; headshot ×2 |
+| M4 | Steadier and faster, 18 per shot |
+| Shotgun | 8 pellets ×10, close-range burst; pellet headshots only ×1.35 |
+| Bolt rifle | Torso 48 (about two shots), headshot ×2.5; you cycle the bolt after each shot |
 
-可拾取弹药、急救包与上述枪械（**栓狙补给稀有**）。**AI 也会捡枪并换装**，枪模外形按种类区分。**捡到的枪入库，不会自动换上**；按 `1`–`5` 或滚轮自选切换。HUD 武器条显示当前持有与弹药。敌人采用偏 CS 的恐/CT 低模造型，枪声为真实枪械采样。
+You can pick up ammo, medkits, and those guns (**bolt-rifle ammo is rare**). **The AI also picks up and swaps guns.** A picked-up gun goes into the inventory and is not equipped automatically. Press `1`–`5` or the wheel to switch. The HUD shows the current weapon and ammo. Enemies use low-poly counter-terror / counter-terrorist shapes. Gunshots are real firearm samples.
 
-玩家开局短暂无敌；受伤约 **4 秒** 未再受伤后自动回血；满血拾取的急救包会收纳，掉血后自动使用。敌人不会自动回血。
+You are briefly invulnerable at the start. After about **4 seconds** without a new hit you regenerate. A medkit picked up at full health is stored and used automatically when you are hurt. Enemies do not regenerate.
 
-地图为更大的街道战街区（据点约 170m、大逃杀约 210m）：主干/次干道路网、可穿行楼块、巷口掩体与灯柱。每局随机一种**地图变体**：
+The map is a larger street block (about 170 m for assault, 210 m for battle royale): main and side roads, enterable buildings, alley cover, and lamps. Each match picks one **map variant**:
 
-| 变体 | 风格 |
-|------|------|
-| 中央广场 | 开阔中庭与纪念碑，适合中远距离交火 |
-| 工业院落 | 货箱迷宫与托盘堆，近战巷战 |
-| 滨河码头 | 北侧河道与栈桥，窄道侧翼穿插 |
+| Variant | Style |
+|---|---|
+| Central plaza | Open court and a monument, mid and long range |
+| Industrial yard | Crates and pallets, close alleys |
+| River dock | A channel and piers on the north side, narrow flanks |
 
-可用 `?map=plaza|yards|docks` 指定地图。开火有更强后坐/FOV 冲击；击杀有「击破」确认与音效。
+Force a map with `?map=plaza|yards|docks`. Fire has stronger recoil and FOV kick. Kills have a break confirmation and a sound.
 
-阵营：玩家与队友为红方，敌人为蓝方；**每队约 5 人**（红方 = 玩家 + 4 名队友）；无友军伤害。AI 会在挨打时找掩体、按角度包抄，并两人一组交替压制 / 推进。红方队友偏积极跟推。敌/我开火有可见弹道（蓝/红）。HUD **击杀** 仅统计玩家本人击杀。
+You and your allies are red. Enemies are blue. **About five per team** (you plus four allies). No friendly fire. AI seeks cover when shot, flanks by angle, and alternates suppress / push in pairs. Red allies push. Tracers are visible (blue / red). The HUD **kill** count is only your own kills.
 
-子弹不能穿墙：实体墙与掩体会挡住玩家与 AI 的弹道与伤害（玻璃/装饰不挡）；命中头部为爆头，伤害 ×2（独立准星/音效）。HUD 提供相对视角的战术区/安全区指引与受击方位。
+Bullets do not pass through solid walls or cover (glass and decoration do not block). A head hit is a headshot, ×2, with its own marker and sound. The HUD points at the fight and shows which side you were hit from.
 
-## 模式
+## Modes
 
-- **据点清剿（偏 COD）**：红蓝各约 5 人；**3 残机重生**；**连杀支援**（×3 侦察标敌 / ×5 身边补给 / ×7 区域压制）；队友可推进占领；多波次蓝方施压；击杀播报与连杀 HUD。
-- **迷你大逃杀（偏 PUBG）**：红蓝各约 5 人；**白圈预告下一安全区**；缩圈预警与毒伤递增；**阶段空投**高级物资；圈外 AI 回撤；**清剿全部蓝方**即胜（队友阵亡不判负）。
+- **Assault:** about five per side; **3 respawns**; **killstreaks** (×3 spot, ×5 supply, ×7 area suppression); allies can push the objective; blue waves; kill feed and streak HUD.
+- **Mini battle royale:** about five per side; a **white circle** previews the next safe zone; shrinking zone and rising outside damage; **staged airdrops**; AI outside the zone falls back; **clear every blue player** to win (losing allies does not lose the match).
 
-## 操作
+## Controls
 
-| 按键 | 作用 |
-|------|------|
-| WASD | 移动 |
-| 左键 | 射击 |
-| 右键 | 开镜瞄准 |
-| R | 换弹（空弹自动换弹，约 3 秒） |
-| Q / E | 按住左右探头（松开恢复） |
-| Z | 按住下蹲（可走，松开站起） |
-| H | 呼叫支援（喇叭 + 队友赶来） |
-| Shift | 冲刺 |
-| 空格 | 跳跃 |
-| 1–5 | 切换已持有武器（未持有无效） |
-| 滚轮 | 在已持有武器间循环 |
-| Esc | 释放指针 / 暂停 |
+| Key | Action |
+|---|---|
+| WASD | Move |
+| Left click | Fire |
+| Right click | Aim |
+| R | Reload (empty mag reloads in about 3 seconds) |
+| Q / E | Hold to lean |
+| Z | Hold to crouch |
+| H | Call for help |
+| Shift | Sprint |
+| Space | Jump |
+| 1–5 | Select a weapon you already hold |
+| Wheel | Cycle held weapons |
+| Esc | Release pointer / pause |
 
-## 目录
+## Layout
 
 ```
 index.html
 css/styles.css
-js/                 # 主循环、玩家、武器、AI、模式
-vendor/             # Three.js r160 + PointerLockControls
+js/         # loop, player, weapons, AI, modes
+vendor/     # Three.js r160 + PointerLockControls
 ```
 
-## 本地运行
+## Run
 
-在仓库根目录：
+From the repository root:
 
 ```bash
-python3 -m http.server 8080
+python -m http.server 8080
 ```
 
-打开：<http://localhost:8080/games/fps/>
+Open <http://localhost:8080/games/fps/>.
 
-需要桌面浏览器与 WebGL；模块脚本请通过 HTTP 服务访问（不要用 `file://`）。
+Use a desktop browser with WebGL. Serve over HTTP; do not open the file with `file://`.
 
-## 说明
+## Notes
 
-表现上为受击高亮、倒地淡出与火花准星，无血腥。敌人为本地脚本 AI，非联机对战。
+Hits flash, bodies fade, and the crosshair sparks. There is no gore. Enemies are local scripted AI, not an online match.

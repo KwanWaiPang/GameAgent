@@ -1,39 +1,39 @@
-[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
-[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-5c5348?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-c48a3a?style=for-the-badge)](./README.md)
 
-# 国际象棋 · 3D · 游戏馆
+# Chess 3D
 
-WebGL 立体国际象棋，适配 Chess3D，并套入游戏馆统一界面与中文菜单。
+WebGL chess adapted from Chess3D, with the hub shell and a Chinese menu.
 
-## 功能
+## Features
 
-- 3D 棋盘与程序化斯顿顿轮廓棋子（顶部汉字标：王/后/车/象/马/兵）
-- 侧栏「新对局」集中选择执白/执黑与 AI 等级 1–10（与围棋/五子棋布局一致）；界面为原生 DOM，不再依赖 jQuery / jQuery UI
-- 悔棋、载入 / 保存 PGN
-- 兵升变选择
-- 落子音效
+- A 3D board and procedural Staunton-like pieces (Chinese labels on top: king, queen, rook, bishop, knight, pawn)
+- A “new game” sidebar for White/Black and AI levels 1–10. The UI is plain DOM, without jQuery
+- Undo, load and save PGN
+- Promotion choice
+- Move sounds
 
-## 目录
+## Layout
 
 ```
-index.html       # 页面入口
-css/shell.css    # 游戏馆壳层与侧栏样式
-js/              # Three.js 场景、GUI、Garbochess AI
-3D/json/         # 棋盘边框模型（棋子为程序化几何）
-texture/         # 贴图
-LICENSE.md       # GPL-3.0
+index.html
+css/shell.css
+js/            # Three.js scene, GUI, Garbochess AI
+3D/json/       # board frame (pieces are procedural)
+texture/
+LICENSE.md     # GPL-3.0
 ```
 
-## 本地运行
+## Run
 
 ```bash
-python3 -m http.server 8080
+python -m http.server 8080
 ```
 
-打开：<http://localhost:8080/games/chess3d/>
+Open <http://localhost:8080/games/chess3d/>.
 
-需要浏览器支持 **WebGL**。若不支持，页面会提示并引导返回游戏馆。
+The browser needs **WebGL**. If it does not, the page says so and offers a way back to the hub.
 
-## 来源
+## Source
 
-基于 [FrenchYann/Chess3D](https://github.com/FrenchYann/Chess3D)（GPL-3.0），AI 使用 Garbochess-JS。详见仓库根目录 `THIRD_PARTY_NOTICES.md`。
+Based on [FrenchYann/Chess3D](https://github.com/FrenchYann/Chess3D) (GPL-3.0). The AI is Garbochess-JS. See `THIRD_PARTY_NOTICES.md` at the repository root.

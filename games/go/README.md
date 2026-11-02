@@ -1,59 +1,53 @@
-[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
-[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-5c5348?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-c48a3a?style=for-the-badge)](./README.md)
 
-# 围棋 · 游戏馆
+# Go
 
-网页版围棋，支持本地双人对弈与浏览器内 AI，采用中国规则（子空皆地）。
+Browser Go with local two-player play and an in-browser AI. Chinese rules (area scoring: stones and empty points both count).
 
-## 功能
+## Features
 
-- 棋盘：9 / 13 / 19 路
-- 让子：2–9 子（9 路最多 5），标准星位，白先，默认贴目 0
-- 人人对战 / 打谱（两人下，棋子标落子序号）/ 人机对战（执黑或执白）
-- AI 强度：二十五级到九段，共十六档（默认六级）
-  - 二十五级到一级：本地搜索。低段故意下得松；十级起蒙特卡洛；三级会读吃子；一级搜索最久
-  - 初段到九段：KataGo 模型，引擎与 Web KaTrain 相同，在浏览器里计算。段位越高，搜索越多。九段一手可能要几十秒
-- 模型讲解：初段到九段可对每一手自动估计亏目。低段不自动算。搜索没看到的手不下结论。棋谱里可以按「模型看上一手」
-- 分级练习：解题十五级，全部带正解可核对。前三级是加厚后的馆内原创；四级到九级是每周一题；十级到十五级是 u-go.net 上带正解的碁经众妙、玄玄棋经和玄览。官子八级，每级先排 20 题，再补同档的官子谱。等级可以随时切换，不必解锁
-  - 一到三级为馆内原创（提子、逃气、连接、双打、征子、扑、倒扑与多手追打），三级起有 2–4 手练习以缓和跨到每周一题的难度断层
-  - 四级到九级使用安永吉八段与 David Ormerod 的每周一题（容易、中等、难），按标出的正解核对。仓库里另外两道未分档的题附在九级后面。许可 CC BY-NC-SA 4.0
-  - 无原谱正解的 tasuki 棋形已从分级解题撤下，只保留能核对的题
-  - 每题先说明目标。坐标和原因在「提示」里。需要连续应手的题会让对方落子，再轮到你，不是只摆一子
-- 经典棋谱：19 路全谱。古代谱尽量收全本因坊家、御城棋和中国唐宋清代名局，近现代另有陈祖德、聂卫平、马晓春、常昊、古力、柯洁等中国高手的公开对局。可按棋手、等级、时代查找。时代为唐、宋、明、清、近代。等级按谱上较低的一段来分；没有段位时，让子和短谱算初级，分先长谱算高级。打谱可以逐步看、拖进度条、连续播放（遇到批注先停下），或点盘上的棋子跳到那一手，也可以猜下一手、执一方跟谱。猜错两次会记下来，可以再练。下偏之后改由 AI 应手
-- 规则：提子、禁自杀、简单劫（不能立刻回提）
-- 对局中随时可以「自动标死子」或「确认点目」。死子判断可选启发式或 KataGo 模型估死子（失败则退回启发式），标完仍可手动改。双方连续停着也会进入点目
-- 停着、认输、悔棋、落子音效
+- Boards: 9, 13, and 19
+- Handicap: 2–9 stones (at most 5 on 9×9), standard stars, White plays first, default komi 0
+- Two humans, record review (move numbers on stones), or human vs AI as Black or White
+- Sixteen strengths, from 25 kyu to 9 dan (default 6 kyu)
+  - 25 kyu to 1 kyu: local search. Weak ranks play loosely on purpose. Monte Carlo from 10 kyu. 3 kyu reads captures. 1 kyu searches the longest.
+  - 1 dan to 9 dan: a KataGo model, the same engine family as Web KaTrain, computed in the browser. Higher dan searches more. A 9 dan move can take tens of seconds.
+- Model commentary: 1–9 dan can estimate the loss of each move. Lower ranks do not run it automatically. Moves the search never saw are not judged. In a record you can ask the model about the previous move.
+- Graded practice: 15 kyu-style problem ranks, all with a checkable solution. Levels 1–3 are original and expanded. Levels 4–9 are weekly problems. Levels 10–15 are solved problems from Gokyo Shumyo, Xuanxuan Qijing, and Xuanlan on u-go.net. Endgame has eight ranks. You can change rank at any time.
+- Classical 19×19 games, searchable by player, rank, and era. Replay step by step, scrub, autoplay (pausing on comments), jump by clicking a stone, guess the next move, or play one side. Two wrong guesses are remembered for later practice.
+- Rules: capture, no suicide, simple ko (no immediate recapture)
+- During a game you can auto-mark dead stones or confirm the score. Dead-stone judgment can use a heuristic or the KataGo model (falling back to the heuristic). Two consecutive passes also enter scoring.
+- Pass, resign, undo, and stone sounds
 
-## 目录
+## Layout
 
 ```
-index.html      # 页面入口
-css/styles.css  # 棋盘与局内样式
-js/engine.js    # 规则引擎
-js/ai.js        # 本地 AI
-js/app.js       # 交互与绘制
-js/drill.js     # 分级练习进程
-js/problems.js  # 练习题（工具生成）
-js/kifu.js      # 19 路经典全谱（工具生成）
-js/kifu-play.js # 打谱 / 猜谱 / 对练
+index.html      # entry
+css/styles.css
+js/engine.js    # rules
+js/ai.js        # local AI
+js/app.js
+js/drill.js
+js/problems.js
+js/kifu.js
+js/kifu-play.js
 tools/build-problems.mjs
 tools/build-kifu.mjs
 ```
 
-## 本地运行
+## Run
 
-在仓库根目录：
+From the repository root:
 
 ```bash
-python3 -m http.server 8080
+python -m http.server 8080
 ```
 
-打开：<http://localhost:8080/games/go/>
+Open <http://localhost:8080/games/go/>.
 
-## 说明
+## Notes
 
-二十五级到一级是浏览器内的经典搜索。初段到九段改用 KataGo 的公开小模型 `g170-b6c96`，引擎来自 Web KaTrain 的浏览器移植，第一次下载约 4MB，计算在玩家自己的浏览器里。段位越高，搜索越多，九段会把这个小模型用得比较满。完整大模型大约 96MB，公开地址不允许别的网页直接读取，所以高段用的是这套小模型。
+25 kyu through 1 kyu use classic in-browser search. 1 dan through 9 dan use KataGo's public small network `g170-b6c96`, via the Web KaTrain browser port. The first download is about 4 MB and the computation stays in the player's browser. The full large network is about 96 MB and its public host does not allow other pages to fetch it, so the high dans use this small network.
 
-「模型讲解」从初段起自动看每一手。低段对局不自动跑模型。搜索没算到的手只提示没算到，不标成坏棋。棋谱里的「模型看上一手」随时可用。
-
-解题四级到九级是 Go Game Guru 的每周一题，作者是安永吉八段和 David Ormerod，许可为 CC BY-NC-SA 4.0。十级到十五级是 u-go.net 上带正解的碁经众妙、玄玄棋经和玄览。官子仍用公有领域的官子谱，每级在原来二十题后再补同档题（二级两手收官已补到约五十题）。无原谱正解的 tasuki 棋形不再进入分级解题。不收录赵治勋、李昌镐等近代题集，也不整段搬 101 围棋网和 goproblems。每题开局说明目标，坐标和原因在「提示」里；若谱上还有应手，对方会自动落下。看答案后要自己再走通才算过关。解题是局部题；「经典棋谱」才是 19 路整局。当湖十局带清代座子，白先。
+Problem levels 4–9 are the Go Game Guru weekly problems by An Younggil 8 dan and David Ormerod, CC BY-NC-SA 4.0. Levels 10–15 and the endgame problems are public-domain classical material with marked solutions. Modern problem sets that cannot be redistributed are not included. Each problem states its goal first; coordinates and reasons are behind “hint”. If the record has a reply, the opponent plays it. “Classical games” are full 19×19 games, separate from local problems.
