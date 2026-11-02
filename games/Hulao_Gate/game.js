@@ -467,7 +467,8 @@ function doAttackDamage(atk){const p=player.model.position;let hits=0;
 function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.motionToken=(e.motionToken||0)+1;e.model.userData.weapon.rotation.z=.32;
   kills++;$('ko-count').textContent=kills;sound(e.kind==='boss'?55:85,.20,'fall');
   emitSparks(e.model.position.clone().add(V(0,1.1,0)),0xe9a66e,9);
-  if(e.kind==='boss')toast('飞将已败！',2);
+  if(e===lockTarget)lockTarget=null;
+   if(e.kind==='boss')toast('飞将已败！',2);
 }
 function showCombo(hits){const c=$('combo');c.hidden=false;$('combo-num').textContent=(Number($('combo-num').textContent)||0)+hits;
   comboClock=1.7;}
@@ -618,6 +619,8 @@ function refreshHud(){if(!player)return;
   $('energy-fill').style.width=`${player.energy}%`;
   $('skill-state').textContent=player.skillCD>0?`${player.skillCD.toFixed(1)}s`:player.energy<50?'蓄势中':'就绪';
   if(phase==='playing')drawRadar();
+  const threatening=enemies.find(e=>e.kind==='boss'&&!e.dead&&e.windup>0&&e.strike);
+  const tip=$('battle-tip');if(tip){tip.hidden=!threatening;if(threatening)tip.textContent=`⚠ ${threatening.strike.label} · 闪避 Space / 格挡 F`;}
 }
 function drawRadar(){const c=$('radar'),g=c.getContext('2d'),w=c.width,h=c.height,r=w/2-10;
   g.clearRect(0,0,w,h);g.save();g.translate(w/2,h/2);g.beginPath();g.arc(0,0,r,0,TAU);g.clip();
@@ -671,7 +674,7 @@ function attachInputs(){
   joy.addEventListener('pointermove',e=>{if(e.pointerId===joystick.id)moveJoy(e);});
   const stopJoy=e=>{if(e.pointerId!==joystick.id)return;joystick.id=-1;joystick.x=joystick.y=0;stick.style.transform='translate(0,0)';};
   joy.addEventListener('pointerup',stopJoy);joy.addEventListener('pointercancel',stopJoy);
-  for(const [id,action] of [['touch-attack',()=>requestAttack('light')],['touch-heavy',()=>requestAttack('heavy')],['touch-skill',()=>requestAttack('skill')],['touch-dodge',doDodge]]){
+  for(const [id,action] of [['touch-attack',()=>requestAttack('light')],['touch-heavy',()=>requestAttack('heavy')],['touch-skill',()=>requestAttack('skill')],['touch-dodge',doDodge],['touch-parry',doParry]]){
     $(id).addEventListener('pointerdown',e=>{e.preventDefault();action();});}
   $('start-btn').addEventListener('click',()=>{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume?.();resetGame();});
   $('restart-btn').addEventListener('click',resetGame);$('restart-pause').addEventListener('click',resetGame);
