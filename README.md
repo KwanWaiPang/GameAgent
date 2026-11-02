@@ -112,11 +112,13 @@ If Pages still serves the `main` root directly, the Vite build output must be co
 
 | Doc | Contents |
 |---|---|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Hub layout, deploy flow, the two FPS boundaries |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Hub layout, deploy flow, the three shooters |
 | [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) | Sources and licenses |
 | [games/street-duty/ARCHITECTURE.md](./games/street-duty/ARCHITECTURE.md) | Street Duty engine contract |
 | [games/fps/README.md](./games/fps/README.md) | Tactical Assault |
+| [games/sandline/README.md](./games/sandline/README.md) | Sandline |
 | [games/pocket/README.md](./games/pocket/README.md) | Pocket Adventure |
+| [games/richera/README.md](./games/richera/README.md) | Gold City Chronicle |
 | [games/redcap/README.md](./games/redcap/README.md) | Red Cap Quest |
 | [games/wizard-chess-3d/README.md](./games/wizard-chess-3d/README.md) | Wizard Chess |
 
@@ -124,19 +126,23 @@ Every guide has **中文 / English** buttons at the top. The highlighted button 
 
 ---
 
-## Copyright
+## Copyright and license
 
 Copyright (C) 2026 Kwan Wai-Pang.
 
-Kwan Wai-Pang owns the copyright in the original hub and in the original games that do not carry another author's license. Open source here means Kwan Wai-Pang grants the MIT License in [LICENSE](./LICENSE): others may use, copy, modify, and share that code if they keep the copyright and license notice. The copyright itself stays with Kwan Wai-Pang.
+Kwan Wai-Pang owns the copyright in the hub and in the original games. Open source means he grants the MIT License in [LICENSE](./LICENSE): others may use, copy, modify, and share that code if they keep this copyright notice and the MIT text. The copyright stays with him.
 
-That grant covers the hub pages, styles, lobby script, and original games such as Go, Gomoku, Junqi, Tactical Assault, and Red Cap Quest.
+That grant covers the hub (`index.html`, `css/`, `js/hub-lobby.js`) and these games: Go, Gomoku, Junqi, Tactical Assault, Red Cap Quest, Wizard Chess, Wizard Chess 2, Chinese Chess 3D, Gold City Chronicle, and Hulao Gate. Hulao Gate is in the repository and is not a card on the hub yet.
 
-Code written by other people stays theirs. Xiangqi, Monopoly, Street Duty, Sandline, Pocket Adventure, and Chess 3D keep the license their authors chose. See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Games written by other people stay under their copyright. The root MIT text does not replace their licenses:
 
-[FAST_LIO](https://github.com/hku-mars/FAST_LIO/blob/main/LICENSE) is GNU GPL version 2 and is not used for this repository. A GPL-2.0-only grant cannot be combined with `games/chess3d` (GPL-3.0), and copying that file would name the wrong copyright holder.
+| Game | Copyright that stays | License |
+|---|---|---|
+| Chinese Chess | liwei | MIT |
+| World Tour | Human Sean; hub adaptation by Kwan Wai-Pang | ISC |
+| Street Duty | mshumer; hub adaptation by Kwan Wai-Pang | MIT |
+| Pocket Adventure | Paulius; hub adaptation by Kwan Wai-Pang | MIT |
+| Sandline | authors of sandline-threejs-fps; hub adaptation by Kwan Wai-Pang | MIT |
+| Chess 3D | the Chess3D authors | GPL-3.0 |
 
-## License
-
-Hub and original static pages: MIT, see [LICENSE](./LICENSE).  
-Per-game licenses stay in each folder (**chess3d is GPL-3.0**). Summary: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

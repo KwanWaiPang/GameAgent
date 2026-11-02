@@ -112,6 +112,20 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - License: MIT (root [`LICENSE`](./LICENSE))
 - Note: a browser platformer. The character, stages, pixels, and sound are procedural and original. Gameplay nods to Super Mario. It is not a Nintendo product and does not copy Nintendo sprites, music, or stages.
 
+## Gomoku (`games/gomoku/`) and Junqi (`games/junqi/`)
+
+- Source: original to this repository
+- License: MIT (root [`LICENSE`](./LICENSE))
+- Copyright: Kwan Wai-Pang
+
+## Hulao Gate (`games/Hulao_Gate/`)
+
+- Source: original to this repository. It is not linked from the hub lobby yet.
+- License: MIT (root [`LICENSE`](./LICENSE))
+- Copyright: Kwan Wai-Pang
+- Renderer: [Three.js](https://github.com/mrdoob/three.js) r160 (MIT), loaded at runtime from jsDelivr
+- Note: an original third-person action game suggested by the Hulao Gate episode. It does not copy Dynasty Warriors trademarks, art, models, music, or assets.
+
 ---
 
 This repository is an aggregate. The hub and original static pages are MIT. A game folder with its own license keeps that license. `games/chess3d/` is **GPL-3.0** and is not relicensed by the root MIT text.

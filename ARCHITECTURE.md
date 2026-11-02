@@ -3,7 +3,7 @@
 
 # Architecture
 
-How the Game Hub is organized and deployed, and how the two 3D shooters coexist.
+How the Game Hub is organized and deployed, and how the three 3D shooters coexist.
 
 The Street Duty engine contract is [`games/street-duty/ARCHITECTURE.md`](./games/street-duty/ARCHITECTURE.md).
 
@@ -119,9 +119,9 @@ main.js
 
 ```
 push main
-   → Actions: npm ci && npm run build (Street Duty and Pocket)
+   → Actions: npm ci && npm run build (Street Duty, Sandline, and Pocket)
    → copy hub + games into _site/
-   → strip Street Duty src/, tools/, node_modules/, …
+   → strip Street Duty, Sandline, and Pocket src/, tools/, node_modules/, …
    → GitHub Pages
 ```
 

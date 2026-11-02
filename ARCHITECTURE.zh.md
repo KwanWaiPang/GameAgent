@@ -77,7 +77,7 @@ src/  +  index.source.html   →  vite build  →  dist/
 
 ---
 
-## 4. 两款 FPS 的边界
+## 4. 三款射击的边界
 
 | | 战术突击 `games/fps/` | 街战突击 `games/street-duty/` |
 |---|---|---|
@@ -120,9 +120,9 @@ main.js
 
 ```
 push main
-   → Actions: npm ci && npm run build（街战与口袋冒险）
+   → Actions: npm ci && npm run build（街战、沙线行动、口袋冒险）
    → 把大厅和游戏复制进 _site/
-   → 去掉街战的 src/、tools/、node_modules/ 等
+   → 去掉街战、沙线行动、口袋冒险的 src/、tools/、node_modules/ 等
    → GitHub Pages
 ```
 
@@ -142,10 +142,11 @@ push main
 
 ## 8. 相关链接
 
-- 大厅说明：[README.md](./README.md)
+- 大厅说明：[README.zh.md](./README.zh.md)
 - 街战中文说明：[games/street-duty/README.zh.md](./games/street-duty/README.zh.md)
 - 街战引擎合同：[games/street-duty/ARCHITECTURE.zh.md](./games/street-duty/ARCHITECTURE.zh.md)
-- 战术突击：[games/fps/README.md](./games/fps/README.md)
-- 口袋冒险：[games/pocket/README.md](./games/pocket/README.md)
-- 红帽奇遇：[games/redcap/README.md](./games/redcap/README.md)
+- 战术突击：[games/fps/README.zh.md](./games/fps/README.zh.md)
+- 沙线行动：[games/sandline/README.zh.md](./games/sandline/README.zh.md)
+- 口袋冒险：[games/pocket/README.zh.md](./games/pocket/README.zh.md)
+- 红帽奇遇：[games/redcap/README.zh.md](./games/redcap/README.zh.md)
 - 上游街战项目：[mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)

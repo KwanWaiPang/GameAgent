@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-5c5348?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-c48a3a?style=for-the-badge)](./README.md)
+
 # Sandline
 
 A single-player tactical shooter in the game hall. The client, interface, procedural guns, and desert and snow arenas come from [sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) (MIT).

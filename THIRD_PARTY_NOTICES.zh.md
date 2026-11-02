@@ -112,6 +112,20 @@
 - 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
 - 说明：网页平台跳跃。角色「阿砖」、关卡与全部像素图、音效均为程序生成的原创素材。玩法向超级马里奥系列致敬，不是任天堂产品，未使用任天堂精灵、音乐或关卡拷贝
 
+## 五子棋（`games/gomoku/`）与军棋（`games/junqi/`）
+
+- 来源：本仓库原创
+- 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
+- 版权：Kwan Wai-Pang
+
+## 虎牢关（`games/Hulao_Gate/`）
+
+- 来源：本仓库原创。大厅卡片尚未挂出。
+- 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
+- 版权：Kwan Wai-Pang
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT），运行时经 jsDelivr 加载
+- 说明：原创第三人称动作游戏，取材虎牢关传说。不是商业无双游戏的复制品，未使用其商标、美术、模型、音乐或素材。
+
 ---
 
 本仓库为聚合：大厅与原创静态页为 MIT；各子目录若自带许可则从其许可。`games/chess3d/` 为 **GPL-3.0**，不受根目录 MIT 再许可。

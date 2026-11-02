@@ -1,15 +1,12 @@
 Copyright (C) 2026 Kwan Wai-Pang
 
-Kwan Wai-Pang owns the copyright in the original Game Hub code. The MIT License
-below is the open-source permission Kwan Wai-Pang grants. It does not transfer
-that copyright. Anyone may use, copy, modify, and redistribute the original
-code under MIT, provided this notice is kept.
+Kwan Wai-Pang owns the copyright in the original Game Hub code. The MIT
+License below is the open-source permission for that code. It does not
+transfer the copyright. Anyone may use, copy, modify, and redistribute the
+original code under MIT if this notice stays with the copy.
 
-This repository does not use the GNU GPL version 2 license shipped by
-hku-mars/FAST_LIO (https://github.com/hku-mars/FAST_LIO/blob/main/LICENSE).
-GPL-2.0-only cannot be combined with games/chess3d, which is GPL-3.0-only.
-Games written by other people keep their own copyright and license. Those
-notices are not replaced by this file.
+Other people's games keep their own copyright and license. This file does
+not relicense them.
 
 MIT License
 
@@ -35,28 +32,33 @@ SOFTWARE.
 
 ---
 
-## Aggregate notice / 聚合说明
+## What this MIT grant covers
 
-This repository is an **aggregate**. Kwan Wai-Pang's MIT grant covers only code
-Kwan Wai-Pang wrote:
+Copyright: Kwan Wai-Pang. License: MIT, the text above.
 
-- the hub (`index.html`, `css/`, `assets/`, documentation at the repo root)
-- original games that do not ship their own license file (including
-  `games/go/`, `games/gomoku/`, `games/junqi/`, `games/fps/`, `games/redcap/`)
+- Hub: `index.html`, `css/`, `js/hub-lobby.js`, `assets/`, root documentation
+- Original games with no separate license file:
+  `games/go/`, `games/gomoku/`, `games/junqi/`, `games/fps/`,
+  `games/redcap/`, `games/wizard-chess-3d/`, `games/wizard-chess-sanctum/`,
+  `games/3D_xiangqi/`, `games/richera/`, `games/Hulao_Gate/`
 
-Subdirectories that include their own license **keep that license**:
+Third-party libraries named in `THIRD_PARTY_NOTICES.md` (Three.js, chess.js,
+Kenney CC0 assets, and others) keep their own terms even when used inside
+these folders.
 
-| Path | License |
-|---|---|
-| `games/xiangqi/` | MIT |
-| `games/monopoly/` | ISC |
-| `games/street-duty/` | MIT |
-| `games/pocket/` | MIT |
-| `games/chess3d/` | **GNU GPL-3.0** (`games/chess3d/LICENSE.md`) |
-| `games/Hulao_Gate/` | MIT (`games/Hulao_Gate/LICENSE`) |
+## What keeps another author's license
 
-`games/chess3d/` is GPL-3.0. Combining or redistributing that game with this
-aggregate must follow GPL-3.0 for the chess3d files (and any work that is a
-derivative of them). The hub MIT grant does **not** relicense chess3d.
+| Path | Copyright that stays | License |
+|---|---|---|
+| `games/xiangqi/` | liwei, 2021 | MIT, `games/xiangqi/LICENSE` |
+| `games/monopoly/` | Human Sean; hub adaptation by Kwan Wai-Pang | ISC, `games/monopoly/LICENSE` |
+| `games/street-duty/` | mshumer, 2026; hub adaptation by Kwan Wai-Pang | MIT, `games/street-duty/LICENSE` |
+| `games/pocket/` | Paulius, 2026; hub adaptation by Kwan Wai-Pang | MIT, `games/pocket/LICENSE` |
+| `games/sandline/` | authors of sandline-threejs-fps; hub adaptation by Kwan Wai-Pang | MIT, `games/sandline/LICENSE` |
+| `games/chess3d/` | the Chess3D authors | **GPL-3.0**, `games/chess3d/LICENSE.md` |
 
-Third-party sources and notes: `THIRD_PARTY_NOTICES.md`.
+`games/chess3d/` is GPL-3.0. Redistributing that game, or a work derived from
+it, follows GPL-3.0 for those files. The MIT grant above does not relicense
+them.
+
+Sources and trademarks: `THIRD_PARTY_NOTICES.md`.

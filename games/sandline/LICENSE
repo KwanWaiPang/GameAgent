@@ -1,6 +1,9 @@
 MIT License
 
-Copyright (c) 2026 SANDLINE contributors
+Copyright (c) the authors of sandline-threejs-fps
+Copyright (C) 2026 Kwan Wai-Pang, for the Game Hub adaptation
+
+The upstream project is https://github.com/xilinnihao-afk/sandline-threejs-fps
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

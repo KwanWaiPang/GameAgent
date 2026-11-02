@@ -114,31 +114,36 @@ cd games/pocket && npm run build
 |---|---|
 | [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 馆级架构、数据流、射击游戏边界 |
 | [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md) | 第三方来源与许可 |
-| [games/street-duty/ARCHITECTURE.md](./games/street-duty/ARCHITECTURE.md) | 街战引擎合同 |
+| [games/street-duty/ARCHITECTURE.zh.md](./games/street-duty/ARCHITECTURE.zh.md) | 街战引擎合同 |
 | [games/street-duty/README.zh.md](./games/street-duty/README.zh.md) | 街战说明 |
-| [games/fps/README.md](./games/fps/README.md) | 战术突击说明 |
+| [games/fps/README.zh.md](./games/fps/README.zh.md) | 战术突击说明 |
 | [games/sandline/README.zh.md](./games/sandline/README.zh.md) | 沙线行动说明 |
-| [games/pocket/README.md](./games/pocket/README.md) | 口袋冒险说明 |
-| [games/redcap/README.md](./games/redcap/README.md) | 红帽奇遇说明 |
-| [games/wizard-chess-3d/README.md](./games/wizard-chess-3d/README.md) | 巫师棋说明 |
+| [games/pocket/README.zh.md](./games/pocket/README.zh.md) | 口袋冒险说明 |
+| [games/richera/README.zh.md](./games/richera/README.zh.md) | 金城纪说明 |
+| [games/redcap/README.zh.md](./games/redcap/README.zh.md) | 红帽奇遇说明 |
+| [games/wizard-chess-3d/README.zh.md](./games/wizard-chess-3d/README.zh.md) | 巫师棋说明 |
 
 每份说明页顶都有「中文 / English」按钮，点一下即切换到另一语言的同名文档。
 
 ---
 
-## 版权
+## 版权与许可
 
 版权所有 (C) 2026 Kwan Wai-Pang。
 
-大厅，以及没有另附作者许可证的原创游戏，版权归 Kwan Wai-Pang 本人。开源不等于放弃版权：根目录 [LICENSE](./LICENSE) 里的 MIT 许可，是 Kwan Wai-Pang 允许他人使用、复制、修改和再分发这些代码；对方必须保留版权声明和许可文本，版权仍归 Kwan Wai-Pang。
+大厅和原创游戏的版权归 Kwan Wai-Pang。开源是他给出的使用许可，不是把版权让出去。根目录 [LICENSE](./LICENSE) 的 MIT 许可允许他人使用、复制、修改和再分发这些代码，但必须保留版权声明和 MIT 文本。
 
-这包括大厅页面、样式、展厅脚本，以及围棋、五子棋、军棋、战术突击、红帽奇遇等原创部分。
+这份许可覆盖大厅（`index.html`、`css/`、`js/hub-lobby.js`），以及围棋、五子棋、军棋、战术突击、红帽奇遇、巫师棋、巫师棋 2、中国象棋 · 3D、金城纪、虎牢关。虎牢关在仓库里，大厅卡片尚未挂出。
 
-别人写的代码，版权仍归原作者。中国象棋、大富翁、街战突击、沙线行动、口袋冒险、国际象棋 3D 继续使用原作者选择的许可证。来源见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
+别人写的游戏，版权仍归原作者。根目录的 MIT 文本不能改掉他们的许可证：
 
-[FAST_LIO](https://github.com/hku-mars/FAST_LIO/blob/main/LICENSE) 是 GNU GPL 第 2 版，本仓库不采用。只限 GPL-2.0 不能和 `games/chess3d` 的 GPL-3.0 合在一起再发布，照抄那份文件也会把版权人写成别人。
+| 游戏 | 仍有效的版权 | 许可证 |
+|---|---|---|
+| 中国象棋 | liwei | MIT |
+| 大富翁 · 世界之旅 | Human Sean；馆内改编为 Kwan Wai-Pang | ISC |
+| 街战突击 | mshumer；馆内改编为 Kwan Wai-Pang | MIT |
+| 口袋冒险 | Paulius；馆内改编为 Kwan Wai-Pang | MIT |
+| 沙线行动 | sandline-threejs-fps 的作者；馆内改编为 Kwan Wai-Pang | MIT |
+| 国际象棋 · 3D | Chess3D 的作者 | GPL-3.0 |
 
-## 许可
-
-大厅与原创静态页：MIT，见根目录 [LICENSE](./LICENSE)。  
-各游戏目录保留原作者许可（**chess3d 为 GPL-3.0**）；汇总见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
+Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。

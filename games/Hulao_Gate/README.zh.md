@@ -1,0 +1,64 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.md)
+
+# 虎牢关
+
+版权所有 (C) 2026 Kwan Wai-Pang。本目录原创代码适用仓库根目录 MIT 许可（[`LICENSE`](../../LICENSE)）。
+
+原创 Three.js 第三人称动作游戏，取材《三国演义》的虎牢关传说。不是商业无双游戏的复制品，也未使用其商标、美术、模型、音乐或素材。大厅卡片尚未挂出。
+
+## 访问
+
+本目录是静态页，不需要 npm 或 Vite。推送到 `KwanWaiPang/GameAgent` 的 `main` 后，Pages 地址是：
+
+https://kwanwaipang.github.io/GameAgent/games/Hulao_Gate/
+
+Three.js 0.160.1 从 jsDelivr 加载，首次打开需要联网。请用 GitHub Pages 或本地 HTTP 服务，不要用 `file://`。
+
+## 操作
+
+| 操作 | 电脑 | 手机或平板 |
+|---|---|---|
+| 移动 | WASD / 方向键 | 左下摇杆 |
+| 调整镜头 | 按住鼠标左键拖动 | 右侧区域滑动 |
+| 连斩 | J / 单击鼠标左键 | 斩 |
+| 重击 | K / 单击鼠标右键 | 重 |
+| 无双技 | Q（消耗 50 无双槽） | 无双 |
+| 闪避 | 空格 | 闪 |
+| 奔跑 | Shift | — |
+| 暂停 | Esc | 右上角暂停 |
+| 镜头距离 | 滚轮 | 固定 |
+
+## 内容
+
+- 可操作关羽：步行、奔跑、闪避无敌、三段轻击、重击、范围无双
+- 三阶段虎牢关：普通士卒、精锐士卒、吕布
+- 敌军会追踪、间隔出击，攻击有前摇，受击会硬直、击退，倒地后离场
+- 原创程序化武将与战场：甲片、青龙偃月刀、方天画戟、城墙、营帐、战旗
+- 第三人称跟随、命中反馈、血量、无双槽、击破数、小地图
+- 触屏和低线程设备会限制同时在场的敌人数，并关闭动态阴影
+
+## 文件
+
+```
+index.html
+style.css
+game.js
+warrior-model.js
+battlefield-detail.js
+```
+
+## 本地检查
+
+```bash
+python -m http.server 8000
+node --check game.js
+node --check warrior-model.js
+node --check battlefield-detail.js
+```
+
+`?q=low` 强制低画质。调试时可查看 `window.__HULAO_READY__` 和 `window.__HULAO_STATE__()`。
+
+## 限制
+
+这是轻量 WebGL 原型。人物和场景是程序化的，不是扫描人体或动作捕捉。音效是 Web Audio 合成。Three.js（MIT）经 CDN 引入；没有第三方游戏的模型或贴图。

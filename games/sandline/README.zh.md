@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.md)
+
 # 沙线行动
 
 游戏馆里的单机战术射击。客户端、界面、程序化枪械和沙漠 / 雪地场景来自 [sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps)（MIT）。
