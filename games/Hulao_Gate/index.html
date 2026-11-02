@@ -23,7 +23,7 @@
     <div class="counter"><small>击破</small><strong id="ko-count">0</strong><span>K.O.</span></div>
     <div class="radar-shell"><canvas width="176" height="176" id="radar"></canvas><span>虎牢关战域</span></div>
     <div class="boss-hud" id="boss-hud" hidden><p>飞将 · 吕布 <span>奉先</span></p><div class="meter boss"><span id="boss-fill"></span></div></div>
-    <div class="bottom-hud"><div class="combo" id="combo" hidden><strong id="combo-num">0</strong><span>CHAIN</span></div><div class="skill-tile"><b>Q</b><span>青龙偃月</span><em id="skill-state">就绪</em></div><div class="controls-hint">WASD 移动 · 鼠标拖动视角 · J / 左键 连击 · K / 右键 重击 · Q 无双 · Space 闪避 · Shift 奔跑 · Esc 暂停</div></div>
+    <div class="bottom-hud"><div class="battle-tip" id="battle-tip" hidden></div><div class="combo" id="combo" hidden><strong id="combo-num">0</strong><span>CHAIN</span></div><div class="skill-tile"><b>Q</b><span>青龙偃月</span><em id="skill-state">就绪</em></div><div class="controls-hint">WASD 移动 · 鼠标拖动视角 · J / 左键 连击 · K / 右键 重击 · Q 无双 · Space 闪避 · Shift 奔跑 · F 格挡 · Tab 锁定 · Esc 暂停</div></div>
   </div>
   <div class="screen start-screen" id="start-screen">
     <div class="screen-content"><p class="eyebrow">THREE KINGDOMS · ACTION EXPERIENCE</p><div class="chop">天下<br>英雄</div><h1>乱世<span>无双</span></h1><div class="hero-divider"><span></span>虎 牢 关<span></span></div><p class="lead">烽烟四起，诸侯会盟。执青龙偃月，破西凉铁骑，直面飞将吕布。</p><button class="primary" id="start-btn" type="button">执刀出阵 <i>→</i></button><p class="start-caption">完全独立的原创浏览器动作游戏 · 灵感来自三国英雄传说</p><p class="loading-hint" id="boot-status">正在集结战场…</p></div>
@@ -32,7 +32,7 @@
   <div class="screen overlay-screen" id="pause-screen" hidden><div class="modal"><p class="eyebrow">BATTLE PAUSED</p><h2>暂歇刀锋</h2><p>铁骑犹在，战鼓未歇。</p><button class="primary" id="resume-btn">继续厮杀 <i>→</i></button><button class="ghost" id="restart-pause">重新开始</button></div></div>
   <div class="screen overlay-screen" id="end-screen" hidden><div class="modal"><p class="eyebrow" id="end-eyebrow">BATTLE REPORT</p><h2 id="end-title">虎牢凯旋</h2><p id="end-copy">天下英雄，舍我其谁。</p><div class="end-stat"><span>击破敌军</span><strong id="end-ko">0</strong></div><button class="primary" id="restart-btn">再战虎牢 <i>→</i></button><a class="ghost" href="../../">返回游戏馆</a></div></div>
   <div id="toast" aria-live="polite"></div>
-  <div class="mobile" id="mobile-controls" hidden><div id="joystick" class="joystick"><div id="stick"></div></div><div class="touch-actions"><button id="touch-skill" class="touch-skill">无双</button><button id="touch-dodge" class="touch-dodge">闪</button><button id="touch-heavy" class="touch-heavy">重</button><button id="touch-attack" class="touch-attack">斩</button></div><div class="touch-note">右侧空白区域滑动镜头</div></div>
+  <div class="mobile" id="mobile-controls" hidden><div id="joystick" class="joystick"><div id="stick"></div></div><div class="touch-actions"><button id="touch-parry" class="touch-parry">挡</button><button id="touch-skill" class="touch-skill">无双</button><button id="touch-dodge" class="touch-dodge">闪</button><button id="touch-heavy" class="touch-heavy">重</button><button id="touch-attack" class="touch-attack">斩</button></div><div class="touch-note">右侧空白区域滑动镜头</div></div>
   <div class="error-screen" id="error-screen" hidden><h2>战场加载失败</h2><p id="error-message">请检查网络及浏览器 WebGL 支持。</p><a href="../../">返回游戏馆</a></div>
   <script type="module" src="./game.js"></script>
 </body>
