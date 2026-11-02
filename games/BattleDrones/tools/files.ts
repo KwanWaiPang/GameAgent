@@ -6,9 +6,9 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { BattleRecord } from "../../src/arena/record";
+import type { BattleRecord } from "../src/arena/record";
 
-export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** sha256 of every file under the given src directories or files (sorted paths and contents). */
 function treeHash(root: string, dirs: string[]): string {

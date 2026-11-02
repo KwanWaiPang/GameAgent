@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { MAP_ART } from "./src/game/map-art";
-import { simHash } from "./tools/arena/files";
+import { simHash } from "./tools/files";
 
 /**
  * Each map's terrain revision: a hash of its painted chunks (art/terrain.py

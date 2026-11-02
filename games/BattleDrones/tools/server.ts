@@ -14,10 +14,10 @@
 // in-process.
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { Arena } from "../../src/arena/match";
-import { SIDES } from "../../src/arena/match";
-import { playScripted, type Script } from "../../src/arena/scripted";
-import type { Faction } from "../../src/sim/types";
+import type { Arena } from "../src/arena/match";
+import { SIDES } from "../src/arena/match";
+import { playScripted, type Script } from "../src/arena/scripted";
+import type { Faction } from "../src/sim/types";
 
 export interface ServeOptions {
   port: number;
