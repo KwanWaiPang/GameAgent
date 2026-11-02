@@ -75,6 +75,13 @@ jobs:
           test -f dist/index.html
           test -f dist/assets/ui/keyart-landscape.webp
           grep -q 'gameagent-return' dist/assets/*.css
+          ! find dist/assets -type f \( -name '*relay-socket*' -o -name '*lobby-*.js' -o -name '*worklet-*' \) | grep -q .
+          test ! -f dist/radio-probe.html
+
+      - name: Restore Node 22 for legacy GameAgent tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Board + hub unit tests
         run: |
