@@ -18,7 +18,7 @@ const params = new URLSearchParams(location.search);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer, scene, camera, player, groundTexture, clock, combatEffects, characterAssets;
 let phase = 'boot', elapsed = 0, wave = 0, waveStarted = 0, pending = 0, spawnClock = 0, bossSpawned = false;
-let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0;
+let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0, hitStop = 0;
 let cameraYaw = 0, cameraPitch = 0.22, cameraDistance = mobile ? 7.1 : 7.3;
 let cameraX = 0, cameraZ = 0, cameraY = 5;
 let enemies = [], fires = [], banners = [], blocked = [];
@@ -418,7 +418,7 @@ function beginWave(n){wave=n;waveStarted=elapsed;const cfg=waveData(n);pending=c
 }
 function resetGame(){for(const e of enemies){characterAssets.detach(e.model);scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
   combatEffects.clear();
-  if(player){characterAssets.detach(player.model);scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;
+  if(player){characterAssets.detach(player.model);scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;hitStop=0;
   cameraYaw=0;cameraPitch=.20;cameraX=0;cameraY=6;cameraZ=54;
   $('ko-count').textContent='0';$('boss-hud').hidden=true;$('end-screen').hidden=true;$('pause-screen').hidden=true;$('start-screen').hidden=true;$('hud').hidden=false;
   $('mobile-controls').hidden=!mobile;keys.clear();joystick.x=joystick.y=0;
@@ -459,7 +459,7 @@ function doAttackDamage(atk){const p=player.model.position;let hits=0;
     if(enemy.hp<=0)killEnemy(enemy);
     else sound(95,.07,'hit');
   }
-  if(hits){player.energy=clamp(player.energy+hits*(atk.kind==='skill'?0:5),0,100);shake=Math.max(shake,Math.min(.32,.1+hits*.03));
+  if(hits){hitStop=Math.max(hitStop,atk.kind==='skill'?.09:atk.kind==='heavy'?.07:.038);player.energy=clamp(player.energy+hits*(atk.kind==='skill'?0:5),0,100);shake=Math.max(shake,Math.min(.32,.1+hits*.03));
     showCombo(hits);sound(atk.kind==='skill'?70:65,.09,'hit');}
 }
 function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.motionToken=(e.motionToken||0)+1;e.model.userData.weapon.rotation.z=.32;
@@ -472,6 +472,12 @@ function showCombo(hits){const c=$('combo');c.hidden=false;$('combo-num').textCo
 function emitSparks(center,color,count){combatEffects.emitSparks(center,color,count);}
 function slash(radius,arc=2.2,skill=false){combatEffects.slash(player.model.position,player.model.rotation.y,radius,arc,skill);}
 function updateAttacks(dt){const a=player.attack;if(!a)return;a.t+=dt;
+  // Short forward commitment adds weight without camera-space teleportation.
+  if(a.t>a.activeStart*.65&&a.t<a.activeEnd){
+    const thrust=a.kind==='skill'?1.25:a.kind==='heavy'?2.15:3.1;
+    const yaw=player.model.rotation.y;
+    moveSafe(player.model,-Math.sin(yaw)*thrust*dt,-Math.cos(yaw)*thrust*dt,.56);
+  }
   if(a.kind==='skill' && a.t>=.12 && !a.slash){slash(4.8,TAU,true);slash(7,TAU,true);a.slash=true;}
   if(a.kind!=='skill' && a.t>=a.activeStart && !a.slash){slash(a.range*.78,a.arc,false);a.slash=true;}
   if(a.t>=a.activeStart && a.t<=a.activeEnd)doAttackDamage(a);
@@ -655,9 +661,13 @@ function attachInputs(){
   $('resume-btn').addEventListener('click',pause);$('pause-btn').addEventListener('click',pause);
   $('sound-btn').addEventListener('click',()=>{muted=!muted;$('sound-btn').textContent=muted?'♪̸':'♪';});
 }
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.048);elapsed+=phase==='playing'?dt:0;
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.048);
+  // Impact hit-stop only freezes simulation, not the browser rendering loop.
+  const simulationDt=phase==='playing'&&hitStop>0?0:dt;
+  hitStop=Math.max(0,hitStop-dt);
+  elapsed+=phase==='playing'?simulationDt:0;
   if(phase==='playing'){
-    updatePlayer(dt);updateEnemies(dt);updateWave(dt);updateCharacterMotion(dt);updateEffects(dt);updateCamera(dt);
+    updatePlayer(simulationDt);updateEnemies(simulationDt);updateWave(simulationDt);updateCharacterMotion(simulationDt);updateEffects(simulationDt);updateCamera(dt);
     if((Math.floor(elapsed*10)%2)===0)refreshHud();
   }else if(player){if(phase==='boot'){player.model.userData.rig.position.y=Math.sin(performance.now()*.001)*.04;}
     updateCamera(dt);for(const f of fires){f.flame.rotation.y+=dt*.4;}}
