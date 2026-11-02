@@ -4,9 +4,9 @@ No third-party character models ship in this repository. The base game remains p
 
 ## Add a skinned model
 
-Copy a licensed glTF 2.0 \`.glb\` (embedded textures and animations) into this directory. Set \`characters\` in \`manifest.json\`:
+Copy a licensed glTF 2.0 `.glb` (embedded textures and animations) into this directory. Set `characters` in `manifest.json`:
 
-\`\`\`json
+```json
 {
   "version": 1,
   "characters": {
@@ -28,11 +28,11 @@ Copy a licensed glTF 2.0 \`.glb\` (embedded textures and animations) into this d
     }
   }
 }
-\`\`\`
+```
 
-Kinds: \`hero\` = Guan Yu, \`boss\` = Lu Bu, \`soldier\` = normal soldier, \`elite\` = elite soldier (can reuse soldier). A character needs **Idle / Walk / Attack** clips or the entire character gracefully falls back to the procedural version. The rest are optional but strongly recommended for production. Clip matching is case-insensitive and strips punctuation; explicit names in \`clips\` take priority.
+Kinds: `hero` = Guan Yu, `boss` = Lu Bu, `soldier` = normal soldier, `elite` = elite soldier (can reuse soldier). A character needs **Idle / Walk / Attack** clips or the entire character gracefully falls back to the procedural version. The rest are optional but strongly recommended for production. Clip matching is case-insensitive and strips punctuation; explicit names in `clips` take priority.
 
-Model orientation: Y-up, humanoid height given in metres, feet aligned to floor, **in-place (no root motion)**, facing adjusted using \`facingOffset\` in radians. Include fitted weapons/armor in the GLB; the placeholder procedural mesh and its procedural weapon are hidden together. Model bounding-box height is normalized to \`height\`. GLB files must be inside this directory (no remote URLs). A missing model, broken animation set, or CDN failure leaves the current gameplay functional.
+Model orientation: Y-up, humanoid height given in metres, feet aligned to floor, **in-place (no root motion)**, facing adjusted using `facingOffset` in radians. Include fitted weapons/armor in the GLB; the placeholder procedural mesh and its procedural weapon are hidden together. Model bounding-box height is normalized to `height`. GLB files must be inside this directory (no remote URLs). A missing model, broken animation set, or CDN failure leaves the current gameplay functional.
 
 Because skinned clones share cached source geometry/materials, each enemy removes only its clone's skeleton; **never dispose the shared GLB geometry, textures or material on individual enemy death**. Keep all source models cached until the page closes.
 
