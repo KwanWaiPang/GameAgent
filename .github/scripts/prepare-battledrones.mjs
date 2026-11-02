@@ -124,9 +124,21 @@ const probe = join(upstream, "radio-probe.html");
 if (!existsSync(probe)) throw new Error("Missing radio link diagnostics page");
 rmSync(probe);
 
-transform("vite.config.ts", (source) =>
-  replaceOnce(source, '        probe: "radio-probe.html"\n', "", "radio probe build entry")
+transform("vite.config.ts", (source) => {
+  source = replaceOnce(source, 'import { duelHash, ffaHash, simHash } from "./tools/arena/files";', 'import { simHash } from "./tools/arena/files";', "multiplayer build hashes");
+  source = replaceOnce(source, '    // a sound duel pairs only two phones running the same sim and duel code (SOUND-DUEL.md)\n    __DUEL_HASH__: JSON.stringify(duelHash(fileURLToPath(new URL(".", import.meta.url)))),\n    // a four-player online battle seats only pages running the same sim and battle code (FFA.md "Build check")\n    __FFA_HASH__: JSON.stringify(ffaHash(fileURLToPath(new URL(".", import.meta.url)))),\n', "", "multiplayer build constants");
+  return replaceOnce(source, '        probe: "radio-probe.html"\n', "", "radio probe build entry");
+});
+
+transform("tools/arena/files.ts", (source) =>
+  cut(source, "/** The sim plus the sound-duel code", "export function gitCommit", "multiplayer hash helpers")
 );
+
+transform("package.json", (source) => {
+  const pkg = JSON.parse(source);
+  pkg.scripts = { dev: "vite", build: "tsc --noEmit && vite build", preview: "vite preview" };
+  return JSON.stringify(pkg, null, 2) + "\n";
+});
 
 // Upstream's TS config type-checks multiplayer-specific tests. The application
 // type-check remains strict, but only includes the live production source.
