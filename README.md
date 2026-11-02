@@ -3,7 +3,7 @@
 
 # Game Hub
 
-A web game collection — board games, wizard chess, a Monopoly-style journey, Hulao Gate, three 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
+A web game collection — board games, wizard chess, a Monopoly-style journey, Hulao Gate, a Hong Kong city roam, three 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
 
 **Live:** https://kwanwaipang.github.io/GameAgent/
 
@@ -30,6 +30,7 @@ Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md).
 | [`games/sandline/`](./games/sandline/) | Sandline | Tactical round-based FPS |
 | [`games/pocket/`](./games/pocket/) | Pocket Adventure | First-person cartoon fan game |
 | [`games/Hulao_Gate/`](./games/Hulao_Gate/) | Hulao Gate | Third-person action |
+| [`games/hongkong/`](./games/hongkong/) | Hong Kong Roam | City exploration |
 | [`games/redcap/`](./games/redcap/) | Red Cap Quest | Mario-like platformer |
 
 - **Wizard Chess** (`wizard-chess-3d`): procedural stone pieces in a Gothic hall. `chess.js` rules, human vs AI, local two-player, and auto-demo. Three.js and chess.js load from a CDN.
@@ -41,6 +42,7 @@ Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Pocket Adventure** (`pocket`): first-person cartoon opening in Pallet Town; choose a starter and meet wild creatures in the grass.
 - **Gold City Chronicle** (`richera`): a 3D street market. One die, land, buildings, tools, and visiting gods. Original names; a nod to classic richman boards, not a commercial copy.
 - **Hulao Gate** (`Hulao_Gate`): a third-person battlefield. Guan Yu against the western army and Lu Bu. Procedural lamellar armor, the pass, and dusk light. Not a commercial musou copy.
+- **Hong Kong Roam** (`hongkong`): adapted from [Slop New York](https://github.com/mrdoob/slop-newyork). Walk, drive a red taxi, cycle, or fly. Lighting, traffic, and rendering stay with the original simulation; place names, signs, the map, and the taxi are Hong Kong.
 - **Red Cap Quest** (`redcap`): eight original procedural stages. A Mario-like tribute, not a Nintendo product, and it does not use official assets or levels.
 
 ---
@@ -123,6 +125,7 @@ If Pages still serves the `main` root directly, the Vite build output must be co
 | [games/richera/README.md](./games/richera/README.md) | Gold City Chronicle |
 | [games/redcap/README.md](./games/redcap/README.md) | Red Cap Quest |
 | [games/Hulao_Gate/README.md](./games/Hulao_Gate/README.md) | Hulao Gate |
+| [games/hongkong/README.md](./games/hongkong/README.md) | Hong Kong Roam |
 | [games/wizard-chess-3d/README.md](./games/wizard-chess-3d/README.md) | Wizard Chess |
 
 Every guide has **中文 / English** buttons at the top. The highlighted button is the page you are reading.
@@ -147,5 +150,6 @@ Games written by other people stay under their copyright. The root MIT text does
 | Pocket Adventure | Paulius; hub adaptation by Kwan Wai-Pang | MIT |
 | Sandline | authors of sandline-threejs-fps; hub adaptation by Kwan Wai-Pang | MIT |
 | Chess 3D | the Chess3D authors | GPL-3.0 |
+| Hong Kong Roam | Mr.doob; adapted here as Hong Kong | MIT |
 
 Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

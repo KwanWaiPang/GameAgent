@@ -49,7 +49,7 @@
 
 ### 3.1 纯静态
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap` · `Hulao_Gate`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap` · `Hulao_Gate` · `hongkong`
 
 - 打开即玩，无需 `npm`。
 - 可用任意静态服务器托管。
@@ -150,4 +150,5 @@ push main
 - 口袋冒险：[games/pocket/README.zh.md](./games/pocket/README.zh.md)
 - 红帽奇遇：[games/redcap/README.zh.md](./games/redcap/README.zh.md)
 - 虎牢关：[games/Hulao_Gate/README.zh.md](./games/Hulao_Gate/README.zh.md)
+- 香港漫游：[games/hongkong/README.zh.md](./games/hongkong/README.zh.md)
 - 上游街战项目：[mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)

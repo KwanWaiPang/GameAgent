@@ -23,6 +23,7 @@ const KIND = {
   pocket: { felt: 0x3d8a48, glow: 0xf06058, plaque: "#16301c", ink: "#ffe8e4" },
   redcap: { felt: 0x3d74c8, glow: 0xf07068, plaque: "#1a2740", ink: "#ffe4e0" },
   hulao: { felt: 0x3a2a22, glow: 0xc4a574, plaque: "#1c1410", ink: "#f3e6d0" },
+  hongkong: { felt: 0x8e1d2a, glow: 0xf0c14a, plaque: "#2a1216", ink: "#ffe8ea" },
 };
 
 function showFlat() {
@@ -637,6 +638,19 @@ function buildDiorama(kind, dio, ped) {
     const blade = put(box, 0xc5ccd0, 0.1, 0.2, 0.1, 0.018, 0.32, 0.06, { metalness: 0.82, roughness: 0.28 });
     blade.rotation.z = -0.55;
     ped.userData.tick = (t) => { banner.position.y = 0.22 + Math.sin(t * 1.6) * 0.008; };
+  } else if (kind === "hongkong") {
+    put(box, 0x0e2438, 0, 0.015, 0.1, 0.7, 0.02, 0.18);
+    const towers = [
+      put(box, 0x1a3348, -0.18, 0.2, -0.02, 0.1, 0.32, 0.1),
+      put(box, 0xd7c4a2, 0.02, 0.3, -0.04, 0.08, 0.52, 0.08),
+      put(box, 0x243444, 0.16, 0.16, 0, 0.1, 0.24, 0.1),
+    ];
+    const cab = put(box, 0xc8102e, 0, 0.07, 0.12, 0.16, 0.06, 0.08);
+    ped.userData.tick = (t) => {
+      towers[1].material.emissive = new THREE.Color(0xffc98a);
+      towers[1].material.emissiveIntensity = 0.2 + Math.sin(t * 2.2) * 0.15;
+      cab.position.x = Math.sin(t * 0.7) * 0.12;
+    };
   } else if (kind === "redcap") {
     put(box, 0x5c94fc, 0, 0.22, -0.16, 0.62, 0.4, 0.04);
     put(box, 0x3cb043, 0, 0.03, 0.05, 0.62, 0.05, 0.28);

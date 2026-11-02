@@ -118,6 +118,14 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - License: MIT (root [`LICENSE`](./LICENSE))
 - Copyright: Kwan Wai-Pang
 
+## Hong Kong Roam (`games/hongkong/`)
+
+- Source: [mrdoob/slop-newyork](https://github.com/mrdoob/slop-newyork)
+- License: MIT (`games/hongkong/LICENSE`, copyright Mr.doob)
+- Renderer: [Three.js](https://github.com/mrdoob/three.js) dev build (MIT), loaded at runtime from jsDelivr (WebGPU / TSL)
+- Geographic data: NYC Open Data and © OpenStreetMap contributors (ODbL). The hub copy renames the interface, streets, map labels, and taxi livery as Hong Kong. The street grid, building footprints, and lighting remain the original simulation
+- Note: listed in the hub City section. The link back to the hub is a local adaptation
+
 ## Hulao Gate (`games/Hulao_Gate/`)
 
 - Source: original to this repository. Linked from the hub Action section.

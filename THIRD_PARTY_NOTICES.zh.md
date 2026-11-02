@@ -118,6 +118,14 @@
 - 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
 - 版权：Kwan Wai-Pang
 
+## 香港漫游（`games/hongkong/`）
+
+- 来源：[mrdoob/slop-newyork](https://github.com/mrdoob/slop-newyork)
+- 许可证：MIT（`games/hongkong/LICENSE`，版权 Mr.doob）
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) 开发分支（MIT），运行时经 jsDelivr 加载 WebGPU / TSL 构建
+- 地理数据：纽约市开放数据与 © OpenStreetMap 贡献者（ODbL）。馆内把界面、路名、地图标注和的士涂装改成香港；街道网格、楼宇轮廓和光照仍是原模拟
+- 说明：已接入大厅「城市」分类。返回游戏馆的链接是馆内适配
+
 ## 虎牢关（`games/Hulao_Gate/`）
 
 - 来源：本仓库原创。已接入大厅「动作」分类。
