@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090c14">
+<title>WIZARD CHESS — Sanctum of Kings</title>
+<style>
+:root{--gold:#d4ad6e;--gold2:#8b6c46;--paper:#e8e1d2;--dim:#9394a4;--glass:rgba(13,18,30,.9)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b12;color:var(--paper);font-family:Georgia,'Times New Roman','Noto Serif SC',serif}button,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 70% at 45% 48%,transparent 26%,rgba(2,4,10,.47) 100%)}
+#hud{position:fixed;inset:0;pointer-events:none}#hud>*{pointer-events:auto}.brand{position:absolute;top:24px;left:29px;text-shadow:0 2px 12px #000}.brand .eyebrow{font:10px/1.2 Arial,sans-serif;letter-spacing:5px;color:#b59b76}.brand h1{font-size:clamp(23px,2.8vw,37px);font-weight:400;letter-spacing:4px;margin:8px 0 4px}.brand small{font:10px Arial,sans-serif;letter-spacing:2.4px;color:#92929b}.brand h1 span{color:var(--gold)}
+.panel{position:absolute;right:24px;top:24px;bottom:24px;width:280px;background:linear-gradient(150deg,rgba(19,24,35,.93),rgba(9,13,23,.9));border:1px solid rgba(221,186,120,.22);box-shadow:0 20px 100px rgba(0,0,0,.5),inset 0 0 30px rgba(180,120,60,.035);backdrop-filter:blur(15px);display:flex;flex-direction:column;padding:22px 20px;gap:14px}
+.panel:before,.panel:after{content:'✦';color:var(--gold2);font-size:12px;position:absolute}.panel:before{top:6px;left:8px}.panel:after{right:8px;bottom:6px}.tiny{font:10px Arial,sans-serif;letter-spacing:2.5px;color:#a69582}.rule{height:1px;background:linear-gradient(to right,transparent,rgba(212,173,110,.45),transparent)}.playerbox{display:flex;gap:12px;align-items:center;padding:5px 0}.avatar{height:46px;width:46px;display:grid;place-items:center;font-size:30px;border:1px solid #5f5040;background:radial-gradient(#364354,#151824);color:#d5b47a}.avatar.ivory{background:radial-gradient(#a8a8a8,#3c4250);color:#f9edd6}.playerbox .name{font-size:15px}.playerbox .sub{font:10px Arial,sans-serif;color:var(--dim);margin-top:6px;letter-spacing:1px}.status{font-size:14px;color:#ecd4aa;min-height:20px;line-height:1.45}.status.check{color:#ff9890}.section-head{display:flex;justify-content:space-between;align-items:center;color:var(--gold);font-size:11px;letter-spacing:2px}.move-scroll{height:140px;overflow:auto;font:12px/1.9 Georgia,serif;color:#aaa6a0;background:rgba(0,0,0,.18);border:1px solid #24283a;padding:8px 10px;scrollbar-color:#5c4b37 transparent}.move-row{display:grid;grid-template-columns:36px 1fr 1fr;gap:3px}.move-row:last-child{color:#eee4d5}.muted{color:#69707e}.captured{min-height:24px;word-break:break-word;font-size:20px;color:#b9a482;letter-spacing:3px}.panel .flex-spacer{flex:1;min-height:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn,select{height:37px;border:1px solid rgba(197,165,112,.35);background:linear-gradient(#232638,#111521);color:#ddd3c1;padding:0 10px;outline:0}.btn:hover,.btn:focus-visible,select:focus-visible{border-color:#eac38a;background:#2a2934}.btn.accent{background:linear-gradient(125deg,#86683f,#4f3825);color:#fff1d5;border-color:#c49b61}.btn.active{color:#ffdfa7;border-color:#e3b878}.btn.small{height:29px;font-size:12px}.control-label{font:10px Arial,sans-serif;letter-spacing:1.3px;color:#a2a1a7;margin-bottom:6px}.quick-cams{position:absolute;bottom:27px;left:29px;display:flex;gap:8px}.quick-cams .btn{background:rgba(12,17,26,.76);backdrop-filter:blur(12px);font-size:12px}.hint-footer{position:absolute;left:29px;bottom:75px;color:#b3ada1;font:11px/1.6 Arial,sans-serif;text-shadow:0 2px 10px #000;letter-spacing:.5px}.top-actions{position:absolute;top:28px;right:324px;display:flex;gap:7px}.top-actions .btn{height:32px;font-size:11px;background:rgba(9,14,26,.78)}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(1,3,9,.65);z-index:10;backdrop-filter:blur(6px)}.overlay.show{display:flex}.dialog{width:min(450px,calc(100% - 30px));background:linear-gradient(145deg,#242836,#0d1120);border:1px solid #95744b;box-shadow:0 22px 90px #000;padding:30px;text-align:center}.dialog h2{font-size:26px;font-weight:400;letter-spacing:3px;color:#f0d8b6;margin:8px 0 12px}.dialog p{font:13px/1.8 Arial,sans-serif;color:#aaa7ac}.dialog .grid2{margin:18px 0}.dialog select{width:100%;margin-top:8px}.dialog .btn{width:100%;margin-top:12px}.promotion-options{display:flex;gap:7px;justify-content:center}.promotion-options button{width:70px;height:70px;background:#222839;border:1px solid #998061;color:#f4ebdc;font-size:33px}.promotion-options button:hover{background:#484051}.toast{position:absolute;left:50%;transform:translateX(-50%);top:25px;background:#101726ed;border:1px solid #a58b5d;color:#f6d7aa;padding:12px 18px;font:12px Arial,sans-serif;letter-spacing:1px;opacity:0;transition:opacity .25s;pointer-events:none;text-align:center}.toast.show{opacity:1}.mobile-toggle{display:none}
+@media(max-width:850px){.brand{top:14px;left:15px}.brand h1{font-size:23px}.brand .eyebrow{font-size:9px}.brand small{display:none}.panel{top:auto;left:0;right:0;bottom:0;width:100%;height:193px;flex-direction:row;gap:9px;padding:11px 14px;overflow:auto;backdrop-filter:blur(16px)}.panel>.rule,.panel>.tiny,.panel>.playerbox,.panel>.captured,.panel>.flex-spacer{display:none}.panel .section-head{display:none}.panel .status{font-size:12px;min-width:92px;width:110px}.panel .move-scroll{width:115px;height:148px;flex-shrink:0;font-size:10px}.panel .grid2{min-width:165px;align-content:start}.panel .grid2 .btn,.panel .grid2 select{height:34px;font-size:11px}.panel>.grid2:last-of-type{min-width:160px}.quick-cams{bottom:201px;left:12px}.quick-cams .btn{height:29px;font-size:10px;padding:0 6px}.hint-footer{bottom:240px;left:13px;font-size:10px;max-width:60%}.top-actions{right:12px;top:18px}.top-actions .btn{height:28px;padding:0 8px;font-size:10px}}
+@media(max-width:480px){.brand .eyebrow{letter-spacing:2px}.brand h1{font-size:19px;letter-spacing:2px}.top-actions{top:51px;right:9px}.top-actions .btn{font-size:10px}.quick-cams{bottom:202px}.hint-footer{bottom:239px}.panel{height:191px}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/","chess.js":"https://cdn.jsdelivr.net/npm/chess.js@1.4.0/dist/esm/chess.js"}}
+</script>
+</head>
+<body>
+<canvas id="scene" aria-label="可互动的 3D 国际象棋棋盘"></canvas><div id="vignette"></div>
+<div id="hud">
+ <header class="brand"><div class="eyebrow">THE ANCIENT ORDER PRESENTS</div><h1>WIZARD <span>CHESS</span></h1><small>SANCTUM OF KINGS · THREE.JS EDITION</small></header>
+ <div class="top-actions"><button class="btn" id="soundBtn">♫ 声音：开</button><button class="btn" id="menuBtn">⚙ 游戏设置</button></div>
+ <div class="toast" id="toast"></div>
+ <aside class="panel">
+   <div class="tiny" style="text-align:center">✦ THE ROYAL DUEL ✦</div><div class="rule"></div>
+   <div class="playerbox"><div class="avatar">♚</div><div><div class="name" id="opponentName">暗影军团 · AI</div><div class="sub" id="blackLabel">BLACK ARMY</div></div></div>
+   <div class="rule"></div><div class="status" id="status">选择棋子，开始魔法对决</div>
+   <div class="section-head"><span>✦ BATTLE CHRONICLE</span><span id="turnCount">00</span></div>
+   <div class="move-scroll" id="moveList"><span class="muted">命运之书尚未写下第一步……</span></div>
+   <div class="section-head"><span>CAPTURED / 战利品</span></div><div class="captured" id="captures">—</div><div class="flex-spacer"></div>
+   <div class="grid2"><button class="btn accent" id="newBtn">⚔ 新的对局</button><button class="btn" id="undoBtn">↶ 悔棋</button><button class="btn" id="hintBtn">✦ 提示</button><button class="btn" id="flipBtn">⟳ 换边视角</button></div>
+   <div class="grid2"><div><div class="control-label">对战模式</div><select id="mode"><option value="ai">挑战 AI</option><option value="local">双人本地</option><option value="demo">AI 自动演示</option></select></div><div><div class="control-label">AI 难度</div><select id="difficulty"><option value="1">学徒 / 简单</option><option value="2" selected>骑士 / 普通</option><option value="3">大法师 / 困难</option></select></div></div>
+ </aside>
+ <div class="hint-footer">单击棋子选择 · 点击光圈落子 · 拖动画面旋转 · 滚轮缩放<br>吃子时自动进入电影镜头 · H 隐藏界面</div>
+ <nav class="quick-cams"><button class="btn small active" data-cam="isometric">◆ 战术视角</button><button class="btn small" data-cam="top">▦ 俯视</button><button class="btn small" data-cam="low">◈ 电影视角</button><button class="btn small" data-cam="wide">⌂ 大教堂</button></nav>
+</div>
+<div class="overlay show" id="welcome"><div class="dialog"><div class="tiny">✦ ENTER THE SANCTUM ✦</div><h2>王者的圣殿</h2><p>在远古石砌大教堂中，指挥会行动的棋子。<br>每一次吃子，都是一场魔法对决。</p><div class="grid2"><div><div class="control-label">执棋阵营</div><select id="sideChoice"><option value="w">曙光 · 白方</option><option value="b">暗影 · 黑方</option></select></div><div><div class="control-label">对战模式</div><select id="startMode"><option value="ai">人机对战</option><option value="local">本地双人</option><option value="demo">自动演示</option></select></div></div><button class="btn accent" id="startBtn">⚔ 进入棋盘</button></div></div>
+<div class="overlay" id="promotion"><div class="dialog"><div class="tiny">THE ASCENSION</div><h2>士兵晋升</h2><p>选择你希望士兵晋升的棋子</p><div class="promotion-options" id="promotionChoices"></div></div></div>
+<div class="overlay" id="endGame"><div class="dialog"><div class="tiny">✦ THE FINAL CHAPTER ✦</div><h2 id="endTitle">对局结束</h2><p id="endDesc"></p><button class="btn accent" id="replayBtn">再次挑战</button><button class="btn" id="closeEndBtn">查看棋盘</button></div></div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {Chess} from 'chess.js';
+
+// Three strict layers: chess.js is the only rules authority, visual objects never decide legality.
+const $=id=>document.getElementById(id);
+const game=new Chess();
+const canvas=$('scene');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.8));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.42;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b111c);scene.fog=new THREE.FogExp2(0x101927,.018);
+const camera=new THREE.PerspectiveCamera(42,1,.1,220);
+const orbit=new OrbitControls(camera,canvas);orbit.enableDamping=true;orbit.dampingFactor=.075;orbit.minDistance=10;orbit.maxDistance=48;orbit.maxPolarAngle=Math.PI/2-.08;orbit.target.set(0,1,0);orbit.enablePan=false;
+const hemi=new THREE.HemisphereLight(0xb5d9ff,0x312015,1.7);scene.add(hemi);
+const ambient=new THREE.AmbientLight(0x9c8cad,.45);scene.add(ambient);
+function light(color,intensity,x,y,z,shadow=false){let l=new THREE.PointLight(color,intensity,35,1.6);l.position.set(x,y,z);if(shadow){l.castShadow=true;l.shadow.mapSize.set(1024,1024);l.shadow.bias=-.00022;l.shadow.radius=4}scene.add(l);return l;}
+light(0xffbd6f,125,-9,10,4,true);light(0x72a9f3,92,9,12,-9);light(0xff873b,65,7,5,12);const keyLight=new THREE.DirectionalLight(0xf5e9d5,2.25);keyLight.position.set(3,17,12);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);keyLight.shadow.camera.left=-18;keyLight.shadow.camera.right=18;keyLight.shadow.camera.top=18;keyLight.shadow.camera.bottom=-18;keyLight.shadow.bias=-.0003;scene.add(keyLight);
+const mat=(color,roughness=.73,metalness=.05,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
+const stone=mat(0x333c4b,.96),stoneEdge=mat(0x4e5462,.94),blackStone=mat(0x212b35,.88),gold=mat(0xc6a36b,.31,.65),goldDark=mat(0x756047,.5,.65),whiteStone=mat(0xd4d3c8,.51,.08),obsidian=mat(0x2c3443,.43,.3),whiteGlow=mat(0x91dcff,.3,.08,{emissive:0x285c79,emissiveIntensity:.45}),blackGlow=mat(0xffbc70,.35,.1,{emissive:0x874019,emissiveIntensity:.48}),floorMat=mat(0x252c35,1);
+const boxGeo=new THREE.BoxGeometry(1,1,1),sphereGeo=new THREE.SphereGeometry(1,16,12);
+function mesh(geo,material,parent,x=0,y=0,z=0,rx=0,ry=0,rz=0){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.rotation.set(rx,ry,rz);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function cube(parent,w,h,d,x,y,z,m){let o=mesh(boxGeo,m,parent,x,y,z);o.scale.set(w,h,d);return o}
+function cyl(parent,rt,rb,h,x,y,z,m,n=24){return mesh(new THREE.CylinderGeometry(rt,rb,h,n),m,parent,x,y,z)}
+function ball(parent,r,x,y,z,m){let o=mesh(sphereGeo,m,parent,x,y,z);o.scale.setScalar(r);return o}
+function ring(parent,r,thick,y,m){let o=mesh(new THREE.TorusGeometry(r,thick,8,48),m,parent,0,y,0,Math.PI/2);return o}
+function torusArch(parent,r,x,y,z,m,rot=0){const a=mesh(new THREE.TorusGeometry(r,.12,7,30,Math.PI),m,parent,x,y,z);a.rotation.z=rot;return a}
+function addFlame(x,y,z){const grp=new THREE.Group();grp.position.set(x,y,z);scene.add(grp);cyl(grp,.55,.72,.72,0,.36,0,stoneEdge);cyl(grp,.47,.37,.15,0,.76,0,goldDark);let flame=mesh(new THREE.ConeGeometry(.23,.94,9),new THREE.MeshBasicMaterial({color:0xffb452,transparent:true,opacity:.92}),grp,0,1.28,0);flame.userData.flame=true;flames.push(flame);light(0xff9a47,8,x,y+2,z);return grp}
+const flames=[];
+// A procedural Gothic great hall: columns, arches, tracery, chandeliers and molten braziers.
+function buildHall(){
+  cube(scene,100,1,100,0,-.57,0,floorMat);
+  for(let z=-24;z<=24;z+=4){cube(scene,47,.012,.033,0,-.051,z,stoneEdge)}
+  cube(scene,36,15,.7,0,7,-20,stone);
+  for(const sx of [-1,1])cube(scene,.85,15,48,17*sx,7,0,stone);
+  for(const z of [-18,-9,0,9,18])for(const sx of [-1,1]){
+    const x=sx*15.2;
+    cube(scene,2.4,.6,2.4,x,.35,z,stoneEdge);
+    cyl(scene,.8,1.05,13,x,7,z,stone,12);
+    cyl(scene,1.17,.88,.55,x,13.9,z,stoneEdge,12);
+    cube(scene,2.55,.45,2.55,x,14.3,z,stoneEdge);
+    for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
+      const rib=cube(scene,.14,13,.15,x+Math.cos(a)*.76,7.1,z+Math.sin(a)*.76,goldDark);rib.rotation.y=-a;
+    }
+  }
+  for(const x of [-10,0,10]){
+    const win=new THREE.Group();scene.add(win);win.position.set(x,8,-19.54);
+    cube(win,5,8,.13,0,0,0,blackStone);
+    const glow=mesh(new THREE.PlaneGeometry(4.5,7.5),new THREE.MeshBasicMaterial({color:0x4c92b0,transparent:true,opacity:.32,side:THREE.DoubleSide}),win,0,0,.09);
+    for(const dx of [-1.25,0,1.25])cube(win,.14,7.8,.2,dx,0,.2,stoneEdge);
+    for(const yy of [-2.6,0,2.6])cube(win,4.8,.13,.19,0,yy,.16,stoneEdge);
+    torusArch(win,2.4,0,4.0,.1,stoneEdge);
+    for(const j of [-1,1]){let w=mesh(new THREE.PlaneGeometry(2,3),new THREE.MeshBasicMaterial({color:j<0?0x345d98:0x90502f,transparent:true,opacity:.24,side:THREE.DoubleSide}),win,j*1,1,.12)}
+  }
+  for(const z of [-17,-8,1,10,19]){
+    const arch=new THREE.Group();scene.add(arch);arch.position.set(0,13.9,z);
+    let a=cube(arch,30,.25,.25,0,1.65,0,stoneEdge);a.rotation.z=0;
+    for(const sx of [-1,1]){let strut=cube(arch,.27,5.4,.33,sx*8.3,.2,0,stoneEdge);strut.rotation.z=sx*.95}
+  }
+  for(const sx of [-1,1])for(const z of [-12,12])addFlame(sx*12.6,.35,z);
+  for(let i=0;i<26;i++){
+    const x=(Math.random()-.5)*26,z=(Math.random()-.5)*33;
+    if(Math.abs(x)<8&&Math.abs(z)<9)continue;
+    cube(scene,.8,1.0,.8,x,.5,z,Math.random()>.5?stone:stoneEdge);
+  }
+  for(const z of [-14,14]){cube(scene,26,.3,2,0,.1,z,stoneEdge);for(const x of [-10,0,10])cube(scene,1.8,.5,2,x,.5,z,stone)}
+  for(const i of [-1,1]){
+    const banner=mesh(new THREE.PlaneGeometry(3.3,6),new THREE.MeshStandardMaterial({color:i<0?0x485d7e:0x624130,side:THREE.DoubleSide,roughness:.95}),scene,i*13.2,9.1,-19.4);
+    cube(scene,3.6,.16,.16,i*13.2,12.25,-19.3,goldDark);
+  }
+}
+buildHall();
+// Altar and coordinate-accurate 8x8 board (a1 front-left when White faces the board).
+const board=new THREE.Group();scene.add(board);const SQ=1.42,BOARD=SQ*8,boardHeight=1.12;
+cube(board,BOARD+2.25,.55,BOARD+2.25,0,.31,0,blackStone);
+cube(board,BOARD+1.77,.13,BOARD+1.77,0,.66,0,goldDark);
+cube(board,BOARD+.72,.33,BOARD+.72,0,.91,0,stoneEdge);
+cube(board,BOARD+.27,.16,BOARD+.27,0,1.065,0,blackStone);
+const tileMats=[mat(0xbabbb2,.34),mat(0x535d6a,.4)];
+const tiles=[];
+for(let rank=0;rank<8;rank++)for(let file=0;file<8;file++){
+ const tile=cube(board,SQ-.017,.10,SQ-.017,(file-3.5)*SQ,boardHeight,(3.5-rank)*SQ,tileMats[(file+rank)%2]);
+ tile.userData.square='abcdefgh'[file]+(rank+1);tiles.push(tile);
+}
+for(let i=-1;i<=1;i+=2){cube(board,BOARD+1.6,.075,.09,0,.76,i*(BOARD/2+.62),gold);cube(board,.09,.075,BOARD+1.6,i*(BOARD/2+.62),.76,0,gold)}
+// Decorative filigree on the edge, deliberately separate from the rule-bearing 64 squares.
+for(let i=0;i<8;i++){
+ const t=makeLabel('abcdefgh'[i],28,'#bca07a');t.position.set((i-3.5)*SQ,.84,BOARD/2+.42);t.rotation.x=-Math.PI/2;t.scale.set(.19,.19,1);board.add(t);
+ const n=makeLabel(''+(i+1),28,'#bca07a');n.position.set(-BOARD/2-.43,.84,(3.5-i)*SQ);n.rotation.x=-Math.PI/2;n.scale.set(.18,.18,1);board.add(n);
+}
+function makeLabel(text,size,color){const c=document.createElement('canvas');c.width=96;c.height=96;const g=c.getContext('2d');g.fillStyle=color;g.font=`bold ${size}px Georgia`;g.textAlign='center';g.textBaseline='middle';g.fillText(text,48,48);const tex=new THREE.CanvasTexture(c);let m=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide});return new THREE.Mesh(new THREE.PlaneGeometry(1,1),m)}
+const targetMat=new THREE.MeshBasicMaterial({color:0x6cdcff,transparent:true,opacity:.56,depthWrite:false});const dangerMat=new THREE.MeshBasicMaterial({color:0xff7050,transparent:true,opacity:.78,depthWrite:false});const selectionMat=new THREE.MeshBasicMaterial({color:0xf6c46f,transparent:true,opacity:.8,depthWrite:false});
+const marks=[];
+function coords(square){const f='abcdefgh'.indexOf(square[0]),r=Number(square[1])-1;return new THREE.Vector3((f-3.5)*SQ,boardHeight+.095,(3.5-r)*SQ)}
+function marker(square,kind){const pos=coords(square);const g=new THREE.Group();g.position.copy(pos);g.position.y+=.07;scene.add(g);const m=kind==='capture'?dangerMat:kind==='selected'?selectionMat:targetMat;
+ const out=mesh(new THREE.TorusGeometry(kind==='selected'?.55:.42,.035,8,48),m,g,0,0,0,Math.PI/2);out.castShadow=false;
+ if(kind!=='selected'){const middle=mesh(new THREE.CircleGeometry(.14,32),m,g,0,.003,0,-Math.PI/2);middle.castShadow=false}
+ g.userData.kind=kind;g.userData.square=square;marks.push(g)
+}
+function clearMarks(){for(const o of marks)scene.remove(o);marks.length=0}
+// Procedural individual character silhouettes: a unique rook / horse / bishop / king / queen / pawn.
+function createPiece(type,color){
+ const group=new THREE.Group(),body=new THREE.Group();group.add(body);
+ const m=color==='w'?whiteStone:obsidian, trim=color==='w'?goldDark:gold,glow=color==='w'?whiteGlow:blackGlow;
+ cyl(body,.39,.46,.18,0,.09,0,trim,32);cyl(body,.33,.38,.16,0,.22,0,m,28);cyl(body,.27,.33,.075,0,.32,0,trim,28);
+ const height=type==='p'?1.24:type==='r'?1.7:type==='n'?1.8:type==='b'?1.93:type==='q'?2.12:2.28;
+ if(type==='p'){
+   cyl(body,.22,.32,.5,0,.60,0,m,18);ball(body,.25,0,1.04,0,m);cyl(body,.16,.21,.12,0,1.30,0,trim);ball(body,.10,0,1.41,0,glow);
+ }else if(type==='r'){
+   cyl(body,.27,.38,.92,0,.83,0,m,12);cyl(body,.38,.30,.14,0,1.36,0,trim,12);cyl(body,.40,.40,.22,0,1.52,0,m,12);
+   for(let i=0;i<6;i++){let a=i*Math.PI/3;cube(body,.17,.27,.19,Math.cos(a)*.30,1.72,Math.sin(a)*.30,trim).rotation.y=-a}
+ }else if(type==='n'){
+   cyl(body,.29,.37,.66,0,.64,0,m,12);const horse=mesh(new THREE.BoxGeometry(.51,.75,.42),m,body,0,1.19,-.07);horse.rotation.x=-.28;
+   const head=mesh(new THREE.BoxGeometry(.54,.42,.68),m,body,0,1.55,-.23);head.rotation.x=-.15;
+   mesh(new THREE.ConeGeometry(.14,.42,6),m,body,-.18,1.90,-.05);
+   mesh(new THREE.ConeGeometry(.14,.42,6),m,body,.18,1.90,-.05);
+   for(const sx of [-1,1])ball(body,.055,sx*.28,1.62,-.44,glow);
+   cube(body,.15,.6,.15,0,1.45,.18,trim).rotation.x=.16;
+ }else if(type==='b'){
+   cyl(body,.28,.35,.73,0,.7,0,m,24);ball(body,.30,0,1.30,0,m);
+   mesh(new THREE.ConeGeometry(.29,.67,12),m,body,0,1.76,0);ring(body,.26,.04,1.38,trim);ball(body,.075,0,2.11,0,glow);
+ }else if(type==='q'){
+   cyl(body,.28,.4,.86,0,.75,0,m,24);ball(body,.29,0,1.39,0,m);
+   cyl(body,.45,.26,.20,0,1.67,0,trim,12);
+   for(let i=0;i<7;i++){let a=i*2*Math.PI/7;const x=Math.cos(a)*.36,z=Math.sin(a)*.36;
+     let spike=mesh(new THREE.ConeGeometry(.115,.44,5),m,body,x,1.94,z);ball(body,.07,x,2.18,z,glow)}
+   ball(body,.16,0,1.99,0,trim);
+ }else{
+   cyl(body,.3,.4,.95,0,.77,0,m,24);cyl(body,.34,.3,.18,0,1.39,0,trim);
+   ball(body,.31,0,1.64,0,m);cyl(body,.27,.3,.12,0,1.93,0,trim);
+   cube(body,.15,.59,.15,0,2.24,0,trim);cube(body,.43,.15,.15,0,2.34,0,trim);
+   for(const i of [-1,1])ball(body,.04,i*.21,1.67,-.25,glow);
+ }
+ for(let i=0;i<4;i++){
+   const a=i*Math.PI/2;const gem=mesh(new THREE.OctahedronGeometry(.075),glow,body,Math.cos(a)*.29,.28,Math.sin(a)*.29);
+ }
+ group.userData.type=type;group.userData.color=color;group.userData.body=body;
+ return group;
+}
+const pieces=new Map(),fx=[];let selected=null,animation=null,busy=false,mode='ai',playerColor='w',flip=false,started=false,sound=true,endShown=false,aiJob=0,moveCache=[];
+function rebuildPieces(){if(animation){scene.remove(animation.mover);if(animation.taken)scene.remove(animation.taken)}for(const p of pieces.values())scene.remove(p);pieces.clear();for(const file of 'abcdefgh')for(let rank=1;rank<=8;rank++){
+ let sq=file+rank,p=game.get(sq);if(!p)continue;const obj=createPiece(p.type,p.color);obj.position.copy(coords(sq));obj.position.y=boardHeight+.14;obj.userData.square=sq;obj.userData.restY=obj.position.y;scene.add(obj);pieces.set(sq,obj)
+}selected=null;clearMarks();updateHUD()}
+function feedback(t,ms=2300){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(feedback.id);feedback.id=setTimeout(()=>e.classList.remove('show'),ms)}
+function statusString(){if(game.isCheckmate())return '♛ 将死 · '+(game.turn()==='w'?'暗影':'曙光')+'阵营胜利';if(game.isStalemate())return '平局 · 无子可走';if(game.isThreefoldRepetition())return '平局 · 三次重复局面';if(game.isInsufficientMaterial())return '平局 · 子力不足';if(game.isDraw())return '平局 · 达到和棋条件';return (game.turn()==='w'?'曙光军团':'暗影军团')+' 行棋'+(game.isCheck()?' · ⚠ 正被将军':'')}
+function updateHUD(){const st=$('status');st.textContent=busy?'⚔ 魔法战斗进行中…':statusString();st.className='status'+(game.isCheck()?' check':'');const hist=game.history({verbose:true});$('turnCount').textContent=String(hist.length).padStart(2,'0');
+ if(!hist.length)$('moveList').innerHTML='<span class="muted">命运之书尚未写下第一步……</span>';else{let h='';for(let i=0;i<hist.length;i+=2){h+=`<div class="move-row"><span class="muted">${i/2+1}.</span><span>${hist[i]?.san||''}</span><span>${hist[i+1]?.san||''}</span></div>`}$('moveList').innerHTML=h;$('moveList').scrollTop=$('moveList').scrollHeight}
+ const captured=hist.filter(m=>m.captured).map(m=>(m.color==='w'?'♟♞♝♜♛':'♙♘♗♖♕')['pnbrq'.indexOf(m.captured)]).join(' ');
+ $('captures').textContent=captured||'—';$('undoBtn').disabled=busy||!hist.length;$('hintBtn').disabled=busy||game.isGameOver();$('blackLabel').textContent=mode==='local'?'PLAYER TWO · BLACK':'BLACK ARMY';$('opponentName').textContent=mode==='local'?'暗影军团 · 玩家二':mode==='demo'?'双 AI 演示':'暗影军团 · AI';
+}
+function humanTurn(){return mode==='local'||(mode==='ai'&&game.turn()===playerColor)}
+function choose(square){
+ if(busy||game.isGameOver()||!humanTurn())return;
+ const p=game.get(square);
+ if(selected===square){selected=null;clearMarks();return}
+ if(selected){const moves=game.moves({square:selected,verbose:true}).filter(m=>m.to===square);if(moves.length){if(moves.some(m=>m.flags.includes('p'))){showPromote(selected,square);return}performMove({from:selected,to:square,promotion:'q'});return}}
+ if(p&&p.color===game.turn()){selected=square;clearMarks();marker(square,'selected');for(const m of game.moves({square,verbose:true})){marker(m.to,m.captured||m.flags.includes('e')?'capture':'normal')}playSound('pick')}
+ else{selected=null;clearMarks()}
+}
+function showPromote(from,to){const div=$('promotionChoices');div.innerHTML='';const map={q:'♛',r:'♜',b:'♝',n:'♞'};for(const type of Object.keys(map)){const b=document.createElement('button');b.textContent=map[type];b.title={q:'后',r:'车',b:'象',n:'马'}[type];b.onclick=()=>{$('promotion').classList.remove('show');performMove({from,to,promotion:type})};div.append(b)}$('promotion').classList.add('show')}
+function showResult(){if(!game.isGameOver()||endShown)return;endShown=true;$('endTitle').textContent=game.isCheckmate()?'将死 · 胜负已分':'棋局终章';$('endDesc').textContent=statusString();$('endGame').classList.add('show')}
+let camTween=null,desiredCam=null;function camTo(pos,target,duration=1050){const now=performance.now();camTween={from:camera.position.clone(),to:new THREE.Vector3(...pos),targetFrom:orbit.target.clone(),targetTo:new THREE.Vector3(...target),start:now,duration};orbit.enabled=false}
+function camPreset(name){let p;
+ if(name==='top')p=[0,27,1.8];else if(name==='low')p=[flip?-.5:.5,7,flip?-21:21];else if(name==='wide')p=[22,22,30];else p=[flip?-14:14,17,flip?-19:19];
+ camTo(p,[0,1,0],1000);document.querySelectorAll('[data-cam]').forEach(b=>b.classList.toggle('active',b.dataset.cam===name))
+}
+function particlesAt(pos,color){const material=mat(color==='w'?0xe7e0d3:0x3a4655,.75);for(let i=0;i<25;i++){
+ const size=.055+Math.random()*.15;const shard=mesh(new THREE.TetrahedronGeometry(size),material,scene,pos.x,pos.y+.65,pos.z);shard.userData.particle=true;shard.userData.vel=new THREE.Vector3((Math.random()-.5)*7,Math.random()*5+1,(Math.random()-.5)*7);shard.userData.spin=new THREE.Vector3(Math.random()*7,Math.random()*7,Math.random()*7);shard.userData.life=1.4+Math.random()*.6;fx.push(shard)
+}const pulse=mesh(new THREE.SphereGeometry(.4,12,10),new THREE.MeshBasicMaterial({color:0xffd4a0,transparent:true,opacity:.68,depthWrite:false}),scene,pos.x,pos.y+.64,pos.z);pulse.userData.pulse=true;pulse.userData.life=.4;fx.push(pulse)}
+function performMove(spec){
+ if(busy||game.isGameOver())return;
+ let legal;try{legal=game.move(spec)}catch(e){return}if(!legal)return;
+ clearMarks();selected=null;busy=true;playSound(legal.captured?'attack':'move');
+ const mover=pieces.get(legal.from);if(!mover){busy=false;rebuildPieces();return}
+ let takenSquare=legal.to;if(legal.flags.includes('e'))takenSquare=legal.to[0]+legal.from[1];
+ const taken=pieces.get(takenSquare);
+ pieces.delete(legal.from);if(taken)pieces.delete(takenSquare);
+ const from=mover.position.clone(),to=coords(legal.to);to.y=boardHeight+.14;
+ const isCapture=!!taken;const start=performance.now();
+ if(isCapture){const target=to.clone();const direction=from.clone().sub(target).normalize();const side=new THREE.Vector3((from.x+target.x)/2+direction.x*3.1,5.5,(from.z+target.z)/2+direction.z*3.4);camTo([side.x,side.y,side.z],[target.x,1.1,target.z],900)}
+ animation={start,duration:isCapture?1680:680,from,to,mover,taken,hit:false,legal,done:()=>{
+   if(taken)scene.remove(taken);
+   mover.position.copy(to);pieces.set(legal.to,mover);mover.userData.square=legal.to;
+   if(legal.flags.includes('k')||legal.flags.includes('q')){
+     const rookFrom=legal.flags.includes('k')?'h'+legal.to[1]:'a'+legal.to[1];
+     const rookTo=legal.flags.includes('k')?'f'+legal.to[1]:'d'+legal.to[1];
+     const rook=pieces.get(rookFrom);if(rook){pieces.delete(rookFrom);rook.position.copy(coords(rookTo));rook.position.y=boardHeight+.14;pieces.set(rookTo,rook)}
+   }
+   if(legal.flags.includes('p')){scene.remove(mover);const upgraded=createPiece(legal.promotion||'q',legal.color);upgraded.position.copy(to);upgraded.userData.square=legal.to;upgraded.userData.restY=to.y;scene.add(upgraded);pieces.set(legal.to,upgraded)}
+   busy=false;animation=null;updateHUD();if(isCapture)camPreset('isometric');showResult();scheduleAI();
+ }};updateHUD()
+}
+function cancelAI(){aiJob++}
+function reset(opts={}){
+ cancelAI();game.reset();endShown=false;
+ mode=opts.mode||$('mode').value;playerColor=opts.side||playerColor;flip=playerColor==='b'&&mode==='ai';
+ busy=false;rebuildPieces();animation=null;
+ for(const p of fx)scene.remove(p);fx.length=0;
+ $('endGame').classList.remove('show');$('promotion').classList.remove('show');$('mode').value=mode;
+ camPreset('isometric');scheduleAI();
+}
+function undo(){if(busy)return;cancelAI();if(game.history().length===0)return;game.undo();if(mode==='ai'&&game.history().length&&game.turn()!==playerColor)game.undo();endShown=false;$('endGame').classList.remove('show');rebuildPieces();scheduleAI()}
+// Local minimax with tactical move ordering. No network, accounts, or remote inference.
+const values={p:100,n:320,b:332,r:510,q:920,k:20000};
+function boardScore(){if(game.isCheckmate())return game.turn()==='w'?-30000:30000;
+ if(game.isDraw())return 0;let s=0,b=game.board();for(let r=0;r<8;r++)for(let f=0;f<8;f++){
+ const p=b[r][f];if(!p)continue;let bonus=0,center=3.5-(Math.abs(3.5-f)+Math.abs(3.5-r))/2;
+ if(p.type==='p')bonus+=(p.color==='w'?6-r:r-1)*7;
+ if(['n','b','q'].includes(p.type))bonus+=center*8;
+ s+=(values[p.type]+bonus)*(p.color==='w'?1:-1);
+}return s}
+function ordered(moves){return moves.sort((a,b)=>((b.captured?values[b.captured]+(b.promotion?700:0):0)-(a.captured?values[a.captured]+(a.promotion?700:0):0)))}
+function search(depth,alpha,beta,turn,ply=0){
+ if(game.isCheckmate())return -30000+ply;
+ if(depth===0||game.isDraw())return boardScore()*turn;
+ let list=ordered(game.moves({verbose:true}));if(!list.length)return 0;
+ let score=-1e9;
+ for(const m of list){game.move(m);const v=-search(depth-1,-beta,-alpha,-turn,ply+1);game.undo();score=Math.max(score,v);alpha=Math.max(alpha,score);if(alpha>=beta)break}
+ return score;
+}
+function chooseAI(){let moves=ordered(game.moves({verbose:true}));if(!moves.length)return null;
+ const level=Number($('difficulty').value);
+ if(level===1)return moves[Math.floor(Math.random()*moves.length)];
+ const depth=level===2?1:2,turn=game.turn()==='w'?1:-1;let best=-1e9,choice=[];
+ for(const move of moves){game.move(move);let score=-search(depth,-1e9,1e9,-turn,1);game.undo();score+=Math.random()*(level===2?17:3);if(score>best+1e-6){best=score;choice=[move]}else if(Math.abs(score-best)<1e-6)choice.push(move)}
+ return choice[Math.floor(Math.random()*choice.length)]||moves[0]
+}
+function scheduleAI(){if(!started||busy||game.isGameOver())return;if(mode==='local')return;if(mode==='ai'&&game.turn()===playerColor)return;
+ const job=++aiJob;const e=$('status');e.textContent='✦ 暗影魔法师正在思考…';
+ setTimeout(()=>{if(job!==aiJob||busy||game.isGameOver())return;const m=chooseAI();if(m)performMove({from:m.from,to:m.to,promotion:m.promotion||'q'})},mode==='demo'?700:500)
+}
+function hint(){if(busy||game.isGameOver()||!humanTurn())return;const m=chooseAI();if(!m)return;selected=m.from;clearMarks();marker(m.from,'selected');marker(m.to,game.get(m.to)?'capture':'normal');feedback('魔法预言：'+m.from+' → '+m.to+' ('+m.san+')')}
+// Input: raycast on board tiles or any child of a sculpted piece.
+const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
+canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:Date.now()}});
+canvas.addEventListener('pointerup',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>7){down=null;return}down=null;
+ const rect=canvas.getBoundingClientRect();pointer.x=(e.clientX-rect.left)/rect.width*2-1;pointer.y=-(e.clientY-rect.top)/rect.height*2+1;ray.setFromCamera(pointer,camera);
+ const pieceObjects=[...pieces.values()];const hits=ray.intersectObjects([...pieceObjects,...tiles],true);
+ for(const h of hits){let obj=h.object;while(obj&&!obj.userData.square)obj=obj.parent;if(obj?.userData.square){choose(obj.userData.square);return}}
+ const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-(boardHeight+.15)),pt=new THREE.Vector3();if(ray.ray.intersectPlane(plane,pt)){const f=Math.floor(pt.x/SQ+4),r=Math.floor(4-pt.z/SQ);if(f>=0&&f<8&&r>=0&&r<8)choose('abcdefgh'[f]+(r+1))}
+});
+// Minimal original sound synthesis, with no audio files or external requests.
+let audioCtx=null;function playSound(kind){if(!sound)return;try{audioCtx??=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=kind==='attack'?'sawtooth':'sine';const now=audioCtx.currentTime;o.frequency.setValueAtTime(kind==='attack'?210:kind==='pick'?550:330,now);o.frequency.exponentialRampToValueAtTime(kind==='attack'?58:180,now+.17);g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(kind==='attack'?.12:.045,now+.01);g.gain.exponentialRampToValueAtTime(.0001,now+.27);o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+.29)}catch(e){}}
+$('startBtn').onclick=()=>{mode=$('startMode').value;playerColor=$('sideChoice').value;started=true;$('welcome').classList.remove('show');reset({mode,side:playerColor})};
+$('newBtn').onclick=()=>{$('welcome').classList.add('show');$('startMode').value=mode;$('sideChoice').value=playerColor};
+$('menuBtn').onclick=()=>{$('welcome').classList.add('show');$('startMode').value=mode;$('sideChoice').value=playerColor};
+$('undoBtn').onclick=undo;$('hintBtn').onclick=hint;$('flipBtn').onclick=()=>{flip=!flip;camPreset('isometric')};
+$('mode').onchange=()=>reset({mode:$('mode').value,side:playerColor});
+$('difficulty').onchange=()=>{feedback('AI 难度已更新，下回合生效')};
+$('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'♫ 声音：开':'♫ 声音：关';if(sound)playSound('pick')};
+$('replayBtn').onclick=()=>reset({mode,side:playerColor});$('closeEndBtn').onclick=()=>$('endGame').classList.remove('show');
+document.querySelectorAll('[data-cam]').forEach(btn=>btn.onclick=()=>camPreset(btn.dataset.cam));
+document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='h'){const hud=$('hud');hud.style.display=hud.style.display==='none'?'block':'none'}if(e.key==='Escape'){$('welcome').classList.remove('show');$('endGame').classList.remove('show')}});
+window.addEventListener('resize',resize);
+function resize(){const w=innerWidth,h=innerHeight;camera.aspect=w/h;camera.fov=w<850?48:42;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+resize();rebuildPieces();camPreset('isometric');
+const clock=new THREE.Clock();let last=performance.now();
+function animate(time){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);
+ if(camTween){const f=Math.min((time-camTween.start)/camTween.duration,1),t=f*f*(3-2*f);camera.position.lerpVectors(camTween.from,camTween.to,t);orbit.target.lerpVectors(camTween.targetFrom,camTween.targetTo,t);if(f>=1){camTween=null;orbit.enabled=true}}
+ if(animation){const a=animation,t=Math.min((time-a.start)/a.duration,1),u=Math.min(t/(a.taken?.70:.88),1);const e=u*u*(3-2*u);
+   a.mover.position.lerpVectors(a.from,a.to,e);a.mover.position.y=a.from.y+Math.sin(Math.PI*u)*(a.taken?.9:.36);
+   a.mover.rotation.y=Math.sin(t*Math.PI*2)*.14;
+   if(a.taken&&t>=.70&&!a.hit){a.hit=true;particlesAt(a.to,a.taken.userData.color);playSound('attack');scene.remove(a.taken)}
+   if(t>=1){a.mover.rotation.y=0;const complete=a.done;animation=null;complete()}
+ }
+ for(const o of pieces.values()){if(animation&&animation.mover===o)continue;const b=o.userData.body;b.position.y=.023*Math.sin(time*.0018+(o.position.x+o.position.z));}
+ for(let i=fx.length-1;i>=0;i--){const o=fx[i];o.userData.life-=dt;if(o.userData.pulse){o.scale.addScalar(dt*7);o.material.opacity=Math.max(0,o.userData.life*1.8)}else{o.userData.vel.y-=10*dt;o.position.addScaledVector(o.userData.vel,dt);o.rotation.x+=o.userData.spin.x*dt;o.rotation.y+=o.userData.spin.y*dt;if(o.position.y<boardHeight+.02){o.position.y=boardHeight+.02;o.userData.vel.multiplyScalar(.35)}}if(o.userData.life<=0){scene.remove(o);fx.splice(i,1)}}
+ for(let i=0;i<flames.length;i++){const f=flames[i];f.scale.set(1+.18*Math.sin(time*.012+i*3),1+.14*Math.sin(time*.018+i*2),1)}
+ for(const m of marks){m.children[0].rotation.z+=dt*(m.userData.kind==='selected'?-.9:.6)}
+ orbit.update();renderer.render(scene,camera)
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
