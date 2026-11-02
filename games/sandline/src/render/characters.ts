@@ -10,38 +10,13 @@ import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import type {Actor,Team,WeaponKind} from '../game/types';
 import {WEAPONS} from '../game/simulation';
 import {createHeldWeapon,updateHeldWeapon,weaponAssetSource,WEAPON_PRESENTATION} from './weapons';
+import {paintProceduralSoldier,proceduralSoldier} from './proceduralSoldier';
 import type {FirstPersonController} from './firstPersonController';
 
 let asset:GLTF|null=null;
 const rosterAssets=new Map<SoldierModelId,GLTF>();
 const stats={loaded:false,source:'User-supplied glb3 faction models with authored materials and shared locomotion',bytes:0,triangles:0,bones:49,clips:[] as string[],error:''};
 export const characterDiagnostics=()=>({...stats,variants:SOLDIER_TEAM_ROSTER,models:SOLDIER_MODELS.filter(m=>rosterAssets.has(m.id))});
-function proceduralSoldier():GLTF{
- const scene=new THREE.Group();scene.name='procedural-soldier';
- const skin='#d7b394',cloth='#8d7348',boot='#2a2c30',helm='#3c4650';
- const material=(color:string)=>new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,name:'procedural-body'});
- const joint=(name:string,parent:THREE.Object3D,x:number,y:number,z:number)=>{const bone=new THREE.Bone();bone.name='mixamorig'+name;bone.position.set(x,y,z);parent.add(bone);return bone;};
- const part=(parent:THREE.Object3D,geometry:THREE.BufferGeometry,color:string,x:number,y:number,z:number)=>{const mesh=new THREE.Mesh(geometry,material(color));mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);};
- const hips=joint('Hips',scene,0,.98,0);part(hips,new THREE.BoxGeometry(.28,.16,.16),cloth,0,0,0);
- const spine=joint('Spine',hips,0,.12,0),spine1=joint('Spine1',spine,0,.12,0),spine2=joint('Spine2',spine1,0,.13,0);
- part(spine2,new THREE.BoxGeometry(.34,.28,.18),cloth,0,.02,0);
- const neck=joint('Neck',spine2,0,.16,0),head=joint('Head',neck,0,.1,0);
- part(head,new THREE.SphereGeometry(.11,12,10),skin,0,.04,0);
- part(head,new THREE.SphereGeometry(.12,12,8,0,Math.PI*2,0,Math.PI*.55),helm,0,.07,0);
- const limb=(side:'Left'|'Right',sign:number)=>{
-  const up=joint(side+'UpLeg',hips,sign*.1,-.04,0);part(up,new THREE.CapsuleGeometry(.07,.28,3,6),cloth,0,-.2,0);
-  const leg=joint(side+'Leg',up,0,-.42,0);part(leg,new THREE.CapsuleGeometry(.055,.28,3,6),cloth,0,-.2,0);
-  const foot=joint(side+'Foot',leg,0,-.4,.02);part(foot,new THREE.BoxGeometry(.09,.06,.2),boot,0,-.03,.04);
-  joint(side+'ToeBase',foot,0,-.02,.12);
-  const arm=joint(side+'Arm',spine2,sign*.18,.04,0);part(arm,new THREE.CapsuleGeometry(.05,.22,3,6),cloth,0,-.16,0);
-  const fore=joint(side+'ForeArm',arm,0,-.28,0);part(fore,new THREE.CapsuleGeometry(.045,.2,3,6),skin,0,-.14,0);
-  const hand=joint(side+'Hand',fore,0,-.26,0);part(hand,new THREE.BoxGeometry(.06,.08,.04),skin,0,-.04,0);
-  joint(side+'HandMiddle1',hand,0,-.06,-.03);joint(side+'HandIndex1',hand,sign*.025,-.05,-.02);joint(side+'HandPinky1',hand,sign*-.025,-.045,-.01);
- };
- limb('Left',-1);limb('Right',1);
- const clip=(name:string)=>new THREE.AnimationClip(name,1,[]);
- return {scene,animations:[clip('Idle'),clip('Walk'),clip('Run')],cameras:[],scenes:[scene],asset:{},parser:null as unknown,userData:{}} as unknown as GLTF;
-}
 export async function loadCharacterAssets(){
  try{asset=await new GLTFLoader().loadAsync(import.meta.env.BASE_URL+'assets/characters/locomotion.glb');
   // Preserve root vertical movement. Blender's source uses Z up below Character's rotation.
@@ -116,6 +91,7 @@ export function createCharacter(team:Team,variant=0,preparedAsset?:GLTF):THREE.G
   if(!sharedMaterials.has(key)){const m=original.clone();m.color.set(team==='blue'?'#7192a0':'#b99874');m.roughness=.86;m.metalness=.05;if(m.normalMap)m.normalScale.set(.5,.5);sharedMaterials.set(key,m);}o.material=sharedMaterials.get(key)!;
  }});
  if(selectedAsset.scene.userData.authoredOutfit)applyTeamUniform(model,modelId,team);
+ if(model.userData.proceduralSoldier)paintProceduralSoldier(model,team,variant);
  root.userData.operatorVariant={id:team+'-'+modelId,name:definition.name,source:definition.file,uniformColor:'authored'};
  let triangles=0;model.traverse(o=>{if(o instanceof THREE.Mesh&&o.visible)triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;});stats.triangles=Math.max(stats.triangles,triangles);
  const mixer=new THREE.AnimationMixer(model),clip=(n:string)=>mixer.clipAction(selectedAsset.animations.find(c=>c.name===n)!);

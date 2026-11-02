@@ -5,7 +5,7 @@
 
 游戏馆里的单机战术射击。客户端、界面、程序化枪械和沙漠 / 雪地场景来自 [sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps)（MIT）。
 
-公开源码不含 Counter-Strike 的地图、角色、经典手臂和音频。没有这些文件时，仍用原版程序化枪械和程序化士兵进入沙漠旧城、雪地竞技场。经典沙漠 2、仓库突击和 Bloodstrike 会提示地图准备失败。把授权资源按上游 `ASSETS.md` 放进 `public/assets/` 后，这些地图和模型会按原版加载。
+公开源码不含 Counter-Strike 的地图、角色、经典手臂和音频。没有这些文件时，仍用原版程序化枪械和程序化士兵进入沙漠旧城、雪地竞技场。经典沙漠 2、仓库突击和 Bloodstrike 会提示地图准备失败。把同一套文件放进 `public/assets/characters/`（以及 `public/assets/` 下的地图、枪械和音频目录）后，会按上游同样的路径加载。人物文件名要和 `soldierRoster.ts` 一致，并且要有 `locomotion.glb`。
 
 与 [`games/fps/`](../fps/) 和 [`games/street-duty/`](../street-duty/) 分开，不替换它们。
 
