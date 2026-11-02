@@ -92,6 +92,14 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - Physics: [Rapier](https://github.com/dimforge/rapier) `@dimforge/rapier3d-compat` (Apache-2.0), used as the first-person camera proxy
 - Note: the game folder uses the upstream client, interface, procedural guns, and the desert and snow arenas. Counter-Strike / Valve maps, characters, classic arms, and audio are not in the public source drop. A procedural soldier is used when the character models are absent. Upstream copyright stays in `games/sandline/LICENSE`.
 
+## Battle Drones (`games/BattleDrones/`)
+
+- Source: [simonw/battledrones](https://github.com/simonw/battledrones), revision `ca4f13b36013e1980289046e731a295d2bf02a3e`
+- License: Apache-2.0 (`games/BattleDrones/LICENSE`)
+- Attribution: `games/BattleDrones/NOTICE`. Upstream authors include Simon Willison. The single-player adaptation for this hub is by Kwan Wai-Pang, 2026
+- Renderer: [Three.js](https://github.com/mrdoob/three.js) 0.185.1 (MIT)
+- Note: online duels, the four-player lobby, the audio link, and the relay are removed. Skirmish, survival, operations, AI, maps, art, and sound stay. The root MIT text does not relicense this folder
+
 ## Street Duty (`games/street-duty/`)
 
 - Source: [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)
@@ -136,4 +144,4 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 
 ---
 
-This repository is an aggregate. The hub and original static pages are MIT. A game folder with its own license keeps that license. `games/chess3d/` is **GPL-3.0** and is not relicensed by the root MIT text.
+This repository is an aggregate. The hub and original static pages are MIT. A game folder with its own license keeps that license. `games/chess3d/` is **GPL-3.0** and `games/BattleDrones/` is **Apache-2.0**. The root MIT text does not relicense either folder. Weekly Go problems at levels 4–9 are CC BY-NC-SA 4.0. OpenStreetMap data in Hong Kong Roam stays ODbL.

@@ -92,6 +92,14 @@
 - 物理：[Rapier](https://github.com/dimforge/rapier) `@dimforge/rapier3d-compat`（Apache-2.0），仅用于第一人称摄像机代理
 - 说明：游戏目录使用上游客户端、界面、程序化枪械，以及沙漠旧城和雪地竞技场。未随源码发行的 Counter-Strike / Valve 地图、角色、经典手臂和音频没有纳入。缺少人物模型时使用程序化士兵。原作者版权声明保留在 `games/sandline/LICENSE`。
 
+## 无人机战争（`games/BattleDrones/`）
+
+- 来源：[simonw/battledrones](https://github.com/simonw/battledrones)，修订 `ca4f13b36013e1980289046e731a295d2bf02a3e`
+- 许可证：Apache-2.0（`games/BattleDrones/LICENSE`）
+- 署名：`games/BattleDrones/NOTICE`。上游作者包括 Simon Willison。馆内单机改编为 Kwan Wai-Pang，2026
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) 0.185.1（MIT）
+- 说明：在线对战、四人房间、声波链路和中继已去掉。遭遇战、生存、战役、AI、地图、美术和音效保留。根目录 MIT 文本不能把这个目录改成 MIT
+
 ## 街战突击（`games/street-duty/`）
 
 - 来源：[mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)
@@ -136,4 +144,4 @@
 
 ---
 
-本仓库为聚合：大厅与原创静态页为 MIT；各子目录若自带许可则从其许可。`games/chess3d/` 为 **GPL-3.0**，不受根目录 MIT 再许可。
+本仓库为聚合：大厅与原创静态页为 MIT；各子目录若自带许可则从其许可。`games/chess3d/` 为 **GPL-3.0**，`games/BattleDrones/` 为 **Apache-2.0**。根目录 MIT 文本不能改掉这两个目录的许可证。围棋每周一题（四到九级）为 CC BY-NC-SA 4.0。香港漫游中的 OpenStreetMap 数据仍为 ODbL。

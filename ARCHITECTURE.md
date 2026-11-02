@@ -3,7 +3,7 @@
 
 # Architecture
 
-How the Game Hub is organized and deployed, and how the three 3D shooters coexist.
+How the Game Hub is organized and deployed, and how the shooters and the drone RTS coexist.
 
 The Street Duty engine contract is [`games/street-duty/ARCHITECTURE.md`](./games/street-duty/ARCHITECTURE.md).
 
@@ -39,7 +39,7 @@ The Street Duty engine contract is [`games/street-duty/ARCHITECTURE.md`](./games
 | **Hub** (`index.html`, `css/`, `js/hub-lobby.js`) | Brand, Three.js ring gallery, card-list fallback |
 | **Game shell** | Each game's own `index.html` / CSS / JS, with an optional link back to the hub |
 | **Shared assets** (`assets/`) | The few files used by more than one game |
-| **CI / Pages** (`.github/workflows/`) | Build Street Duty and Pocket, pack `_site`, deploy |
+| **CI / Pages** (`.github/workflows/`) | Build Street Duty, Sandline, Pocket, the Go KataGo bundle, and Battle Drones; pack `_site`; deploy |
 
 The hub draws a Three.js gallery only. It does not boot any game runtime. Choosing a plinth or a list card navigates away. Without WebGL, the card list remains.
 
@@ -49,7 +49,7 @@ The hub draws a Three.js gallery only. It does not boot any game runtime. Choosi
 
 ### 3.1 Static
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap` · `Hulao_Gate` · `hongkong`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `redcap` · `Hulao_Gate` · `hongkong`
 
 Open and play. No `npm`. Any static file server is enough.
 
@@ -74,9 +74,11 @@ src/  +  index.source.html   →  vite build  →  dist/
 
 Production must load the hashed `assets/*.js`. Do not ship the Vite source HTML as the live entry.
 
+Battle Drones (`games/BattleDrones/`) is a fourth Vite game. Node.js 24 writes `dist/`, and Actions publishes that directory with `LICENSE` and `NOTICE`. `dist/` is not committed. The Go KataGo bundle is also built in CI, into `games/go/katago/`, before the site is packed. The engine source tree is then left off the site.
+
 ---
 
-## 4. The two FPS boundaries
+## 4. Shooters, and the drone RTS
 
 | | Tactical Assault `games/fps/` | Street Duty `games/street-duty/` |
 |---|---|---|
@@ -90,6 +92,8 @@ Production must load the hashed `assets/*.js`. Do not ship the Vite source HTML 
 They do not import each other and must not replace each other. Edit one without touching the other.
 
 Sandline (`games/sandline/`) is a third shooter in its own folder. Rules are adapted from sandline-threejs-fps (MIT). The desert and snow arenas stay in source. Soldiers, guns, and audio are procedural, with no Counter-Strike maps or models. It ships a build, the same way Street Duty does.
+
+Battle Drones (`games/BattleDrones/`) is a single-player RTS under Apache-2.0, vendored from simonw/battledrones, in its own folder beside the shooters. Node.js 24 runs `npm run build`, which writes `dist/`. Actions copies `dist/` plus `LICENSE` and `NOTICE` onto Pages. `dist/` is not committed. Multiplayer lobbies, the audio link, and the relay are absent from this tree.
 
 ---
 
@@ -119,9 +123,13 @@ main.js
 
 ```
 push main
-   → Actions: npm ci && npm run build (Street Duty, Sandline, and Pocket)
+   → Actions: npm ci && npm run build
+     (Street Duty, Sandline, Pocket, the Go KataGo bundle;
+      Battle Drones on Node.js 24)
    → copy hub + games into _site/
    → strip Street Duty, Sandline, and Pocket src/, tools/, node_modules/, …
+   → replace games/BattleDrones on the site with dist/ plus LICENSE and NOTICE
+   → drop games/go/katago-engine from the site
    → GitHub Pages
 ```
 
@@ -133,7 +141,7 @@ If Pages still serves the `main` root as-is, the committed `games/street-duty/in
 
 1. **New game:** self-contained under `games/<slug>/`, then add a hub card.
 2. **Street Duty:** edit `src/` → `npm run build` → commit the synced `index.html` and `assets/`.
-3. Do not mix or overwrite `fps`, `street-duty`, and `sandline`.
+3. Do not mix or overwrite `fps`, `street-duty`, `sandline`, and `BattleDrones`.
 4. When vendors change, update [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and the [Chinese notices](./THIRD_PARTY_NOTICES.zh.md).
 5. Hub docs live at the repo root, one file per language. The Street Duty engine contract stays under `games/street-duty/`.
 
@@ -145,6 +153,8 @@ If Pages still serves the `main` root as-is, the committed `games/street-duty/in
 - Street Duty: [games/street-duty/README.md](./games/street-duty/README.md)
 - Engine contract: [games/street-duty/ARCHITECTURE.md](./games/street-duty/ARCHITECTURE.md)
 - Tactical Assault: [games/fps/README.md](./games/fps/README.md)
+- Sandline: [games/sandline/README.md](./games/sandline/README.md)
+- Battle Drones: [games/BattleDrones/README.md](./games/BattleDrones/README.md)
 - Pocket Adventure: [games/pocket/README.md](./games/pocket/README.md)
 - Red Cap Quest: [games/redcap/README.md](./games/redcap/README.md)
 - Hulao Gate: [games/Hulao_Gate/README.md](./games/Hulao_Gate/README.md)

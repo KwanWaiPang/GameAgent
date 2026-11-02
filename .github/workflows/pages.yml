@@ -147,7 +147,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p _site
-          cp index.html .nojekyll README.md ARCHITECTURE.md THIRD_PARTY_NOTICES.md LICENSE _site/
+          cp index.html .nojekyll README.md README.zh.md ARCHITECTURE.md ARCHITECTURE.zh.md THIRD_PARTY_NOTICES.md THIRD_PARTY_NOTICES.zh.md LICENSE _site/
           cp -r css js games assets _site/
           # 沙线行动：同样只保留构建产物
           rm -rf _site/games/sandline/src \
@@ -220,10 +220,13 @@ jobs:
 
       - name: Stage Battle Drones for GitHub Pages
         run: |
+          rm -rf _site/games/BattleDrones
           mkdir -p _site/games/BattleDrones
           cp -a games/BattleDrones/dist/. _site/games/BattleDrones/
-          cp games/BattleDrones/LICENSE _site/games/BattleDrones/LICENSE
+          cp games/BattleDrones/LICENSE games/BattleDrones/NOTICE _site/games/BattleDrones/
           test -f _site/games/BattleDrones/index.html
+          test -f _site/games/BattleDrones/LICENSE
+          test -f _site/games/BattleDrones/NOTICE
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

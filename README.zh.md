@@ -3,7 +3,7 @@
 
 # 游戏馆
 
-中文网页游戏集合：棋类、巫师棋、大富翁、虎牢关、香港漫游、三款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
+中文网页游戏集合：棋类、巫师棋、大富翁、虎牢关、香港漫游、无人机即时战略、三款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
 
 **在线地址：** https://kwanwaipang.github.io/GameAgent/
 
@@ -28,6 +28,7 @@
 | [`games/fps/`](./games/fps/) | 战术突击 · 3D | 3D FPS（红蓝对抗） |
 | [`games/street-duty/`](./games/street-duty/) | 街战突击 | 3D FPS（全程序化街战） |
 | [`games/sandline/`](./games/sandline/) | 沙线行动 | 3D FPS（战术回合） |
+| [`games/BattleDrones/`](./games/BattleDrones/) | 无人机战争 | 3D 即时战略（单机） |
 | [`games/pocket/`](./games/pocket/) | 口袋冒险 | 第一人称 3D 卡通粉丝向开局 |
 | [`games/Hulao_Gate/`](./games/Hulao_Gate/) | 乱世无双 · 虎牢关 | 第三人称动作 |
 | [`games/hongkong/`](./games/hongkong/) | 香港漫游 | 城市探索 |
@@ -39,6 +40,7 @@
 - **战术突击**（`fps`）：红蓝各约 5 人、据点 / 大逃杀、可拾取武器。
 - **街战突击**（`street-duty`）：Claude-of-Duty 本地完整落地；玩家 + 2 队友 + 动态敌方波次。三款射击互不替换。
 - **沙线行动**（`sandline`）：改写自 sandline-threejs-fps 的单机战术射击。沙漠旧城与雪地竞技场，八种模式。人物和枪是程序化的，不含 Counter-Strike 地图或模型。
+- **无人机战争**（`BattleDrones`）：引自 simonw/battledrones 的单机即时战略。遭遇战、生存和战役都保留。在线对战、声波链路和中继已去掉。它单独成目录，和三款射击并列。
 - **口袋冒险**（`pocket`）：第一人称 3D 卡通真新镇开局；选御三家、高草遇敌。
 - **金城纪**（`richera`）：三维街市沙盘。单骰买地盖楼、道具和神仙。原创地名，致敬富翁类棋，不是商业作品复刻。
 - **虎牢关**（`Hulao_Gate`）：第三人称动作战场。关羽对西凉军与吕布。程序化甲片、关城和暮色光照，不是商业无双的复刻。
@@ -65,7 +67,8 @@ games/<name>/              # 各游戏独立目录
 
 1. 大厅是 Three.js 圆形展厅，并保留卡片列表；每个游戏自包含入口 `games/<name>/index.html`。
 2. 多数游戏是纯静态页面，无需构建。
-3. **街战突击 / 沙线行动 / 口袋冒险例外**：Vite 构建产物提交为 `index.html` + `assets/`（Pages 从仓库根目录部署）。
+3. **街战突击 / 沙线行动 / 口袋冒险**：Vite 构建产物提交为 `index.html` + `assets/`（Pages 从仓库根目录部署）。
+4. **无人机战争**同样用 Vite，构建使用 Node.js 24。`npm run build` 写出 `dist/`。Actions 发布这个目录，并附上 `LICENSE` 与 `NOTICE`。仓库不提交 `dist/`。
 
 ---
 
@@ -94,7 +97,16 @@ cd games/sandline && npm run build
 cd games/pocket && npm run build
 ```
 
-详情：[街战突击](./games/street-duty/README.zh.md) · [沙线行动](./games/sandline/README.zh.md) · [口袋冒险](./games/pocket/README.zh.md)
+### 无人机战争
+
+使用 Node.js 24。开发服务器是 Vite 默认端口 5173。
+
+```bash
+cd games/BattleDrones && npm ci && npm run dev
+cd games/BattleDrones && npm run build          # 写出 dist/
+```
+
+详情：[街战突击](./games/street-duty/README.zh.md) · [沙线行动](./games/sandline/README.zh.md) · [口袋冒险](./games/pocket/README.zh.md) · [无人机战争](./games/BattleDrones/README.zh.md)
 
 ---
 
@@ -102,13 +114,14 @@ cd games/pocket && npm run build
 
 工作流 [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) 在推送 `main` 时：
 
-1. `npm ci && npm run build`（`games/street-duty`、`games/sandline` 与 `games/pocket`）
-2. 打包静态站（去掉各游戏的 `src/` / `tools/` 等开发文件）
-3. 发布到 GitHub Pages
+1. `npm ci && npm run build`（`games/street-duty`、`games/sandline`、`games/pocket`），并构建围棋 KataGo 包
+2. 在 Node.js 24 上对 `games/BattleDrones` 执行 `npm ci && npm run build`，发布 `dist/`，并附上 `LICENSE` 与 `NOTICE`
+3. 打包静态站（去掉各构建游戏的 `src/` / `tools/` 等开发文件）
+4. 发布到 GitHub Pages
 
 推荐：Settings → Pages → Source 选 **GitHub Actions**。
 
-若仍用从 `main` 根目录部署的旧方式，务必把 Vite 构建产物提交进仓库，否则线上会缺 `assets/`。
+若仍用从 `main` 根目录部署的旧方式，街战突击、沙线行动和口袋冒险的 Vite 产物必须提交进仓库，否则线上会缺 `assets/`。无人机战争只通过 Actions 的产物上线：可玩文件在 `dist/`，这个目录不在 `main` 上。
 
 ---
 
@@ -116,12 +129,13 @@ cd games/pocket && npm run build
 
 | 文档 | 内容 |
 |---|---|
-| [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 馆级架构、数据流、射击游戏边界 |
+| [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 馆级架构、数据流、射击与无人机战争 |
 | [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md) | 第三方来源与许可 |
 | [games/street-duty/ARCHITECTURE.zh.md](./games/street-duty/ARCHITECTURE.zh.md) | 街战引擎合同 |
 | [games/street-duty/README.zh.md](./games/street-duty/README.zh.md) | 街战说明 |
 | [games/fps/README.zh.md](./games/fps/README.zh.md) | 战术突击说明 |
 | [games/sandline/README.zh.md](./games/sandline/README.zh.md) | 沙线行动说明 |
+| [games/BattleDrones/README.zh.md](./games/BattleDrones/README.zh.md) | 无人机战争说明 |
 | [games/pocket/README.zh.md](./games/pocket/README.zh.md) | 口袋冒险说明 |
 | [games/richera/README.zh.md](./games/richera/README.zh.md) | 金城纪说明 |
 | [games/redcap/README.zh.md](./games/redcap/README.zh.md) | 红帽奇遇说明 |
@@ -152,5 +166,6 @@ cd games/pocket && npm run build
 | 沙线行动 | sandline-threejs-fps 的作者；馆内改编为 Kwan Wai-Pang | MIT |
 | 国际象棋 · 3D | Chess3D 的作者 | GPL-3.0 |
 | 香港漫游 | Mr.doob；馆内改编为香港 | MIT |
+| 无人机战争 | Simon Willison 与上游作者；单机改编为 Kwan Wai-Pang | Apache-2.0 |
 
-Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
+Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。围棋每周一题（四到九级）是 CC BY-NC-SA 4.0。香港漫游里的 OpenStreetMap 地图数据仍是 ODbL。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。

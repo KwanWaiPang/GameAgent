@@ -138,6 +138,7 @@ transform("tools/arena/files.ts", (source) =>
 transform("package.json", (source) => {
   const pkg = JSON.parse(source);
   pkg.scripts = { dev: "vite", build: "tsc --noEmit && vite build", preview: "vite preview" };
+  pkg.license = "Apache-2.0";
   return JSON.stringify(pkg, null, 2) + "\n";
 });
 
