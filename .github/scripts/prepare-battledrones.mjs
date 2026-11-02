@@ -77,12 +77,29 @@ transform("src/main.ts", (source) => {
   );
   source = replaceOnce(source, '    duelRow.hidden = gameMode.mode !== "skirmish";\n', "", "multiplayer row visibility");
   source = replaceOnce(source, "  if (!duelRematch) sfx.unlockOnGesture();", "  sfx.unlockOnGesture();", "local menu sound");
-  source = replaceOnce(source, "    const four = m.players === 4;\n", "", "unused multiplayer flag");
-  source = cut(
+  // Multiplayer map-specific text and button state are removed. Maps that
+  // once supported four online seats remain playable in local single-player.
+  source = replaceOnce(
     source,
-    '    // a four-player map: no sound duel',
-    '    const best =',
-    "duel map selection buttons"
+    `    const four = m.players === 4;
+    menu.querySelector("#sub")!.textContent = opsMode
+      ? "Short missions with a twist. Three stars each — can you take them all?"
+      : survival
+        ? "Hold your base against endless, themed waves. How long can you last?"
+        : four
+          ? "Four commanders, one survivor. Knock out every rival's HQ and Goliaths."
+          : "Mine scrap. Build your swarm. Destroy the enemy HQ and its Goliaths.";
+    // a four-player map: no sound duel (two phones only), and online seats up to four
+    duelBtn.hidden = !duelable || four;
+    onlineBtn.textContent = four ? "🌐 Battle friends online (up to 4)" : "🌐 Duel a friend online";
+`,
+    `    menu.querySelector("#sub")!.textContent = opsMode
+      ? "Short missions with a twist. Three stars each — can you take them all?"
+      : survival
+        ? "Hold your base against endless, themed waves. How long can you last?"
+        : "Mine scrap. Build your swarm. Destroy the enemy HQ and its Goliaths.";
+`,
+    "single-player map description and multiplayer controls"
   );
   source = cut(
     source,
