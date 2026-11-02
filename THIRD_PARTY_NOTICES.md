@@ -120,7 +120,7 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 
 ## Hulao Gate (`games/Hulao_Gate/`)
 
-- Source: original to this repository. It is not linked from the hub lobby yet.
+- Source: original to this repository. Linked from the hub Action section.
 - License: MIT (root [`LICENSE`](./LICENSE))
 - Copyright: Kwan Wai-Pang
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) r160 (MIT), loaded at runtime from jsDelivr

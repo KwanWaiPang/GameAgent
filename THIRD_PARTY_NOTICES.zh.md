@@ -120,7 +120,7 @@
 
 ## 虎牢关（`games/Hulao_Gate/`）
 
-- 来源：本仓库原创。大厅卡片尚未挂出。
+- 来源：本仓库原创。已接入大厅「动作」分类。
 - 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
 - 版权：Kwan Wai-Pang
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT），运行时经 jsDelivr 加载

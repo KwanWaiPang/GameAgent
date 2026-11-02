@@ -3,7 +3,7 @@
 
 # 游戏馆
 
-中文网页游戏集合：棋类、巫师棋、大富翁、三款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
+中文网页游戏集合：棋类、巫师棋、大富翁、虎牢关、三款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
 
 **在线地址：** https://kwanwaipang.github.io/GameAgent/
 
@@ -29,6 +29,7 @@
 | [`games/street-duty/`](./games/street-duty/) | 街战突击 | 3D FPS（全程序化街战） |
 | [`games/sandline/`](./games/sandline/) | 沙线行动 | 3D FPS（战术回合） |
 | [`games/pocket/`](./games/pocket/) | 口袋冒险 | 第一人称 3D 卡通粉丝向开局 |
+| [`games/Hulao_Gate/`](./games/Hulao_Gate/) | 乱世无双 · 虎牢关 | 第三人称动作 |
 | [`games/redcap/`](./games/redcap/) | 红帽奇遇 | 网页平台跳跃（马里奥式致敬） |
 
 - **巫师棋**（`wizard-chess-3d`）：哥特圣殿中的程序化石甲棋子；`chess.js` 规则，人机 / 本地双人 / 自动演示。运行时从 CDN 加载 Three.js 与 chess.js。
@@ -39,6 +40,7 @@
 - **沙线行动**（`sandline`）：改写自 sandline-threejs-fps 的单机战术射击。沙漠旧城与雪地竞技场，八种模式。人物和枪是程序化的，不含 Counter-Strike 地图或模型。
 - **口袋冒险**（`pocket`）：第一人称 3D 卡通真新镇开局；选御三家、高草遇敌。
 - **金城纪**（`richera`）：三维街市沙盘。单骰买地盖楼、道具和神仙。原创地名，致敬富翁类棋，不是商业作品复刻。
+- **虎牢关**（`Hulao_Gate`）：第三人称动作战场。关羽对西凉军与吕布。程序化甲片、关城和暮色光照，不是商业无双的复刻。
 - **红帽奇遇**（`redcap`）：八关原创程序像素。玩法向超级马里奥致敬，不是任天堂产品，未使用官方素材或关卡。
 
 ---
@@ -121,6 +123,7 @@ cd games/pocket && npm run build
 | [games/pocket/README.zh.md](./games/pocket/README.zh.md) | 口袋冒险说明 |
 | [games/richera/README.zh.md](./games/richera/README.zh.md) | 金城纪说明 |
 | [games/redcap/README.zh.md](./games/redcap/README.zh.md) | 红帽奇遇说明 |
+| [games/Hulao_Gate/README.zh.md](./games/Hulao_Gate/README.zh.md) | 虎牢关说明 |
 | [games/wizard-chess-3d/README.zh.md](./games/wizard-chess-3d/README.zh.md) | 巫师棋说明 |
 
 每份说明页顶都有「中文 / English」按钮，点一下即切换到另一语言的同名文档。
@@ -133,7 +136,7 @@ cd games/pocket && npm run build
 
 大厅和原创游戏的版权归 Kwan Wai-Pang。开源是他给出的使用许可，不是把版权让出去。根目录 [LICENSE](./LICENSE) 的 MIT 许可允许他人使用、复制、修改和再分发这些代码，但必须保留版权声明和 MIT 文本。
 
-这份许可覆盖大厅（`index.html`、`css/`、`js/hub-lobby.js`），以及围棋、五子棋、军棋、战术突击、红帽奇遇、巫师棋、巫师棋 2、中国象棋 · 3D、金城纪、虎牢关。虎牢关在仓库里，大厅卡片尚未挂出。
+这份许可覆盖大厅（`index.html`、`css/`、`js/hub-lobby.js`），以及围棋、五子棋、军棋、战术突击、红帽奇遇、巫师棋、巫师棋 2、中国象棋 · 3D、金城纪、虎牢关。虎牢关挂在大厅「动作」分类。
 
 别人写的游戏，版权仍归原作者。根目录的 MIT 文本不能改掉他们的许可证：
 

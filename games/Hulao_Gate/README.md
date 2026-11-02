@@ -5,7 +5,7 @@
 
 Copyright (C) 2026 Kwan Wai-Pang. Original code in this folder is under the MIT License at the repository root ([`LICENSE`](../../LICENSE)).
 
-An original Three.js third-person action game, suggested by the Hulao Gate episode in *Romance of the Three Kingdoms*. It is not a copy of a commercial Dynasty Warriors game, and it does not use that series' trademarks, art, models, music, or assets. It is not a card on the hub lobby yet.
+An original Three.js third-person action game, suggested by the Hulao Gate episode in *Romance of the Three Kingdoms*. It is not a copy of a commercial Dynasty Warriors game, and it does not use that series' trademarks, art, models, music, or assets. The hub lists it under Action.
 
 ## Play
 
@@ -34,7 +34,7 @@ Three.js 0.160.1 loads from jsDelivr, so the first visit needs a network. Use Gi
 - Playable Guan Yu: walk, run, invulnerable dodge, a three-hit light combo, a heavy attack, and an area musou
 - Three Hulao stages: soldiers, elite soldiers, and Lu Bu
 - Enemies chase, attack on a timer, wind up, stagger, knock back, and leave when they fall
-- Original procedural warriors and battlefield: armor, the crescent blade, the halberd, walls, tents, and banners
+- A physically based battlefield: lamellar warriors, the crescent blade, the halberd, rammed-earth walls, tiled roofs, pines, tents, and banners. Dusk sun, sky reflections, and dust haze replace the old sphere-built cartoon bodies
 - A follow camera, hit feedback, health, musou, break count, and a minimap
 - Touch devices and machines with few CPU threads cap how many enemies are active and turn dynamic shadows off
 
@@ -46,6 +46,7 @@ style.css
 game.js
 warrior-model.js
 battlefield-detail.js
+procedural-maps.js
 ```
 
 ## Check locally
@@ -55,6 +56,7 @@ python -m http.server 8000
 node --check game.js
 node --check warrior-model.js
 node --check battlefield-detail.js
+node --check procedural-maps.js
 ```
 
 `?q=low` forces the low quality preset. In the console, `window.__HULAO_READY__` and `window.__HULAO_STATE__()` are available.

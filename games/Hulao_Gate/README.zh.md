@@ -5,7 +5,7 @@
 
 版权所有 (C) 2026 Kwan Wai-Pang。本目录原创代码适用仓库根目录 MIT 许可（[`LICENSE`](../../LICENSE)）。
 
-原创 Three.js 第三人称动作游戏，取材《三国演义》的虎牢关传说。不是商业无双游戏的复制品，也未使用其商标、美术、模型、音乐或素材。大厅卡片尚未挂出。
+原创 Three.js 第三人称动作游戏，取材《三国演义》的虎牢关传说。不是商业无双游戏的复制品，也未使用其商标、美术、模型、音乐或素材。已挂在游戏馆「动作」分类。
 
 ## 访问
 
@@ -34,7 +34,7 @@ Three.js 0.160.1 从 jsDelivr 加载，首次打开需要联网。请用 GitHub 
 - 可操作关羽：步行、奔跑、闪避无敌、三段轻击、重击、范围无双
 - 三阶段虎牢关：普通士卒、精锐士卒、吕布
 - 敌军会追踪、间隔出击，攻击有前摇，受击会硬直、击退，倒地后离场
-- 原创程序化武将与战场：甲片、青龙偃月刀、方天画戟、城墙、营帐、战旗
+- 写实向程序化战场：甲片武将、青龙偃月刀、方天画戟、夯土关城、瓦顶、松林、营帐与战旗。光照是暮色直射光、天空环境反射和尘霾，不再用圆球拼出的卡通人体
 - 第三人称跟随、命中反馈、血量、无双槽、击破数、小地图
 - 触屏和低线程设备会限制同时在场的敌人数，并关闭动态阴影
 
@@ -46,6 +46,7 @@ style.css
 game.js
 warrior-model.js
 battlefield-detail.js
+procedural-maps.js
 ```
 
 ## 本地检查
@@ -55,6 +56,7 @@ python -m http.server 8000
 node --check game.js
 node --check warrior-model.js
 node --check battlefield-detail.js
+node --check procedural-maps.js
 ```
 
 `?q=low` 强制低画质。调试时可查看 `window.__HULAO_READY__` 和 `window.__HULAO_STATE__()`。

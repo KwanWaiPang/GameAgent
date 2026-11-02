@@ -49,7 +49,7 @@ The hub draws a Three.js gallery only. It does not boot any game runtime. Choosi
 
 ### 3.1 Static
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap` · `Hulao_Gate`
 
 Open and play. No `npm`. Any static file server is enough.
 
@@ -147,4 +147,5 @@ If Pages still serves the `main` root as-is, the committed `games/street-duty/in
 - Tactical Assault: [games/fps/README.md](./games/fps/README.md)
 - Pocket Adventure: [games/pocket/README.md](./games/pocket/README.md)
 - Red Cap Quest: [games/redcap/README.md](./games/redcap/README.md)
+- Hulao Gate: [games/Hulao_Gate/README.md](./games/Hulao_Gate/README.md)
 - Upstream: [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)
