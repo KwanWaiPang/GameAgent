@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { BOARD, GROUP_COLORS, MAX_BUILD_LEVEL } from "./data.js";
+import { getActiveMap, GROUP_COLORS, MAX_BUILD_LEVEL } from "./data.js";
 
 const FONT = '"Noto Serif SC","Songti SC","SimSun","Microsoft YaHei",serif';
 
@@ -30,6 +30,16 @@ const CAM = {
 };
 
 let ANISO = 8;
+
+let theme = {
+  paper: "#f4efe4",
+  ink: "#2a2118",
+  price: "#7a3030",
+  center: "world",
+  name: "世界之旅",
+  en: "WORLD TOUR",
+  felt: "#1c5a38",
+};
 
 const cardboardMat = new THREE.MeshStandardMaterial({
   color: 0xe7d8c4,
@@ -178,6 +188,134 @@ function drawLines(ctx, lines, cx, cy, maxW, maxH, weight, color) {
   });
 }
 
+function motifFor(def) {
+  return (
+    {
+      station: "rail",
+      utility: "drop",
+      chance: "spark",
+      fate: "spark",
+      go: "sail",
+      jail: "gate",
+      park: "tree",
+      gotojail: "gate",
+      tax: "market",
+    }[def.type] || null
+  );
+}
+
+function drawMotif(ctx, kind, x, y, s, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(2.2, s * 0.09);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  const u = s * 0.46;
+  const poly = (pts, fill = false) => {
+    ctx.beginPath();
+    pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+    ctx.closePath();
+    if (fill) ctx.fill();
+    else ctx.stroke();
+  };
+  if (kind === "pagoda") {
+    poly([[0, -u], [u, -u * 0.35], [-u, -u * 0.35]], true);
+    poly([[0, -u * 0.15], [u * 0.82, u * 0.28], [-u * 0.82, u * 0.28]], true);
+    ctx.fillRect(-u * 0.16, u * 0.28, u * 0.32, u * 0.42);
+  } else if (kind === "bridge") {
+    ctx.beginPath();
+    ctx.moveTo(-u, u * 0.35);
+    ctx.quadraticCurveTo(0, -u * 0.85, u, u * 0.35);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-u, u * 0.35);
+    ctx.lineTo(u, u * 0.35);
+    ctx.stroke();
+  } else if (kind === "dome") {
+    ctx.beginPath();
+    ctx.arc(0, u * 0.1, u * 0.62, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(-u * 0.72, u * 0.08, u * 1.44, u * 0.16);
+    ctx.beginPath();
+    ctx.arc(0, -u * 0.55, u * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (kind === "sail") {
+    poly([[-u * 0.15, u], [-u * 0.15, -u], [u * 0.7, u * 0.15]], true);
+    ctx.beginPath();
+    ctx.moveTo(-u * 0.7, u * 0.55);
+    ctx.quadraticCurveTo(0, u * 0.15, u * 0.75, u * 0.55);
+    ctx.stroke();
+  } else if (kind === "gate") {
+    ctx.strokeRect(-u * 0.7, -u * 0.15, u * 1.4, u * 0.9);
+    ctx.beginPath();
+    ctx.arc(0, -u * 0.15, u * 0.38, Math.PI, 0);
+    ctx.stroke();
+  } else if (kind === "peak") {
+    poly([[-u, u * 0.55], [0, -u], [u * 0.35, u * 0.1], [u, u * 0.55]], true);
+  } else if (kind === "tree") {
+    ctx.beginPath();
+    ctx.arc(0, -u * 0.15, u * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-u * 0.08, u * 0.2, u * 0.16, u * 0.45);
+  } else if (kind === "wall") {
+    ctx.fillRect(-u * 0.8, -u * 0.05, u * 1.6, u * 0.7);
+    ctx.fillRect(-u * 0.15, -u * 0.55, u * 0.3, u * 0.55);
+  } else if (kind === "lantern") {
+    poly([[0, -u], [-u * 0.45, -u * 0.2], [-u * 0.35, u * 0.45], [u * 0.35, u * 0.45], [u * 0.45, -u * 0.2]], true);
+  } else if (kind === "market") {
+    poly([[-u, u * 0.15], [0, -u * 0.55], [u, u * 0.15]], true);
+    ctx.fillRect(-u * 0.7, u * 0.15, u * 1.4, u * 0.12);
+  } else if (kind === "oasis") {
+    ctx.beginPath();
+    ctx.ellipse(0, u * 0.35, u * 0.7, u * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-u * 0.06, -u * 0.15, u * 0.12, u * 0.5);
+    ctx.beginPath();
+    ctx.arc(-u * 0.28, -u * 0.15, u * 0.22, 0, Math.PI * 2);
+    ctx.arc(u * 0.28, -u * 0.2, u * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (kind === "spire") {
+    poly([[0, -u], [u * 0.38, u * 0.55], [-u * 0.38, u * 0.55]], true);
+    ctx.fillRect(-u * 0.5, u * 0.5, u, u * 0.14);
+  } else if (kind === "rail") {
+    ctx.beginPath();
+    ctx.moveTo(-u, -u * 0.28);
+    ctx.lineTo(u, -u * 0.28);
+    ctx.moveTo(-u, u * 0.28);
+    ctx.lineTo(u, u * 0.28);
+    ctx.stroke();
+    for (const x0 of [-u * 0.55, 0, u * 0.55]) {
+      ctx.beginPath();
+      ctx.moveTo(x0, -u * 0.28);
+      ctx.lineTo(x0, u * 0.28);
+      ctx.stroke();
+    }
+  } else if (kind === "drop") {
+    ctx.beginPath();
+    ctx.moveTo(0, -u);
+    ctx.quadraticCurveTo(u * 0.85, u * 0.05, 0, u * 0.7);
+    ctx.quadraticCurveTo(-u * 0.85, u * 0.05, 0, -u);
+    ctx.fill();
+  } else if (kind === "spark") {
+    poly(
+      [
+        [0, -u],
+        [u * 0.22, -u * 0.22],
+        [u, 0],
+        [u * 0.22, u * 0.22],
+        [0, u],
+        [-u * 0.22, u * 0.22],
+        [-u, 0],
+        [-u * 0.22, -u * 0.22],
+      ],
+      true
+    );
+  }
+  ctx.restore();
+}
+
 function paintTile(def, printW, printD) {
   const square = Math.abs(printW - printD) < 0.25;
   const H = square ? 768 : 760;
@@ -189,9 +327,9 @@ function paintTile(def, printW, printD) {
   const band = bandOf(def);
   const bandH = Math.round(H * (square ? 0.15 : 0.2));
 
-  ctx.fillStyle = "#f7f1e6";
+  ctx.fillStyle = theme.paper || "#f4efe4";
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = hexToRgba(band, 0.07);
+  ctx.fillStyle = hexToRgba(band, 0.08);
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = band;
   ctx.fillRect(0, 0, W, bandH);
@@ -199,6 +337,10 @@ function paintTile(def, printW, printD) {
   ctx.fillRect(0, bandH - 5, W, 5);
   ctx.fillStyle = "rgba(0,0,0,0.16)";
   ctx.fillRect(0, bandH, W, 3);
+  const motif = def.motif || motifFor(def);
+  if (motif) {
+    drawMotif(ctx, motif, W / 2, bandH * 0.52, bandH * 0.72, "rgba(255,252,244,0.92)");
+  }
 
   const wm = { chance: "?", fate: "!", tax: "税", station: "铁", go: "起", jail: "停", park: "泊", gotojail: "止" }[
     def.type
@@ -214,7 +356,7 @@ function paintTile(def, printW, printD) {
     ctx.restore();
   }
 
-  const titleColor = def.type === "go" ? "#9f2424" : "#2a2118";
+  const titleColor = def.type === "go" ? theme.price || "#9f2424" : theme.ink || "#2a2118";
   if (square) {
     drawLines(ctx, splitName(def.name), W / 2, H * 0.46, W * 0.84, H * 0.26, 700, titleColor);
     ctx.fillStyle = "#6d5848";
@@ -270,7 +412,7 @@ function paintTile(def, printW, printD) {
       ctx.moveTo(W * 0.22, H * 0.84);
       ctx.lineTo(W * 0.78, H * 0.84);
       ctx.stroke();
-      ctx.fillStyle = "#7a3030";
+      ctx.fillStyle = theme.price || "#7a3030";
       ctx.font = `700 ${Math.floor(H * 0.07)}px ${FONT}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -282,105 +424,221 @@ function paintTile(def, printW, printD) {
   return canvas;
 }
 
+function plaque(ctx, title, en) {
+  ctx.fillStyle = "rgba(255,250,240,0.9)";
+  roundBox(ctx, 512 - 210, 470, 420, 150, 18);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(90,62,36,0.45)";
+  ctx.lineWidth = 3;
+  roundBox(ctx, 512 - 210, 470, 420, 150, 18);
+  ctx.stroke();
+  ctx.fillStyle = theme.ink || "#2a2118";
+  ctx.font = `700 64px ${FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(title, 512, 522);
+  ctx.fillStyle = "#8a6239";
+  ctx.font = `600 18px ${FONT}`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.42em";
+  ctx.fillText(en || "", 512, 572);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+}
+
+function roundBox(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function frameMap(ctx, S, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 8;
+  ctx.strokeRect(28, 28, S - 56, S - 56);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(44, 44, S - 88, S - 88);
+}
+
+function fillCoast(ctx, color, draw) {
+  ctx.beginPath();
+  draw(ctx);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(92, 64, 40, 0.45)";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+}
+
+function paintWorldCenter(ctx, S) {
+  const sea = ctx.createLinearGradient(0, 0, 0, S);
+  sea.addColorStop(0, "#c5e6ee");
+  sea.addColorStop(1, "#6aa3b4");
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, 0, S, S);
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1.5;
+  for (const y of [180, 320, 480, 640, 800]) {
+    ctx.beginPath();
+    ctx.moveTo(50, y);
+    ctx.lineTo(S - 50, y);
+    ctx.stroke();
+  }
+  fillCoast(ctx, "#ead8b4", (c) => {
+    c.moveTo(150, 150);
+    c.bezierCurveTo(230, 120, 320, 170, 300, 250);
+    c.bezierCurveTo(340, 310, 250, 340, 230, 400);
+    c.bezierCurveTo(210, 470, 270, 540, 250, 640);
+    c.bezierCurveTo(240, 760, 160, 790, 140, 700);
+    c.bezierCurveTo(110, 600, 170, 500, 145, 420);
+    c.bezierCurveTo(120, 320, 90, 220, 150, 150);
+  });
+  fillCoast(ctx, "#e2c99a", (c) => {
+    c.moveTo(430, 210);
+    c.bezierCurveTo(520, 170, 600, 220, 560, 290);
+    c.bezierCurveTo(610, 330, 540, 390, 500, 430);
+    c.bezierCurveTo(560, 520, 520, 680, 430, 720);
+    c.bezierCurveTo(360, 680, 390, 540, 370, 450);
+    c.bezierCurveTo(340, 340, 360, 250, 430, 210);
+  });
+  fillCoast(ctx, "#edd9b0", (c) => {
+    c.moveTo(560, 180);
+    c.bezierCurveTo(700, 90, 900, 140, 940, 250);
+    c.bezierCurveTo(980, 340, 860, 400, 820, 460);
+    c.bezierCurveTo(760, 540, 680, 480, 640, 400);
+    c.bezierCurveTo(590, 320, 500, 260, 560, 180);
+  });
+  fillCoast(ctx, "#e6d0a4", (c) => {
+    c.moveTo(760, 560);
+    c.bezierCurveTo(840, 520, 920, 560, 900, 640);
+    c.bezierCurveTo(860, 710, 760, 690, 740, 630);
+    c.bezierCurveTo(720, 590, 730, 560, 760, 560);
+  });
+  ctx.strokeStyle = "rgba(120,40,32,0.55)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([9, 8]);
+  ctx.beginPath();
+  ctx.moveTo(220, 280);
+  ctx.quadraticCurveTo(360, 180, 500, 250);
+  ctx.quadraticCurveTo(680, 160, 800, 300);
+  ctx.quadraticCurveTo(860, 420, 820, 600);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#8d3b32";
+  for (const [x, y] of [
+    [210, 240],
+    [480, 250],
+    [760, 280],
+    [820, 610],
+    [230, 560],
+  ]) {
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  frameMap(ctx, S, "#6d5438");
+  plaque(ctx, theme.name || "世界之旅", theme.en);
+}
+
+function paintJiangnanCenter(ctx, S) {
+  const mist = ctx.createLinearGradient(0, 0, 0, S);
+  mist.addColorStop(0, "#e7f2ea");
+  mist.addColorStop(1, "#c9ddd4");
+  ctx.fillStyle = mist;
+  ctx.fillRect(0, 0, S, S);
+  ctx.strokeStyle = "#3e8f98";
+  ctx.lineWidth = 78;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(80, 180);
+  ctx.bezierCurveTo(280, 80, 420, 420, 560, 300);
+  ctx.bezierCurveTo(760, 140, 820, 520, 960, 640);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.35)";
+  ctx.lineWidth = 16;
+  ctx.stroke();
+  ctx.strokeStyle = "#2f6a4a";
+  ctx.lineWidth = 4;
+  for (const [x, y] of [
+    [180, 220],
+    [340, 360],
+    [700, 260],
+    [640, 520],
+  ]) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + 30, y - 70, x + 70, y);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "#5a3a28";
+  ctx.lineWidth = 6;
+  for (const [x, y] of [
+    [300, 210],
+    [620, 250],
+    [780, 480],
+  ]) {
+    ctx.beginPath();
+    ctx.moveTo(x - 36, y + 16);
+    ctx.quadraticCurveTo(x, y - 28, x + 36, y + 16);
+    ctx.stroke();
+  }
+  frameMap(ctx, S, "#3d6a5c");
+  plaque(ctx, theme.name || "江南烟雨", theme.en);
+}
+
+function paintSilkCenter(ctx, S) {
+  const sand = ctx.createLinearGradient(0, 0, S, S);
+  sand.addColorStop(0, "#f0d7a2");
+  sand.addColorStop(0.55, "#e2b56a");
+  sand.addColorStop(1, "#c9844a");
+  ctx.fillStyle = sand;
+  ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = "#8d5a3a";
+  ctx.beginPath();
+  ctx.moveTo(40, 260);
+  for (let x = 40; x <= 980; x += 70) {
+    const peak = x % 140 === 40;
+    ctx.lineTo(x, peak ? 120 : 230);
+  }
+  ctx.lineTo(980, 280);
+  ctx.lineTo(40, 280);
+  ctx.fill();
+  ctx.strokeStyle = "#6a3a28";
+  ctx.lineWidth = 5;
+  ctx.setLineDash([14, 12]);
+  ctx.beginPath();
+  ctx.moveTo(120, 340);
+  ctx.bezierCurveTo(300, 480, 480, 260, 680, 420);
+  ctx.bezierCurveTo(820, 540, 860, 360, 960, 300);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#2f6a4e";
+  for (const [x, y] of [
+    [260, 430],
+    [520, 340],
+    [760, 460],
+  ]) {
+    ctx.beginPath();
+    ctx.ellipse(x, y + 18, 34, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 3, y - 28, 6, 36);
+  }
+  frameMap(ctx, S, "#6a4024");
+  plaque(ctx, theme.name || "丝路商队", theme.en);
+}
+
 function paintCenter() {
   const S = 1024;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = S;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#f4ecdc";
-  ctx.fillRect(0, 0, S, S);
-  const vg = ctx.createRadialGradient(S / 2, S * 0.42, 40, S / 2, S * 0.46, S * 0.68);
-  vg.addColorStop(0, "rgba(255,252,246,0.65)");
-  vg.addColorStop(1, "rgba(140,96,52,0.08)");
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, S, S);
-
-  ctx.strokeStyle = "#8a6239";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(34, 34, S - 68, S - 68);
-  ctx.lineWidth = 2;
-  ctx.strokeRect(52, 52, S - 104, S - 104);
-
-  ctx.fillStyle = "#8a6239";
-  for (const [x, y] of [
-    [86, 86],
-    [S - 86, 86],
-    [86, S - 86],
-    [S - 86, S - 86],
-  ]) {
-    ctx.beginPath();
-    ctx.moveTo(x, y - 14);
-    ctx.lineTo(x + 14, y);
-    ctx.lineTo(x, y + 14);
-    ctx.lineTo(x - 14, y);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  ctx.save();
-  ctx.strokeStyle = "rgba(160,62,46,0.45)";
-  ctx.lineWidth = 3;
-  ctx.setLineDash([10, 12]);
-  ctx.beginPath();
-  ctx.arc(512, 390, 230, 0.2, Math.PI * 1.2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(512, 430, 150, Math.PI * 1.05, Math.PI * 1.85);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.fillStyle = "#a34332";
-  for (const [x, y] of [
-    [330, 300],
-    [512, 230],
-    [700, 320],
-    [400, 500],
-    [640, 470],
-  ]) {
-    ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.strokeStyle = "#8a6239";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(512, 390, 132, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(512, 390, 116, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.fillStyle = "#6d5336";
-  ctx.font = `600 26px ${FONT}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("北", 512, 232);
-  ctx.fillText("南", 512, 548);
-  ctx.fillText("东", 678, 390);
-  ctx.fillText("西", 346, 390);
-
-  ctx.fillStyle = "rgba(244,236,220,0.94)";
-  ctx.beginPath();
-  ctx.arc(512, 390, 96, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#2b2118";
-  ctx.font = `700 78px ${FONT}`;
-  ctx.fillText("世界之旅", 512, 378);
-  ctx.fillStyle = "#8a6239";
-  ctx.font = `600 20px ${FONT}`;
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.46em";
-  ctx.fillText("WORLD TOUR", 512, 432);
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
-
-  ctx.fillStyle = "#5e4b3c";
-  ctx.font = `600 28px ${FONT}`;
-  ctx.fillText("顺时针行进", 512, 610);
-  ctx.font = `500 24px ${FONT}`;
-  ctx.fillText("经过起点  ·  领取 $2000", 512, 652);
-
-  speckle(ctx, S, S, 1400);
+  if (theme.center === "jiangnan") paintJiangnanCenter(ctx, S);
+  else if (theme.center === "silk") paintSilkCenter(ctx, S);
+  else paintWorldCenter(ctx, S);
+  speckle(ctx, S, S, 900);
   return canvas;
 }
 
@@ -458,11 +716,11 @@ function feltCanvas() {
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#1c5a38";
+  ctx.fillStyle = "#c8c8c8";
   ctx.fillRect(0, 0, 256, 256);
   for (let i = 0; i < 3500; i++) {
     const light = Math.random() > 0.5;
-    ctx.fillStyle = light ? "rgba(190,255,210,0.045)" : "rgba(0,0,0,0.06)";
+    ctx.fillStyle = light ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.08)";
     ctx.fillRect(Math.random() * 256, Math.random() * 256, 1, 2);
   }
   return canvas;
@@ -968,12 +1226,13 @@ export class BoardView {
 
   _buildBoard() {
     const felt = makeTex(feltCanvas(), [4, 4]);
-    const green = new THREE.MeshStandardMaterial({
+    this._feltMat = new THREE.MeshStandardMaterial({
       map: felt,
-      color: 0xffffff,
+      color: theme.felt || "#1c5a38",
       roughness: 0.68,
       metalness: 0.03,
     });
+    const green = this._feltMat;
     const base = new THREE.Mesh(new THREE.BoxGeometry(OUTER * 2, 0.2, OUTER * 2), [
       cardboardMat,
       cardboardMat,
@@ -1019,8 +1278,9 @@ export class BoardView {
 
     const info = layoutSlots();
     const inner = BOARD_HALF - CORNER + GUTTER / 2 - 0.03;
+    const cells = getActiveMap().cells;
     info.forEach((cell, i) => {
-      this.tiles[i] = this._createTile(cell, BOARD[i]);
+      this.tiles[i] = this._createTile(cell, cells[i]);
     });
 
     const centerBody = new THREE.Mesh(
@@ -1031,14 +1291,15 @@ export class BoardView {
     centerBody.castShadow = true;
     centerBody.receiveShadow = true;
     this.boardRoot.add(centerBody);
+    this._centerMat = new THREE.MeshStandardMaterial({
+      map: makeTex(paintCenter()),
+      roughness: 0.84,
+      metalness: 0,
+      color: 0xffffff,
+    });
     const centerPrint = new THREE.Mesh(
       new THREE.PlaneGeometry(inner * 2 - 0.06, inner * 2 - 0.06),
-      new THREE.MeshStandardMaterial({
-        map: makeTex(paintCenter()),
-        roughness: 0.84,
-        metalness: 0,
-        color: 0xffffff,
-      })
+      this._centerMat
     );
     centerPrint.rotation.x = -Math.PI / 2;
     centerPrint.position.y = TILE_H + 0.002;
@@ -1148,6 +1409,7 @@ export class BoardView {
     return {
       group,
       rim,
+      print,
       buildings,
       w: info.w,
       d: info.d,
@@ -1323,6 +1585,29 @@ export class BoardView {
       t0: performance.now(),
       dur: 680,
     };
+  }
+
+  setTheme(map) {
+    if (!map || !this._built) return;
+    theme = map;
+    if (this._feltMat) this._feltMat.color.set(map.felt);
+    if (this._centerMat) {
+      const old = this._centerMat.map;
+      this._centerMat.map = makeTex(paintCenter());
+      this._centerMat.needsUpdate = true;
+      if (old) old.dispose();
+    }
+    (map.cells || []).forEach((def, i) => {
+      const tile = this.tiles[i];
+      if (!tile?.print) return;
+      const old = tile.print.material.map;
+      tile.print.material.map = makeTex(
+        paintTile(def, tile.w - PRINT_INSET, tile.d - PRINT_INSET)
+      );
+      tile.print.material.needsUpdate = true;
+      if (old) old.dispose();
+      tile.sig = "";
+    });
   }
 
   sync(state) {

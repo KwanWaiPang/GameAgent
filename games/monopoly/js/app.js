@@ -1,4 +1,6 @@
 import {
+  MAPS,
+  useMap,
   rentOf,
   isDeed,
   buildLevelLabel,
@@ -75,6 +77,8 @@ const els = {
   assetBankrupt: document.getElementById("assetBankrupt"),
   assetClose: document.getElementById("assetClose"),
   bootNote: document.getElementById("bootNote"),
+  mapPick: document.getElementById("mapPick"),
+  brandSub: document.getElementById("brandSub"),
 };
 
 const PIECE_NAME = { round: "车", triangle: "帽", square: "犬", star: "船" };
@@ -438,6 +442,12 @@ function startNew(opts = {}) {
   const aiCount = Math.max(0, Number(els.aiCount.value) || 0);
   const you = (els.playerName?.value || "旅行者").trim().slice(0, 12) || "旅行者";
   const names = [you];
+  const map = useMap(chosenMapId());
+  view.setTheme(map);
+  if (els.brandSub) els.brandSub.textContent = `${map.name} · 桌面对局`;
+  try {
+    sessionStorage.setItem("mono-map", map.id);
+  } catch (_) {}
   state = createInitialState({ startMoney, humanCount, aiCount, names });
   if (autoHumans) setAllHumanAuto(state, true);
   play(clickAudio);
@@ -540,6 +550,36 @@ view.onHover = (index, x, y) => {
 };
 
 els.dice?.addEventListener("click", onDice);
+function chosenMapId() {
+  return document.querySelector("#mapPick .map-card.is-on")?.dataset.map || "world";
+}
+
+function renderMapPicker() {
+  let saved = "world";
+  try {
+    saved = sessionStorage.getItem("mono-map") || "world";
+  } catch (_) {}
+  if (!MAPS.some((map) => map.id === saved)) saved = "world";
+  els.mapPick.innerHTML = MAPS.map(
+    (map) => `<button type="button" class="map-card${map.id === saved ? " is-on" : ""}" data-map="${map.id}">
+      <span class="map-swatch" style="--felt:${map.felt};--paper:${map.paper}"></span>
+      <span>
+        <span class="map-name">${map.name}</span>
+        <span class="map-tag">${map.tag} · ${map.blurb}</span>
+      </span>
+    </button>`
+  ).join("");
+}
+
+els.mapPick?.addEventListener("click", (ev) => {
+  const btn = ev.target.closest("[data-map]");
+  if (!btn || btn.classList.contains("is-on")) return;
+  els.mapPick.querySelectorAll(".map-card").forEach((card) => {
+    card.classList.toggle("is-on", card === btn);
+  });
+  startNew();
+});
+
 els.btnNew.addEventListener("click", () => startNew({ collapseSetup: true }));
 els.dialogOk.addEventListener("click", () => onDialog(true));
 els.dialogCancel.addEventListener("click", () => onDialog(false));
@@ -601,6 +641,8 @@ function syncCounts() {
 }
 els.humanCount.addEventListener("change", syncCounts);
 els.aiCount.addEventListener("change", syncCounts);
+
+renderMapPicker();
 
 try {
   await view.ready;

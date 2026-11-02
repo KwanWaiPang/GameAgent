@@ -1,8 +1,26 @@
 /**
- * 「世界之旅」式环线棋盘
- * 视觉与城市编排参考实体棋常见环线布局（原创配置，非官方复制）
+ * 环线大富翁数据。地图在 maps.js，开局前用 useMap 切换。
  * 玩法骨架参考 HumanSean/javascript-monopoly（ISC）
  */
+
+import { MAPS } from "./maps.js";
+
+export { MAPS };
+
+let activeMap = MAPS[0];
+
+/** 当前地图的 40 格。引擎按这个现绑来开局。 */
+export let BOARD = activeMap.cells;
+
+export function useMap(id) {
+  activeMap = MAPS.find((map) => map.id === id) || MAPS[0];
+  BOARD = activeMap.cells;
+  return activeMap;
+}
+
+export function getActiveMap() {
+  return activeMap;
+}
 
 export const CELL_COUNT = 40;
 
@@ -15,60 +33,6 @@ export const TOKEN_PRESETS = [
 ];
 
 export const AI_NAMES = ["艾米", "鲍勃", "卡罗"];
-
-/**
- * 起点在右下角，顺时针：底边向左 → 左边向上 → 顶边向右 → 右边向下
- * 国家地产不使用国旗；特殊格仅用文字记号
- */
-export const BOARD = [
-  // 底边（右→左）：美洲
-  { name: "起点", type: "go", value: 2000, mark: "起", subtitle: "路过+$2000" },
-  { name: "古巴", type: "property", value: 600, group: "brown" },
-  { name: "命运", type: "fate", value: 0, mark: "！" },
-  { name: "墨西哥", type: "property", value: 800, group: "brown" },
-  { name: "所得税", type: "tax", value: 1000, mark: "税" },
-  { name: "纽约站", type: "station", value: 2000, mark: "站" },
-  { name: "阿根廷", type: "property", value: 1000, group: "sky" },
-  { name: "机会", type: "chance", value: 0, mark: "？" },
-  { name: "加拿大", type: "property", value: 1200, group: "sky" },
-  { name: "美国", type: "property", value: 1400, group: "sky" },
-  { name: "暂停", type: "jail", value: 0, mark: "停", subtitle: "路过无事" },
-
-  // 左边（下→上）：欧洲
-  { name: "荷兰", type: "property", value: 1600, group: "pink" },
-  { name: "电力", type: "utility", value: 1500, mark: "电" },
-  { name: "希腊", type: "property", value: 1800, group: "pink" },
-  { name: "西班牙", type: "property", value: 2000, group: "pink" },
-  { name: "巴黎站", type: "station", value: 2000, mark: "站" },
-  { name: "意大利", type: "property", value: 2200, group: "orange" },
-  { name: "命运", type: "fate", value: 0, mark: "！" },
-  { name: "德国", type: "property", value: 2400, group: "orange" },
-  { name: "法国", type: "property", value: 2600, group: "orange" },
-
-  // 顶边（左→右）：欧亚
-  { name: "停车场", type: "park", value: 0, mark: "泊", subtitle: "休息一回" },
-  { name: "英国", type: "property", value: 2800, group: "red" },
-  { name: "机会", type: "chance", value: 0, mark: "？" },
-  { name: "俄罗斯", type: "property", value: 3000, group: "red" },
-  { name: "土耳其", type: "property", value: 3200, group: "red" },
-  { name: "东京站", type: "station", value: 2000, mark: "站" },
-  { name: "泰国", type: "property", value: 3400, group: "yellow" },
-  { name: "澳大利亚", type: "property", value: 3600, group: "yellow" },
-  { name: "自来水", type: "utility", value: 1500, mark: "水" },
-  { name: "新加坡", type: "property", value: 3800, group: "yellow" },
-  { name: "强制暂停", type: "gotojail", value: 0, mark: "止", subtitle: "停走数日" },
-
-  // 右边（上→下）：亚非等（中国为统一国家地产，不含港澳台分列）
-  { name: "巴西", type: "property", value: 4000, group: "green" },
-  { name: "日本", type: "property", value: 4200, group: "green" },
-  { name: "命运", type: "fate", value: 0, mark: "！" },
-  { name: "韩国", type: "property", value: 4400, group: "green" },
-  { name: "上海站", type: "station", value: 2000, mark: "站" },
-  { name: "印度", type: "property", value: 4600, group: "navy" },
-  { name: "机会", type: "chance", value: 0, mark: "？" },
-  { name: "中国", type: "property", value: 4800, group: "navy" },
-  { name: "财产税", type: "tax", value: 1500, mark: "税" },
-];
 
 export const GROUP_COLORS = {
   brown: "#8d6e63",
