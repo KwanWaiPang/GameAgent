@@ -25,7 +25,7 @@ let cameraX = 0, cameraZ = 0, cameraY = 5;
 let enemies = [], fires = [], banners = [], blocked = [];
 let keys = new Set(), pointer = { down: false, x: 0, y: 0, moved: 0 };
 let joystick = { x: 0, y: 0, id: -1 };
-let muted = false, audio = null, nextId = 1, lockTarget = null, hudClock = 0, warningRing = null;
+let muted = false, audio = null, nextId = 1, lockTarget = null, hudClock = 0, warningRing = null, warningShapes = null;
 let seeded = 731927;
 const rand = () => ((seeded = (1664525 * seeded + 1013904223) >>> 0) / 4294967296);
 const pick = (a,b) => a + (b-a)*rand();
@@ -407,13 +407,16 @@ function enemyStats(kind){return kind==='boss'?{hp:660,speed:2.75,reach:3.3,dama
 function createBossWarning(){if(warningRing)return;
   const geometry=new THREE.RingGeometry(.86,1,80);
   const material=new THREE.MeshBasicMaterial({color:0xff6240,side:THREE.DoubleSide,transparent:true,opacity:.45,depthWrite:false,depthTest:true});
-  warningRing=new THREE.Mesh(geometry,material);warningRing.rotation.x=-Math.PI/2;warningRing.position.y=.095;
+  warningShapes={shockwave:geometry,cleave:new THREE.RingGeometry(.08,1,64,1,Math.PI/2-2.65/2,2.65),thrust:new THREE.RingGeometry(.08,1,64,1,Math.PI/2-1.05/2,1.05)};
+  warningRing=new THREE.Mesh(geometry,material);warningRing.rotation.order='YXZ';warningRing.rotation.x=-Math.PI/2;warningRing.position.y=.095;
   warningRing.visible=false;warningRing.renderOrder=3;warningRing.frustumCulled=false;scene.add(warningRing);
 }
 function updateBossWarning(){if(!warningRing)return;const e=enemies.find(e=>e.kind==='boss'&&!e.dead&&e.windup>0&&e.strike);
   if(!e){warningRing.visible=false;return;}
   const radius=e.strike.reach;warningRing.visible=true;
   warningRing.position.set(e.model.position.x,.105,e.model.position.z);
+  warningRing.geometry=warningShapes[e.strike.type]||warningShapes.shockwave;
+  warningRing.rotation.y=e.strike.type==='shockwave'?0:e.model.rotation.y;
   warningRing.scale.set(radius,radius,1);
   warningRing.material.opacity=.32+.26*(.5+.5*Math.sin(elapsed*16));
   warningRing.material.color.setHex(e.strike.type==='shockwave'?0xff3524:0xffa05d);
