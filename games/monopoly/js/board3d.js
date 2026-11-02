@@ -468,165 +468,302 @@ function fillCoast(ctx, color, draw) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.strokeStyle = "rgba(92, 64, 40, 0.45)";
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "rgba(62, 44, 28, 0.55)";
+  ctx.lineWidth = 5;
   ctx.stroke();
+}
+
+function cubicPoints(p0, p1, p2, p3, n = 28) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const u = 1 - t;
+    pts.push([
+      u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+      u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1],
+    ]);
+  }
+  return pts;
+}
+
+function ribbon(ctx, pts, half, color) {
+  const left = [];
+  const right = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(pts.length - 1, i + 1)];
+    let dx = b[0] - a[0];
+    let dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy) || 1;
+    dx /= len;
+    dy /= len;
+    left.push([pts[i][0] - dy * half, pts[i][1] + dx * half]);
+    right.push([pts[i][0] + dy * half, pts[i][1] - dx * half]);
+  }
+  ctx.beginPath();
+  ctx.moveTo(left[0][0], left[0][1]);
+  left.forEach((p) => ctx.lineTo(p[0], p[1]));
+  for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i][0], right[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function compassRose(ctx, x, y, r) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "rgba(255,248,236,0.92)";
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#5c4030";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#9a3b32";
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 0.72);
+  ctx.lineTo(r * 0.16, 0);
+  ctx.lineTo(0, r * 0.72);
+  ctx.lineTo(-r * 0.16, 0);
+  ctx.fill();
+  ctx.fillStyle = "#5c4030";
+  ctx.beginPath();
+  ctx.moveTo(r * 0.72, 0);
+  ctx.lineTo(0, r * 0.12);
+  ctx.lineTo(-r * 0.72, 0);
+  ctx.lineTo(0, -r * 0.12);
+  ctx.fill();
+  ctx.fillStyle = "#2a2118";
+  ctx.font = `700 ${Math.floor(r * 0.34)}px ${FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("北", 0, -r - r * 0.28);
+  ctx.restore();
+}
+
+function mapLabel(ctx, text, x, y, color) {
+  ctx.fillStyle = color;
+  ctx.font = `700 34px ${FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x, y);
 }
 
 function paintWorldCenter(ctx, S) {
   const sea = ctx.createLinearGradient(0, 0, 0, S);
-  sea.addColorStop(0, "#c5e6ee");
-  sea.addColorStop(1, "#6aa3b4");
+  sea.addColorStop(0, "#8ec8d8");
+  sea.addColorStop(1, "#3e86a4");
   ctx.fillStyle = sea;
   ctx.fillRect(0, 0, S, S);
-  ctx.strokeStyle = "rgba(255,255,255,0.18)";
-  ctx.lineWidth = 1.5;
-  for (const y of [180, 320, 480, 640, 800]) {
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 2;
+  for (const y of [160, 340, 520, 700]) {
     ctx.beginPath();
-    ctx.moveTo(50, y);
-    ctx.lineTo(S - 50, y);
+    ctx.moveTo(36, y);
+    ctx.lineTo(S - 36, y);
     ctx.stroke();
   }
-  fillCoast(ctx, "#ead8b4", (c) => {
-    c.moveTo(150, 150);
-    c.bezierCurveTo(230, 120, 320, 170, 300, 250);
-    c.bezierCurveTo(340, 310, 250, 340, 230, 400);
-    c.bezierCurveTo(210, 470, 270, 540, 250, 640);
-    c.bezierCurveTo(240, 760, 160, 790, 140, 700);
-    c.bezierCurveTo(110, 600, 170, 500, 145, 420);
-    c.bezierCurveTo(120, 320, 90, 220, 150, 150);
+  const americas = (c) => {
+    c.moveTo(120, 130);
+    c.lineTo(250, 110);
+    c.lineTo(330, 190);
+    c.lineTo(300, 280);
+    c.lineTo(250, 300);
+    c.lineTo(210, 390);
+    c.lineTo(250, 470);
+    c.lineTo(290, 620);
+    c.lineTo(240, 760);
+    c.lineTo(150, 740);
+    c.lineTo(120, 600);
+    c.lineTo(160, 480);
+    c.lineTo(130, 360);
+    c.lineTo(100, 220);
+  };
+  const eurafrica = (c) => {
+    c.moveTo(400, 150);
+    c.lineTo(560, 120);
+    c.lineTo(620, 210);
+    c.lineTo(560, 280);
+    c.lineTo(590, 360);
+    c.lineTo(540, 470);
+    c.lineTo(560, 680);
+    c.lineTo(450, 760);
+    c.lineTo(360, 640);
+    c.lineTo(390, 470);
+    c.lineTo(340, 300);
+    c.lineTo(370, 190);
+  };
+  const asia = (c) => {
+    c.moveTo(600, 150);
+    c.lineTo(820, 90);
+    c.lineTo(960, 180);
+    c.lineTo(940, 320);
+    c.lineTo(860, 400);
+    c.lineTo(780, 360);
+    c.lineTo(700, 420);
+    c.lineTo(640, 300);
+    c.lineTo(600, 210);
+  };
+  fillCoast(ctx, "#f0ddb8", americas);
+  fillCoast(ctx, "#efd7aa", eurafrica);
+  fillCoast(ctx, "#f3e2c0", asia);
+  fillCoast(ctx, "#edd4a4", (c) => {
+    c.moveTo(760, 520);
+    c.lineTo(900, 500);
+    c.lineTo(940, 600);
+    c.lineTo(860, 680);
+    c.lineTo(750, 640);
+    c.lineTo(740, 560);
   });
-  fillCoast(ctx, "#e2c99a", (c) => {
-    c.moveTo(430, 210);
-    c.bezierCurveTo(520, 170, 600, 220, 560, 290);
-    c.bezierCurveTo(610, 330, 540, 390, 500, 430);
-    c.bezierCurveTo(560, 520, 520, 680, 430, 720);
-    c.bezierCurveTo(360, 680, 390, 540, 370, 450);
-    c.bezierCurveTo(340, 340, 360, 250, 430, 210);
-  });
-  fillCoast(ctx, "#edd9b0", (c) => {
-    c.moveTo(560, 180);
-    c.bezierCurveTo(700, 90, 900, 140, 940, 250);
-    c.bezierCurveTo(980, 340, 860, 400, 820, 460);
-    c.bezierCurveTo(760, 540, 680, 480, 640, 400);
-    c.bezierCurveTo(590, 320, 500, 260, 560, 180);
-  });
-  fillCoast(ctx, "#e6d0a4", (c) => {
-    c.moveTo(760, 560);
-    c.bezierCurveTo(840, 520, 920, 560, 900, 640);
-    c.bezierCurveTo(860, 710, 760, 690, 740, 630);
-    c.bezierCurveTo(720, 590, 730, 560, 760, 560);
-  });
-  ctx.strokeStyle = "rgba(120,40,32,0.55)";
-  ctx.lineWidth = 3;
-  ctx.setLineDash([9, 8]);
-  ctx.beginPath();
-  ctx.moveTo(220, 280);
-  ctx.quadraticCurveTo(360, 180, 500, 250);
-  ctx.quadraticCurveTo(680, 160, 800, 300);
-  ctx.quadraticCurveTo(860, 420, 820, 600);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = "#8d3b32";
-  for (const [x, y] of [
-    [210, 240],
-    [480, 250],
-    [760, 280],
-    [820, 610],
-    [230, 560],
+  ctx.fillStyle = "#3f8f62";
+  for (const [x, y, r] of [
+    [190, 220, 36],
+    [210, 340, 28],
+    [220, 560, 34],
+    [470, 230, 30],
+    [480, 520, 40],
+    [760, 220, 46],
+    [860, 280, 32],
+    [830, 580, 22],
   ]) {
     ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   }
-  frameMap(ctx, S, "#6d5438");
+  ctx.strokeStyle = "#f2d48a";
+  ctx.lineWidth = 7;
+  ctx.lineCap = "round";
+  ctx.setLineDash([2, 16]);
+  ctx.beginPath();
+  ctx.moveTo(210, 250);
+  ctx.quadraticCurveTo(360, 160, 490, 230);
+  ctx.quadraticCurveTo(680, 140, 820, 250);
+  ctx.quadraticCurveTo(900, 400, 830, 580);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#8d3b32";
+  ctx.lineWidth = 4;
+  for (const [x, y] of [
+    [200, 250],
+    [480, 220],
+    [800, 230],
+    [830, 590],
+    [230, 600],
+  ]) {
+    ctx.beginPath();
+    ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  mapLabel(ctx, "美洲", 200, 300, "#3a2918");
+  mapLabel(ctx, "欧非", 470, 400, "#3a2918");
+  mapLabel(ctx, "亚洲", 800, 300, "#3a2918");
+  compassRose(ctx, 120, 860, 42);
+  frameMap(ctx, S, "#f4efe4");
   plaque(ctx, theme.name || "世界之旅", theme.en);
 }
 
 function paintJiangnanCenter(ctx, S) {
-  const mist = ctx.createLinearGradient(0, 0, 0, S);
-  mist.addColorStop(0, "#e7f2ea");
-  mist.addColorStop(1, "#c9ddd4");
-  ctx.fillStyle = mist;
+  const field = ctx.createLinearGradient(0, 0, 0, S);
+  field.addColorStop(0, "#d7ebc8");
+  field.addColorStop(1, "#b7d7a4");
+  ctx.fillStyle = field;
   ctx.fillRect(0, 0, S, S);
-  ctx.strokeStyle = "#3e8f98";
-  ctx.lineWidth = 78;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(80, 180);
-  ctx.bezierCurveTo(280, 80, 420, 420, 560, 300);
-  ctx.bezierCurveTo(760, 140, 820, 520, 960, 640);
-  ctx.stroke();
   ctx.strokeStyle = "rgba(255,255,255,0.35)";
-  ctx.lineWidth = 16;
-  ctx.stroke();
-  ctx.strokeStyle = "#2f6a4a";
-  ctx.lineWidth = 4;
-  for (const [x, y] of [
-    [180, 220],
-    [340, 360],
-    [700, 260],
-    [640, 520],
-  ]) {
+  ctx.lineWidth = 2;
+  for (let y = 80; y < 980; y += 46) {
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.quadraticCurveTo(x + 30, y - 70, x + 70, y);
+    ctx.moveTo(40, y);
+    ctx.lineTo(980, y);
     ctx.stroke();
   }
-  ctx.strokeStyle = "#5a3a28";
-  ctx.lineWidth = 6;
-  for (const [x, y] of [
-    [300, 210],
-    [620, 250],
-    [780, 480],
+  const spine = [
+    ...cubicPoints([40, 220], [220, 40], [360, 360], [520, 240]),
+    ...cubicPoints([520, 240], [700, 100], [760, 420], [980, 560]).slice(1),
+  ];
+  ribbon(ctx, spine, 78, "#1f6f86");
+  ribbon(ctx, spine, 46, "#7ec9d4");
+  ribbon(ctx, spine, 16, "rgba(255,255,255,0.45)");
+  ctx.fillStyle = "#f4efe2";
+  for (const [x, y, w] of [
+    [300, 150, 90],
+    [620, 180, 80],
+    [760, 400, 86],
   ]) {
-    ctx.beginPath();
-    ctx.moveTo(x - 36, y + 16);
-    ctx.quadraticCurveTo(x, y - 28, x + 36, y + 16);
+    roundBox(ctx, x - w / 2, y - 10, w, 22, 8);
+    ctx.fill();
+    ctx.strokeStyle = "#6a4a32";
+    ctx.lineWidth = 4;
     ctx.stroke();
   }
-  frameMap(ctx, S, "#3d6a5c");
+  ctx.fillStyle = "#2a2118";
+  for (const [x, y] of [
+    [240, 150],
+    [430, 280],
+    [700, 300],
+  ]) {
+    drawMotif(ctx, "pagoda", x, y, 70, "#2a2118");
+  }
+  mapLabel(ctx, "运河", 180, 120, "#1d332c");
+  mapLabel(ctx, "太湖", 430, 430, "#1d332c");
+  compassRose(ctx, 140, 860, 40);
+  frameMap(ctx, S, "#f7fbf4");
   plaque(ctx, theme.name || "江南烟雨", theme.en);
 }
 
-function paintSilkCenter(ctx, S) {
-  const sand = ctx.createLinearGradient(0, 0, S, S);
-  sand.addColorStop(0, "#f0d7a2");
-  sand.addColorStop(0.55, "#e2b56a");
-  sand.addColorStop(1, "#c9844a");
-  ctx.fillStyle = sand;
-  ctx.fillRect(0, 0, S, S);
-  ctx.fillStyle = "#8d5a3a";
+function dune(ctx, y, amp, color) {
   ctx.beginPath();
-  ctx.moveTo(40, 260);
-  for (let x = 40; x <= 980; x += 70) {
-    const peak = x % 140 === 40;
-    ctx.lineTo(x, peak ? 120 : 230);
+  ctx.moveTo(0, y);
+  for (let x = 0; x <= 1024; x += 8) {
+    ctx.lineTo(x, y + Math.sin(x * 0.012) * amp + Math.sin(x * 0.03) * amp * 0.35);
   }
-  ctx.lineTo(980, 280);
-  ctx.lineTo(40, 280);
+  ctx.lineTo(1024, 1024);
+  ctx.lineTo(0, 1024);
+  ctx.closePath();
+  ctx.fillStyle = color;
   ctx.fill();
-  ctx.strokeStyle = "#6a3a28";
-  ctx.lineWidth = 5;
-  ctx.setLineDash([14, 12]);
-  ctx.beginPath();
-  ctx.moveTo(120, 340);
-  ctx.bezierCurveTo(300, 480, 480, 260, 680, 420);
-  ctx.bezierCurveTo(820, 540, 860, 360, 960, 300);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = "#2f6a4e";
+}
+
+function paintSilkCenter(ctx, S) {
+  ctx.fillStyle = "#f6e2b0";
+  ctx.fillRect(0, 0, S, S);
+  dune(ctx, 180, 28, "#e7c27a");
+  dune(ctx, 340, 36, "#d7a45a");
+  dune(ctx, 560, 30, "#c98442");
+  ctx.fillStyle = "#7a4a32";
+  for (let i = 0; i < 9; i++) {
+    const x = 80 + i * 110;
+    const h = 90 + (i % 3) * 36;
+    ctx.beginPath();
+    ctx.arc(x, 250, h * 0.72, Math.PI, 0);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#5c3424";
+  for (let i = 0; i < 8; i++) {
+    const x = 140 + i * 110;
+    ctx.beginPath();
+    ctx.arc(x, 230, 48, Math.PI, 0);
+    ctx.fill();
+  }
+  const road = cubicPoints([80, 470], [280, 620], [520, 300], [960, 430], 36);
+  ribbon(ctx, road, 16, "#f8f1dc");
+  ribbon(ctx, road, 4, "#8a5a32");
+  ctx.fillStyle = "#2f7a52";
   for (const [x, y] of [
-    [260, 430],
-    [520, 340],
-    [760, 460],
+    [250, 520],
+    [520, 390],
+    [760, 470],
   ]) {
     ctx.beginPath();
-    ctx.ellipse(x, y + 18, 34, 14, 0, 0, Math.PI * 2);
+    ctx.arc(x, y, 28, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillRect(x - 3, y - 28, 6, 36);
+    drawMotif(ctx, "tree", x, y - 8, 36, "#143c28");
   }
-  frameMap(ctx, S, "#6a4024");
+  mapLabel(ctx, "天山", 512, 150, "#3a2416");
+  mapLabel(ctx, "沙海", 180, 700, "#3a2416");
+  compassRose(ctx, 900, 860, 40);
+  frameMap(ctx, S, "#f8f1e0");
   plaque(ctx, theme.name || "丝路商队", theme.en);
 }
 
@@ -638,7 +775,6 @@ function paintCenter() {
   if (theme.center === "jiangnan") paintJiangnanCenter(ctx, S);
   else if (theme.center === "silk") paintSilkCenter(ctx, S);
   else paintWorldCenter(ctx, S);
-  speckle(ctx, S, S, 900);
   return canvas;
 }
 
