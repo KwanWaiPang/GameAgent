@@ -146,6 +146,8 @@ transform("tsconfig.json", (source) =>
   replaceOnce(source, '"include": ["src", "tests"]', '"include": ["src"]', "production TypeScript scope")
 );
 
+transform("index.html", (source) => source.replaceAll('href="/src/', 'href="./src/').replaceAll('src="/src/', 'src="./src/'));
+
 transform("src/ui/style.css", (source) => source + String.raw`
 
 /* GameAgent integration: the original single-player art and HUD are unchanged. */
