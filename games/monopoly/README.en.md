@@ -4,7 +4,7 @@
 # World Tour
 
 - A physical-board style loop: buy world cities, collect rent, upgrade, and play against a local computer.
-- The board uses color groups, flags, four corner squares, and a title in the center. The city list is original to the hub.
+- The board is a Three.js tabletop: wood, raised tiles, printed names, plastic tokens and dice. Orbit and zoom are supported. The city list is original to the hub.
 
 ## Play
 
@@ -20,6 +20,7 @@ index.html
 css/styles.css
 js/data.js      # board and cards
 js/engine.js
+js/board3d.js   # tabletop scene
 js/app.js
 LICENSE         # ISC
 ```

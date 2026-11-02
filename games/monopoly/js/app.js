@@ -1,10 +1,7 @@
 import {
-  BOARD,
-  GROUP_COLORS,
   rentOf,
   isDeed,
   buildLevelLabel,
-  MAX_BUILD_LEVEL,
   getDeedCard,
   listBankSellActions,
   BANK_BUYBACK_RATE,
@@ -23,12 +20,12 @@ import {
   tryTrade,
   aiAcceptsTrade,
 } from "./engine.js";
+import { BoardView } from "./board3d.js";
 
 const clickAudio = document.getElementById("clickAudio");
 const selectAudio = document.getElementById("selectAudio");
 
 const els = {
-  board: document.getElementById("board"),
   turnLabel: document.getElementById("turnLabel"),
   turnDot: document.getElementById("turnDot"),
   phaseBadge: document.getElementById("phaseBadge"),
@@ -37,11 +34,8 @@ const els = {
   result: document.getElementById("result"),
   players: document.getElementById("playerList"),
   log: document.getElementById("logList"),
-  dice: null,
-  diceTray: null,
-  dieA: null,
-  dieB: null,
-  diceSum: null,
+  dice: document.getElementById("diceBtn"),
+  diceSum: document.getElementById("diceSum"),
   dialog: document.getElementById("dialog"),
   dialogTitle: document.getElementById("dialogTitle"),
   dialogText: document.getElementById("dialogText"),
@@ -80,14 +74,18 @@ const els = {
   assetList: document.getElementById("assetList"),
   assetBankrupt: document.getElementById("assetBankrupt"),
   assetClose: document.getElementById("assetClose"),
+  bootNote: document.getElementById("bootNote"),
 };
 
+const PIECE_NAME = { round: "车", triangle: "帽", square: "犬", star: "船" };
+
+const view = new BoardView(document.getElementById("scene"));
 
 let state = null;
 let busy = false;
 let fast = false;
 let autoHumans = false;
-let cellNodes = [];
+let round = 0;
 
 function play(el) {
   if (!el) return;
@@ -106,126 +104,33 @@ function speed() {
   return fast ? Math.max(220, (state?.speedMs || 700) * 0.45) : state?.speedMs || 700;
 }
 
-/** 起点在右下角，顺时针 */
-function cellGridPos(i) {
-  if (i <= 10) return { row: 11, col: 11 - i, side: "bottom" }; // 右→左
-  if (i <= 19) return { row: 11 - (i - 10), col: 1, side: "left" }; // 下→上
-  if (i <= 30) return { row: 1, col: i - 19, side: "top" }; // 左→右
-  return { row: i - 29, col: 11, side: "right" }; // 上→下  i=31→row2, i=39→row10
+function pieceChip(pl) {
+  const label = PIECE_NAME[pl.shape] || "子";
+  return `<span class="piece-pip" style="--c:${pl.color}" title="${pl.name}">${label}</span>`;
 }
 
-function cellInnerHTML(def) {
-  const price =
-    def.type === "property" || def.type === "station" || def.type === "utility"
-      ? `$${def.value}`
-      : def.subtitle || "";
-  // 国家地产不放图标；特殊格用文字记号（不用国旗）
-  const mark = def.type === "property" ? "" : def.mark || "";
-
-  return `
-    <span class="cell-band" aria-hidden="true">
-      <span class="cell-houses" aria-hidden="true"></span>
-    </span>
-    <span class="cell-body">
-      ${mark ? `<span class="cell-icon">${mark}</span>` : `<span class="cell-icon cell-icon-empty"></span>`}
-      <span class="cell-name">${def.name}</span>
-      <span class="cell-price">${price}</span>
-    </span>
-    <span class="cell-tokens" aria-hidden="true"></span>
-  `;
-}
-
-function buildBoard() {
-  els.board.innerHTML = "";
-  cellNodes = [];
-
-  const center = document.createElement("div");
-  center.className = "board-center";
-  center.style.gridColumn = "2 / 11";
-  center.style.gridRow = "2 / 11";
-  center.innerHTML = `
-    <div class="center-sky" aria-hidden="true"></div>
-    <div class="center-landmarks" aria-hidden="true">
-      <span>🗽</span><span>🗼</span><span>🏛️</span><span>🏯</span>
-    </div>
-    <div class="center-title">
-      <div class="center-brand">大富翁</div>
-      <div class="center-sub">世界之旅</div>
-    </div>
-    <div class="center-cards" aria-hidden="true">
-      <span class="fake-card chance">机会</span>
-      <span class="fake-card fate">命运</span>
-    </div>
-    <div class="dice-tray" id="diceTray" aria-live="polite">
-      <div class="die" id="dieA" data-value="0" role="img" aria-label="骰子一"></div>
-      <div class="die" id="dieB" data-value="0" role="img" aria-label="骰子二"></div>
-    </div>
-    <p class="dice-sum" id="diceSum">点击下方掷骰</p>
-    <button type="button" class="dice-btn" id="diceBtnInner" aria-label="掷骰子">
-      掷双骰前进
-    </button>
-  `;
-  els.board.appendChild(center);
-
-  const innerBtn = center.querySelector("#diceBtnInner");
-  els.dice = innerBtn;
-  els.diceTray = center.querySelector("#diceTray");
-  els.dieA = center.querySelector("#dieA");
-  els.dieB = center.querySelector("#dieB");
-  els.diceSum = center.querySelector("#diceSum");
-  paintDie(els.dieA, 0);
-  paintDie(els.dieB, 0);
-  setDiceSumText("点击下方掷骰");
-  innerBtn.addEventListener("click", onDice);
-
-  BOARD.forEach((def, i) => {
-    const pos = cellGridPos(i);
-    const node = document.createElement("button");
-    node.type = "button";
-    node.className = `cell cell-${def.type} side-${pos.side}`;
-    if (i === 0 || i === 10 || i === 20 || i === 30) {
-      node.classList.add("cell-corner");
-    }
-    node.style.gridRow = String(pos.row);
-    node.style.gridColumn = String(pos.col);
-    if (def.group) {
-      node.style.setProperty("--group", GROUP_COLORS[def.group] || "#888");
-    }
-    node.dataset.index = String(i);
-    node.innerHTML = cellInnerHTML(def);
-    node.addEventListener("mouseenter", () => showTip(i, node));
-    node.addEventListener("mouseleave", hideTip);
-    node.addEventListener("focus", () => showTip(i, node));
-    node.addEventListener("blur", hideTip);
-    node.addEventListener("click", (ev) => {
-      if (!state || !isDeed(state.cells[i])) return;
-      ev.preventDefault();
-      openDeed(i);
-    });
-    els.board.appendChild(node);
-    cellNodes[i] = node;
-  });
-}
-
-function showTip(i, anchor) {
-  if (!state) return;
-  const cell = state.cells[i];
-  if (!isDeed(cell)) {
+function showTip(i, x, y) {
+  if (!state || i == null) {
     hideTip();
     return;
   }
-  const owner =
-    cell.owner == null ? "无" : state.players[cell.owner]?.name || "—";
+  const cell = state.cells[i];
+  let extra = "";
+  if (isDeed(cell)) {
+    const owner = cell.owner == null ? "银行" : state.players[cell.owner]?.name || "—";
+    extra = `<div>地主：${owner}</div><div>现租金：$${rentOf(cell, state)}</div><div class="tip-hint">点击查看地契</div>`;
+  } else if (cell.subtitle) {
+    extra = `<div>${cell.subtitle}</div>`;
+  } else if (cell.type === "tax") {
+    extra = `<div>向银行缴纳 $${cell.value}</div>`;
+  } else if (cell.type === "chance" || cell.type === "fate") {
+    extra = `<div>抽取一张${cell.name}</div>`;
+  }
   els.tip.hidden = false;
-  els.tip.innerHTML = `
-    <strong>${cell.name}</strong>
-    <div>地主：${owner}</div>
-    <div>现租金：$${rentOf(cell, state)}</div>
-    <div class="tip-hint">点击查看地契</div>
-  `;
-  const rect = anchor.getBoundingClientRect();
-  els.tip.style.left = `${Math.min(window.innerWidth - 200, Math.max(8, rect.left))}px`;
-  els.tip.style.top = `${Math.max(8, rect.top - 8)}px`;
+  els.tip.innerHTML = `<strong>${cell.name}</strong>${extra}`;
+  const w = 220;
+  els.tip.style.left = `${Math.min(window.innerWidth - w, Math.max(8, x + 14))}px`;
+  els.tip.style.top = `${Math.min(window.innerHeight - 96, Math.max(8, y + 16))}px`;
 }
 
 function hideTip() {
@@ -243,30 +148,21 @@ function openDeed(index) {
 
   els.deedKind.textContent = deed.kindLabel;
   els.deedTitle.textContent = deed.name;
-  els.deedBand.style.background = deed.groupColor || (
-    deed.type === "station" ? "#43a047" : deed.type === "utility" ? "#0288d1" : "#8d6e63"
-  );
+  els.deedBand.style.background =
+    deed.groupColor ||
+    (deed.type === "station" ? "#43a047" : deed.type === "utility" ? "#0288d1" : "#8d6e63");
 
-  const ownerName =
-    deed.ownerId == null
-      ? "尚未出售"
-      : state.players[deed.ownerId]?.name || "—";
+  const ownerName = deed.ownerId == null ? "尚未出售" : state.players[deed.ownerId]?.name || "—";
   let status = "";
   if (deed.type === "property") {
     status = `当前建筑：${buildLevelLabel(deed.level)}`;
   } else if (deed.type === "station") {
-    status = deed.ownerId == null
-      ? "当前无人持有"
-      : `持有者已有 ${deed.stationOwned} 座车站`;
+    status = deed.ownerId == null ? "当前无人持有" : `持有者已有 ${deed.stationOwned} 座车站`;
   }
   els.deedOwner.textContent = `地主：${ownerName}${status ? ` · ${status}` : ""}`;
 
   const activeLevel =
-    deed.type === "property"
-      ? deed.level
-      : deed.type === "station"
-        ? deed.stationOwned || 0
-        : 0;
+    deed.type === "property" ? deed.level : deed.type === "station" ? deed.stationOwned || 0 : 0;
 
   els.deedRentTable.innerHTML = deed.rows
     .map((row) => {
@@ -297,146 +193,40 @@ function closeDeed() {
   els.deedOverlay.hidden = true;
 }
 
-/** 骰子点数面（圆点） */
-function paintDie(el, value) {
-  if (!el) return;
-  const n = Math.max(0, Math.min(6, value | 0));
-  el.dataset.value = String(n);
-  el.classList.toggle("die-blank", n === 0);
-  const map = {
-    0: [],
-    1: [4],
-    2: [0, 8],
-    3: [0, 4, 8],
-    4: [0, 2, 6, 8],
-    5: [0, 2, 4, 6, 8],
-    6: [0, 2, 3, 5, 6, 8],
-  };
-  el.innerHTML = Array.from({ length: 9 }, (_, i) =>
-    map[n].includes(i) ? '<span class="pip"></span>' : "<span></span>"
-  ).join("");
-}
-
 function setDiceSumText(text) {
   if (els.diceSum) els.diceSum.textContent = text;
 }
 
-function randFace() {
-  return 1 + Math.floor(Math.random() * 6);
-}
-
 async function animateDice(a, b) {
-  try {
-    if (els.diceTray) {
-      els.diceTray.classList.remove("is-landed");
-      els.diceTray.classList.add("is-rolling");
-    }
-    setDiceSumText("骰子滚动中…");
-    const spins = fast ? 10 : 18;
-    for (let i = 0; i < spins; i++) {
-      paintDie(els.dieA, randFace());
-      paintDie(els.dieB, randFace());
-      await delay(fast ? 40 : 70);
-    }
-    paintDie(els.dieA, a);
-    paintDie(els.dieB, b);
-    setDiceSumText(`${a} + ${b} = ${a + b}`);
-    if (els.diceTray) {
-      els.diceTray.classList.remove("is-rolling");
-      els.diceTray.classList.add("is-landed");
-      await delay(fast ? 220 : 420);
-    }
-  } finally {
-    if (els.diceTray) {
-      els.diceTray.classList.remove("is-rolling");
-      els.diceTray.classList.remove("is-landed");
-    }
-    setDiceSumText(`${a} + ${b} = ${a + b}`);
-  }
+  setDiceSumText("骰子滚动中…");
+  await view.rollDice(a, b, fast);
+  setDiceSumText(`${a} + ${b} = ${a + b}`);
 }
 
-/** 棋子逐格走动（视觉），不结算路过起点奖金 */
 async function animateWalk(playerId, from, steps) {
-  const pl = state.players[playerId];
-  if (!pl || steps <= 0) return;
-  const total = BOARD.length;
-  for (let i = 1; i <= steps; i++) {
-    pl.position = (from + i) % total;
-    renderTokensOnly();
-    const node = cellNodes[pl.position];
-    if (node) {
-      node.classList.add("is-stepping");
-      await delay(fast ? 90 : 160);
-      node.classList.remove("is-stepping");
-    } else {
-      await delay(fast ? 90 : 160);
-    }
-  }
+  await view.walk(playerId, from, steps, fast);
 }
 
-function renderTokensOnly() {
-  if (!state) return;
-  state.cells.forEach((_, i) => {
-    const node = cellNodes[i];
-    if (!node) return;
-    const tokens = node.querySelector(".cell-tokens");
-    if (!tokens) return;
-    const here = state.players.filter(
-      (pl) => !pl.bankrupt && pl.position === i
-    );
-    tokens.innerHTML = here.map((pl) => meepleHTML(pl)).join("");
-  });
-}
-
-async function playTurnRoll() {
+async function playTurnRoll(my = round) {
   const p = currentPlayer(state);
   const from = p.position;
   const pair = rollDicePair();
   play(selectAudio);
   await animateDice(pair.a, pair.b);
+  if (my !== round) return;
   await animateWalk(p.id, from, pair.sum);
-  // 走动已到终点，先复位再交给引擎做正式位移与结算
+  if (my !== round) return;
   p.position = from;
   state = applyDiceMove(state, pair);
   play(clickAudio);
   render();
 }
 
-function meepleHTML(pl) {
-  const shape = pl.shape || "round";
-  return `<span class="meeple" data-shape="${shape}" data-id="${pl.id}" style="--piece:${pl.color};--piece-light:${pl.accent || "#fff"}" title="${pl.name}">
-    <span class="meeple-head"></span>
-    <span class="meeple-body"></span>
-    <span class="meeple-base"></span>
-  </span>`;
-}
-
-/** 地图上盖房：1–3 栋小房子，第 4 级换成酒店；颜色随地主 */
-function renderHouses(level, ownerName = "") {
-  const n = Math.max(0, Math.min(level || 0, MAX_BUILD_LEVEL));
-  if (n <= 0) return "";
-  const who = ownerName ? `${ownerName}的` : "";
-  if (n >= MAX_BUILD_LEVEL) {
-    return `<span class="house hotel" title="${who}酒店" aria-label="${who}酒店">
-      <span class="hotel-flag"></span>
-      <span class="hotel-windows" aria-hidden="true">
-        <i></i><i></i><i></i><i></i>
-      </span>
-      <span class="hotel-door" aria-hidden="true"></span>
-    </span>`;
-  }
-  return Array.from(
-    { length: n },
-    () => `<span class="house" title="${who}房子"></span>`
-  ).join("");
-}
-
 function render() {
   if (!state) return;
   const p = currentPlayer(state);
 
-  els.turnLabel.textContent =
-    state.phase === "ended" ? "对局结束" : `${p.name} 行动`;
+  els.turnLabel.textContent = state.phase === "ended" ? "对局结束" : `${p.name} 行动`;
   els.turnDot.style.background = p?.color || "#888";
   els.dayCount.textContent = `第 ${state.day} 天`;
   els.message.textContent = state.message || "";
@@ -463,10 +253,8 @@ function render() {
   els.players.innerHTML = state.players
     .map((pl) => {
       const props = state.cells.filter((c) => c.owner === pl.id).length;
-      return `<li class="${pl.bankrupt ? "bankrupt" : ""} ${
-        pl.id === state.turn ? "current" : ""
-      }">
-        <span class="token-wrap">${meepleHTML(pl)}</span>
+      return `<li class="${pl.bankrupt ? "bankrupt" : ""} ${pl.id === state.turn ? "current" : ""}">
+        <span class="token-wrap">${pieceChip(pl)}</span>
         <span class="name">${pl.name}${pl.auto ? " · 托管" : ""}</span>
         <span class="money">$${pl.bankrupt ? 0 : pl.money}</span>
         <span class="props">${props}处产业</span>
@@ -479,77 +267,24 @@ function render() {
     .map((t) => `<li>${t}</li>`)
     .join("");
 
-  state.cells.forEach((cell, i) => {
-    const node = cellNodes[i];
-    if (!node) return;
-    const housesEl = node.querySelector(".cell-houses");
-    const priceEl = node.querySelector(".cell-price");
-    const tokens = node.querySelector(".cell-tokens");
-    node.classList.toggle("owned", cell.owner != null);
-    node.classList.toggle("is-turn-here", p && !p.bankrupt && p.position === i);
-    if (cell.owner != null) {
-      const owner = state.players[cell.owner];
-      node.style.setProperty("--owner", owner.color);
-      node.style.setProperty("--owner-light", owner.accent || "#fff");
+  if (!view.rolling) {
+    if (state.lastDiceA > 0 && state.lastDiceB > 0) {
+      setDiceSumText(`${state.lastDiceA} + ${state.lastDiceB} = ${state.lastDiceA + state.lastDiceB}`);
     } else {
-      node.style.removeProperty("--owner");
-      node.style.removeProperty("--owner-light");
+      setDiceSumText("点击掷双骰");
     }
-    if (cell.type === "property") {
-      priceEl.textContent = `$${cell.value}`;
-      const ownerName =
-        cell.owner != null ? state.players[cell.owner]?.name || "" : "";
-      housesEl.innerHTML = renderHouses(cell.level || 0, ownerName);
-      node.classList.toggle("has-houses", (cell.level || 0) > 0);
-      node.classList.toggle("has-hotel", (cell.level || 0) >= MAX_BUILD_LEVEL);
-    } else if (cell.type === "station" || cell.type === "utility") {
-      housesEl.innerHTML = "";
-      priceEl.textContent = `$${cell.value}`;
-      node.classList.remove("has-houses", "has-hotel");
-    } else {
-      housesEl.innerHTML = "";
-      node.classList.remove("has-houses", "has-hotel");
-    }
-    const here = state.players.filter(
-      (pl) => !pl.bankrupt && pl.position === i
-    );
-    tokens.innerHTML = here.map((pl) => meepleHTML(pl)).join("");
-  });
-
-  if (state.lastDiceA > 0 && state.lastDiceB > 0) {
-    paintDie(els.dieA, state.lastDiceA);
-    paintDie(els.dieB, state.lastDiceB);
-    // 滚动动画进行中保留「滚动中」文案；其余时候始终回显上次点数
-    if (!els.diceTray?.classList.contains("is-rolling")) {
-      setDiceSumText(
-        `${state.lastDiceA} + ${state.lastDiceB} = ${state.lastDiceA + state.lastDiceB}`
-      );
-    }
-  } else if (!els.diceTray?.classList.contains("is-rolling")) {
-    setDiceSumText("点击下方掷骰");
   }
 
-  const canRoll =
-    !busy &&
-    state.phase === "ready" &&
-    p &&
-    p.isHuman &&
-    !p.auto &&
-    state.phase !== "ended";
+  view.sync(state);
+
+  const canRoll = !busy && state.phase === "ready" && p && p.isHuman && !p.auto && state.phase !== "ended";
   if (els.dice) els.dice.disabled = !canRoll;
 
   const canSell =
-    !busy &&
-    p &&
-    p.isHuman &&
-    !p.auto &&
-    !p.bankrupt &&
-    (state.phase === "ready" || state.phase === "raise");
+    !busy && p && p.isHuman && !p.auto && !p.bankrupt && (state.phase === "ready" || state.phase === "raise");
   if (els.btnSell) els.btnSell.disabled = !canSell;
   const canTrade =
-    canSell &&
-    state.phase === "ready" &&
-    state.players.some((pl) => !pl.bankrupt && pl.id !== p.id);
+    canSell && state.phase === "ready" && state.players.some((pl) => !pl.bankrupt && pl.id !== p.id);
   if (els.btnTrade) els.btnTrade.disabled = !canTrade;
 
   if (state.phase === "dialog" && state.pendingDialog) {
@@ -564,7 +299,6 @@ function render() {
   if (state.phase === "raise" && p?.isHuman && !p.auto) {
     renderAssetPanel();
   } else if (!els.assetOverlay.hidden && state.phase !== "raise") {
-    // 自愿变卖面板保持打开时刷新列表
     renderAssetPanel();
   }
   if (state.phase !== "raise" && state.phase !== "ready" && !els.assetOverlay.hidden) {
@@ -623,7 +357,7 @@ function openAssetPanel() {
 }
 
 function closeAssetPanel() {
-  if (state?.phase === "raise") return; // 欠债时必须变卖或宣告破产
+  if (state?.phase === "raise") return;
   els.assetOverlay.hidden = true;
 }
 
@@ -649,21 +383,25 @@ function onGiveUpBankrupt() {
   runAutoLoop();
 }
 
-async function runAutoLoop() {
-  while (state && shouldAutoAct(state) && state.phase !== "ended") {
+async function runAutoLoop(my = round) {
+  while (state && my === round && shouldAutoAct(state) && state.phase !== "ended") {
     busy = true;
     render();
+    if (my !== round) return;
     if (state.phase === "ready") {
       await delay(speed() * 0.35);
-      await playTurnRoll();
+      if (my !== round) return;
+      await playTurnRoll(my);
     } else {
       await delay(speed());
+      if (my !== round) return;
       state = autoAct(state);
       play(clickAudio);
       render();
     }
     await delay(speed() * 0.45);
   }
+  if (my !== round) return;
   busy = false;
   render();
 }
@@ -672,12 +410,14 @@ async function onDice() {
   if (!state || busy || state.phase !== "ready") return;
   const p = currentPlayer(state);
   if (!p.isHuman || p.auto) return;
+  const my = round;
   busy = true;
   render();
-  await playTurnRoll();
+  await playTurnRoll(my);
+  if (my !== round) return;
   busy = false;
   render();
-  await runAutoLoop();
+  await runAutoLoop(my);
 }
 
 function onDialog(yes) {
@@ -689,6 +429,10 @@ function onDialog(yes) {
 }
 
 function startNew(opts = {}) {
+  round += 1;
+  const my = round;
+  view.cut();
+  busy = false;
   const startMoney = Number(els.startMoney.value) || 15000;
   const humanCount = Math.max(1, Number(els.humanCount.value) || 1);
   const aiCount = Math.max(0, Number(els.aiCount.value) || 0);
@@ -696,12 +440,11 @@ function startNew(opts = {}) {
   const names = [you];
   state = createInitialState({ startMoney, humanCount, aiCount, names });
   if (autoHumans) setAllHumanAuto(state, true);
-  busy = false;
-  buildBoard();
   play(clickAudio);
   if (opts.collapseSetup && els.setupDetails) els.setupDetails.open = false;
   render();
-  runAutoLoop();
+  view.resetTable();
+  runAutoLoop(my);
 }
 
 function deedChecks(listEl, ownerId, name) {
@@ -721,9 +464,7 @@ function deedChecks(listEl, ownerId, name) {
 }
 
 function selectedIdx(listEl) {
-  return [...listEl.querySelectorAll("input[type=checkbox]:checked")].map((el) =>
-    Number(el.dataset.idx)
-  );
+  return [...listEl.querySelectorAll("input[type=checkbox]:checked")].map((el) => Number(el.dataset.idx));
 }
 
 function fillTradePartner() {
@@ -789,6 +530,16 @@ function submitTrade() {
   render();
 }
 
+view.onPick = (index) => {
+  if (!state || !isDeed(state.cells[index])) return;
+  openDeed(index);
+};
+view.onHover = (index, x, y) => {
+  if (index == null) hideTip();
+  else showTip(index, x, y);
+};
+
+els.dice?.addEventListener("click", onDice);
 els.btnNew.addEventListener("click", () => startNew({ collapseSetup: true }));
 els.dialogOk.addEventListener("click", () => onDialog(true));
 els.dialogCancel.addEventListener("click", () => onDialog(false));
@@ -809,11 +560,20 @@ els.deedClose.addEventListener("click", closeDeed);
 els.deedOverlay.addEventListener("click", (ev) => {
   if (ev.target === els.deedOverlay) closeDeed();
 });
+document.getElementById("camTable")?.addEventListener("click", () => view.setCamera("table"));
+document.getElementById("camTop")?.addEventListener("click", () => view.setCamera("top"));
+document.getElementById("camLow")?.addEventListener("click", () => view.setCamera("low"));
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") {
     closeDeed();
     closeTradePanel();
     if (state?.phase !== "raise") closeAssetPanel();
+  }
+  if (ev.code === "Space") {
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || tag === "BUTTON") return;
+    ev.preventDefault();
+    onDice();
   }
 });
 els.btnSpeed.addEventListener("click", () => {
@@ -842,5 +602,14 @@ function syncCounts() {
 els.humanCount.addEventListener("change", syncCounts);
 els.aiCount.addEventListener("change", syncCounts);
 
-buildBoard();
-startNew();
+try {
+  await view.ready;
+  if (els.bootNote) els.bootNote.hidden = true;
+  startNew();
+} catch (err) {
+  console.error(err);
+  if (els.bootNote) {
+    els.bootNote.hidden = false;
+    els.bootNote.textContent = "立体棋盘没有加载成功。请检查网络后刷新，页面需要加载 Three.js。";
+  }
+}

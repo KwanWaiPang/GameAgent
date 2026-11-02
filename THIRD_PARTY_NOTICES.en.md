@@ -67,6 +67,7 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - Gameplay skeleton: [HumanSean/javascript-monopoly](https://github.com/HumanSean/javascript-monopoly) (ISC)
 - License: ISC (`games/monopoly/LICENSE`)
 - Note: a physical “world tour” loop. Cities and UI are hub-authored, not an official Monopoly product map.
+- Renderer: [Three.js](https://github.com/mrdoob/three.js) r180 (MIT), including `OrbitControls`, `RoundedBoxGeometry` and `RoomEnvironment`, loaded at runtime from jsDelivr
 
 ## Tactical Assault (`games/fps/`)
 

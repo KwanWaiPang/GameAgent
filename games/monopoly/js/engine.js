@@ -83,7 +83,7 @@ export function createInitialState(opts) {
     lastDice: 0,
     lastDiceA: 0,
     lastDiceB: 0,
-    message: "点击骰子开始旅行",
+    message: "按「掷双骰」或空格键，开始这一轮旅行。",
     log: [],
     pendingDialog: null,
     /** 欠款待变卖凑钱：{ amount, creditorId, label, sideEffects? } */

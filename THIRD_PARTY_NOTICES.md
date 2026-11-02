@@ -67,6 +67,7 @@
 - 玩法骨架参考：[HumanSean/javascript-monopoly](https://github.com/HumanSean/javascript-monopoly)（ISC）
 - 许可：ISC（`games/monopoly/LICENSE`）
 - 说明：实体棋「世界之旅」式环线；城市与界面为游戏馆原创配置，不是商业大富翁产品的官方地图
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r180（MIT），含 `OrbitControls`、`RoundedBoxGeometry`、`RoomEnvironment`，运行时经 jsDelivr 加载
 
 ## 战术突击 3D（`games/fps/`）
 
