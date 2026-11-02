@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+
 # 战术突击 · 3D · 游戏馆
 
 写实军事风第一人称射击（无血腥）。纯前端运行，本地 AI，支持两种模式。

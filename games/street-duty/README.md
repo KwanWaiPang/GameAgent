@@ -1,13 +1,15 @@
-# Street Duty · 街战突击
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-5c5348?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-c48a3a?style=for-the-badge)](./README.md)
+
+# Street Duty
 
 Hub entry for a browser FPS built with Three.js r180 and WebGL2. This folder is a **local, playable port** of [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty) (MIT) — not an iframe or external link.
 
-中文馆内说明（键位、部署、画质）：**[README.zh.md](./README.zh.md)**  
-Hub architecture (bilingual): **[../../ARCHITECTURE.md](../../ARCHITECTURE.md)**
+Hub architecture: **[../../ARCHITECTURE.en.md](../../ARCHITECTURE.en.md)**
 
 It **coexists with** [`../fps/`](../fps/) (Tactical Assault). Do not replace one with the other.
 
-**Live:** https://kwanwaipang.github.io/cursor-agent/games/street-duty/
+**Live:** https://kwanwaipang.github.io/GameAgent/games/street-duty/
 
 There are no art assets. Textures, meshes, animation and audio are generated procedurally at load time. Runtime dependency: `three` only.
 

@@ -1,99 +1,100 @@
-# 第三方组件说明 · Third-party notices
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./THIRD_PARTY_NOTICES.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./THIRD_PARTY_NOTICES.en.md)
 
-本仓库「游戏馆」聚合多个开源实现，并在统一界面下适配。  
-The Game Hub aggregates several open-source games under a shared UI shell.
+# 第三方组件说明
+
+本仓库「游戏馆」聚合多个开源实现，并在统一界面下适配。英文版见页顶按钮。
 
 ---
 
-## 中国象棋 · Chinese Chess（`games/xiangqi/`）
+## 中国象棋（`games/xiangqi/`）
 
-- 来源 / Source: [中国象棋 in HTML5](https://github.com/KwanWaiPang/Chess/tree/master/Chinese_Chess)（原作：一叶孤舟 / itlwei）
-- 许可证 / License: MIT（`games/xiangqi/LICENSE`）
+- 来源：[中国象棋 in HTML5](https://github.com/KwanWaiPang/Chess/tree/master/Chinese_Chess)（原作：一叶孤舟 / itlwei）
+- 许可证：MIT（`games/xiangqi/LICENSE`）
 
-## 巫师棋 2 · Wizard Chess Sanctum（`games/wizard-chess-sanctum/`）
+## 巫师棋 2（`games/wizard-chess-sanctum/`）
 
-- 来源 / Source: 本目录独立程序化场景与棋子 / Standalone procedural hall and pieces
-- 规则库 / Rules: [chess.js](https://github.com/jhlywa/chess.js) 1.4.0（BSD-2-Clause），运行时经 jsDelivr 加载
-- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r180（MIT），运行时经 jsDelivr 加载
+- 来源：本目录独立程序化场景与棋子
+- 规则库：[chess.js](https://github.com/jhlywa/chess.js) 1.4.0（BSD-2-Clause），运行时经 jsDelivr 加载
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r180（MIT），运行时经 jsDelivr 加载
 
-## 中国象棋 · 3D · Xiangqi diorama（`games/3D_xiangqi/`）
+## 中国象棋 · 3D（`games/3D_xiangqi/`）
 
-- 来源 / Source: 本目录原创规则与立体沙盘 / Original rules and tabletop scene in this folder
-- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r160（MIT），运行时经 cdnjs 加载
-- 说明 / Note: 楚河汉界规则（九宫、马腿、炮架、将死等），不是国际象棋。 Xiangqi rules, not Western chess.
+- 来源：本目录原创规则与立体沙盘
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT），运行时经 cdnjs 加载
+- 说明：楚河汉界规则（九宫、马腿、炮架、将死等），不是国际象棋
 
-## 巫师棋 · Wizard Chess（`games/wizard-chess-3d/`）
+## 巫师棋（`games/wizard-chess-3d/`）
 
-- 来源 / Source: 本仓库原创程序化场景与棋子 / Original procedural hall and pieces in this repository
-- 规则库 / Rules: [chess.js](https://github.com/jhlywa/chess.js) 1.4.0（BSD-2-Clause），运行时经 jsDelivr 加载
-- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r160（MIT），含 `OrbitControls`，运行时经 jsDelivr 加载
-- 说明 / Note: 哥特圣殿风格为原创实现，不包含参考站的专有模型或贴图。纯静态页，游玩时需要联网。 Gothic hall and pieces are original; no proprietary reference-site assets. Static page; a network connection is required at runtime.
+- 来源：本仓库原创程序化场景与棋子
+- 规则库：[chess.js](https://github.com/jhlywa/chess.js) 1.4.0（BSD-2-Clause），运行时经 jsDelivr 加载
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT），含 `OrbitControls`，运行时经 jsDelivr 加载
+- 说明：哥特圣殿风格为原创实现，不包含参考站的专有模型或贴图。纯静态页，游玩时需要联网
 
-## 国际象棋 3D · Chess 3D（`games/chess3d/`）
+## 国际象棋 3D（`games/chess3d/`）
 
-- 来源 / Source: [FrenchYann/Chess3D](https://github.com/FrenchYann/Chess3D)
-- AI: [Garbochess-JS](https://github.com/glinscott/Garbochess-JS)
-- 许可证 / License: GNU GPL v3（`games/chess3d/LICENSE.md`）
-- 说明 / Note: 修改与再分发需遵守 GPL。 Modifications and redistribution must follow the GPL.
+- 来源：[FrenchYann/Chess3D](https://github.com/FrenchYann/Chess3D)
+- AI：[Garbochess-JS](https://github.com/glinscott/Garbochess-JS)
+- 许可证：GNU GPL v3（`games/chess3d/LICENSE.md`）
+- 说明：修改与再分发需遵守 GPL
 
-## 围棋 · Go（`games/go/`）
+## 围棋（`games/go/`）
 
-- 对局引擎与分级 AI：本仓库原创 / Graded engine and AI: original to this repository
-- KataGo 浏览器档 / In-browser KataGo level:
+- 对局引擎与分级 AI：本仓库原创
+- KataGo 浏览器档：
   - 引擎移植自 [Web KaTrain](https://github.com/Sir-Teo/web-katrain)（MIT），其中的神经网络前向与搜索来自 [KataGo](https://github.com/lightvector/KataGo)（MIT）
-  - 模型 `g170-b6c96-s175395328-d26788732`，KataGo 仓库公开的测试用小网络 / small public test network from the KataGo repository
-- 练习题一到三级：馆内原创（已加厚，含多手练习）/ Beginner drills: original, expanded
-- 每周一题 / Weekly problems, levels 4–9 of 解题:
-  - 作者 / Authors: 安永吉 An Younggil (8 dan) and David Ormerod, Go Game Guru
-  - 来源 / Source: [gogameguru/go-problems](https://github.com/gogameguru/go-problems)
-  - 许可证 / License: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-  - 说明 / Note: 抽出标成 Correct 的正解，改成中文目标和对战练习。这是改编，不是原谱全文。仅供非商业使用。Adapted to Chinese goals and interactive lines; non-commercial only.
-- 古典解题（十级起）与官子（公有领域）/ Classical problems, public domain:
-  - 碁经众妙 Gokyo Shumyo（Hayashi Genbi，1812）。正解谱转录见 [u-go.net classical problems](https://www.u-go.net/classic/)（Ulrich Goertz；底稿来自 Flygo，经许可再分发）
-  - 玄玄棋经 Xuanxuan Qijing（严德甫、晏天章，约 1349）。SGF 由 Jean-Pierre Vesinet 整理，经 u-go.net 发布
-  - 玄览 Xuanlan。谱面转录 Flygo → u-go.net
-  - 官子谱 Guan Zi Pu。谱面转录 Flygo → u-go.net
-- 未收录 / Not included: 101 围棋网、goproblems.com，以及赵治勋、李昌镐的现代题集。这些题目不能再分发。
-- 说明 / Note: tsumego.tasuki.org 的公有领域棋形（发阳论等）曾以无正解 look-only 形式试收；因无法自动核对，已从分级解题撤下。阅读工具 `games/go/tools/tsumego-read.mjs` 仍保留，但 `problems.js` 不再导入。
-- 19 路经典全谱 / Full-board classical games, public domain, collected by Andries Brouwer (CWI), who states he claims no rights and that the games are in the public domain: <https://homepages.cwi.nl/~aeb/go/games/>
+  - 模型 `g170-b6c96-s175395328-d26788732`，KataGo 仓库公开的测试用小网络
+- 练习题一到三级：馆内原创（已加厚，含多手练习）
+- 每周一题（解题四到九级）：
+  - 作者：安永吉（八段）与 David Ormerod，Go Game Guru
+  - 来源：[gogameguru/go-problems](https://github.com/gogameguru/go-problems)
+  - 许可证：[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+  - 说明：抽出标成 Correct 的正解，改成中文目标和对战练习。这是改编，不是原谱全文。仅供非商业使用
+- 古典解题（十级起）与官子（公有领域）：
+  - 碁经众妙（林元美，1812）。正解谱转录见 [u-go.net classical problems](https://www.u-go.net/classic/)（Ulrich Goertz；底稿来自 Flygo，经许可再分发）
+  - 玄玄棋经（严德甫、晏天章，约 1349）。SGF 由 Jean-Pierre Vesinet 整理，经 u-go.net 发布
+  - 玄览。谱面转录 Flygo → u-go.net
+  - 官子谱。谱面转录 Flygo → u-go.net
+- 未收录：101 围棋网、goproblems.com，以及赵治勋、李昌镐的现代题集。这些题目不能再分发
+- 说明：tsumego.tasuki.org 的公有领域棋形（发阳论等）曾以无正解、只可观看的形式试收；因无法自动核对，已从分级解题撤下。阅读工具 `games/go/tools/tsumego-read.mjs` 仍保留，但 `problems.js` 不再导入
+- 19 路经典全谱为公有领域，由 Andries Brouwer（CWI）汇集。他声明不主张权利，并认为这些对局属于公有领域：<https://homepages.cwi.nl/~aeb/go/games/>
   - 当湖十局（范西屏、施襄夏，1739）、施襄夏对程兰如、徐星友对程兰如、烂柯，以及唐宋对局
   - 秀策耳赤之局（1846）与御城棋；对太田雄藏、对海老泽健造、对村濑秀甫
   - 本因坊道策御城棋、本因坊秀伯御城棋、本因坊丈和名局（1835，对赤星因彻）
 
-## 大富翁 · 世界之旅 · World Tour Monopoly（`games/monopoly/`）
+## 大富翁 · 世界之旅（`games/monopoly/`）
 
-- 玩法骨架参考 / Gameplay skeleton: [HumanSean/javascript-monopoly](https://github.com/HumanSean/javascript-monopoly)（ISC）
-- 许可 / License: ISC（`games/monopoly/LICENSE`）
-- 说明 / Note: 实体棋「世界之旅」式环线；城市与界面为游戏馆原创配置，非商业大富翁产品官方地图复制。 Hub-authored board cities/UI — not an official Monopoly product map.
+- 玩法骨架参考：[HumanSean/javascript-monopoly](https://github.com/HumanSean/javascript-monopoly)（ISC）
+- 许可：ISC（`games/monopoly/LICENSE`）
+- 说明：实体棋「世界之旅」式环线；城市与界面为游戏馆原创配置，不是商业大富翁产品的官方地图
 
-## 战术突击 3D · Tactical Assault（`games/fps/`）
+## 战术突击 3D（`games/fps/`）
 
-- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r160（MIT）
-- 指针锁定 / Pointer lock: Three.js examples `PointerLockControls`（MIT）
-- 枪声素材 / Gunshot samples: based on Wikimedia Commons「9 mm gunshot-mike-koenig-123.wav」（CC BY-SA 4.0）；换弹片段改编自 [Mixkit](https://mixkit.co/free-sound-effects/)
-- 玩法、场景、AK 第一人称模型与角色：本仓库原创 / Gameplay, scene, AK viewmodel and characters: original to this repo
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT）
+- 指针锁定：Three.js examples `PointerLockControls`（MIT）
+- 枪声素材：基于维基共享资源「9 mm gunshot-mike-koenig-123.wav」（CC BY-SA 4.0）；换弹片段改编自 [Mixkit](https://mixkit.co/free-sound-effects/)
+- 玩法、场景、AK 第一人称模型与角色：本仓库原创
 
-## 街战突击 · Street Duty（`games/street-duty/`）
+## 街战突击（`games/street-duty/`）
 
-- 来源 / Source: [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)
-- 许可证 / License: MIT（`games/street-duty/LICENSE`）
-- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r180（MIT）
-- 说明 / Note: 游戏馆以独立入口**本地完整落地**（Vite + `src/`，非外链/iframe）；中文标题、暂停菜单、大厅返回、队友与突击导演为适配层。原作者版权声明保持不变。 Full local port in the hub (not an embed). Chinese UI, back-to-hub link, ally fireteam and assault director are hub adaptations. Upstream copyright retained.
+- 来源：[mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)
+- 许可证：MIT（`games/street-duty/LICENSE`）
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r180（MIT）
+- 说明：游戏馆以独立入口本地完整落地（Vite + `src/`，不是外链或 iframe）。中文标题、暂停菜单、大厅返回、队友与突击导演为适配层。原作者版权声明保持不变
 
-## 口袋冒险 · Pocket Adventure（`games/pocket/`）
+## 口袋冒险（`games/pocket/`）
 
-- 来源 / Source: [PauliusOS/pallet-town-3d](https://github.com/PauliusOS/pallet-town-3d)
-- 许可证 / License: MIT（`games/pocket/LICENSE`）
-- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r185（MIT）
-- 说明 / Note: 第一人称 3D 卡通粉丝向；中文 UI、游戏馆入口与 Pages 打包为适配层。宝可梦为权利方商标，本页为非官方粉丝向。 Upstream MIT retained; hub adds Chinese UI and packaging.
+- 来源：[PauliusOS/pallet-town-3d](https://github.com/PauliusOS/pallet-town-3d)
+- 许可证：MIT（`games/pocket/LICENSE`）
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r185（MIT）
+- 说明：第一人称 3D 卡通粉丝向。中文界面、游戏馆入口与 Pages 打包为适配层。宝可梦为权利方商标，本页为非官方粉丝向
 
-## 红帽奇遇 · Red Cap Quest（`games/redcap/`）
+## 红帽奇遇（`games/redcap/`）
 
-- 来源 / Source: 本仓库原创 / Original to this repository
-- 许可证 / License: MIT（仓库根目录 [`LICENSE`](./LICENSE)）
-- 说明 / Note: 网页平台跳跃。角色「阿砖」、关卡与全部像素图、音效均为程序生成的原创素材。玩法向超级马里奥系列致敬，**不是**任天堂产品，未使用任天堂精灵、音乐或关卡拷贝。 Super Mario is a trademark of Nintendo; this is an unofficial fan-style tribute with original art and maps.
+- 来源：本仓库原创
+- 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
+- 说明：网页平台跳跃。角色「阿砖」、关卡与全部像素图、音效均为程序生成的原创素材。玩法向超级马里奥系列致敬，不是任天堂产品，未使用任天堂精灵、音乐或关卡拷贝
 
 ---
 
-本仓库为聚合：大厅与原创静态页为 MIT；各子目录若自带许可则从其许可。`games/chess3d/` 为 **GPL-3.0**，不受根目录 MIT 再许可。  
-This repo is an aggregate: hub/original static pages are MIT; per-game licenses in subfolders still apply. `games/chess3d/` remains **GPL-3.0**.
+本仓库为聚合：大厅与原创静态页为 MIT；各子目录若自带许可则从其许可。`games/chess3d/` 为 **GPL-3.0**，不受根目录 MIT 再许可。

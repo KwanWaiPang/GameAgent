@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 export default defineConfig({
   // Relative base so the build works under GitHub Pages
-  // (https://…/cursor-agent/games/street-duty/).
+  // (https://…/GameAgent/games/street-duty/).
   base: './',
   // Dev/build entry stays as the Vite source HTML; sync-pages-build.mjs then
   // copies dist into the game root for legacy branch-based Pages.

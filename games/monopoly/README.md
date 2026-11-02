@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+
 # 大富翁 · 世界之旅
 
 - 实体棋「世界之旅」式 **环线** 大富翁：世界城市买地、收租、升级，本地人机对战。

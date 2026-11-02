@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 /**
- * GitHub Pages serves this game under /cursor-agent/games/pocket/,
+ * GitHub Pages serves this game under /GameAgent/games/pocket/,
  * so assets must be relative (`./`).
  */
 export default defineConfig({

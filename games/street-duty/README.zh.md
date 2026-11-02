@@ -1,116 +1,88 @@
-# 街战突击 · Street Duty
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.md)
 
-游戏馆中的完整程序化第一人称街战。**不是外链或 iframe**，而是参照 [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)（MIT）在本仓库本地落地的可玩实现。
+# 街战突击
 
-A full procedural first-person street shooter inside the Game Hub. **Not an embed or iframe** — a local playable port of [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty) (MIT).
+游戏馆中的完整程序化第一人称街战。不是外链或 iframe，而是参照 [mshumer/Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty)（MIT）在本仓库本地落地的可玩实现。
 
-与 [`games/fps/`](../fps/)（战术突击）**并存、互不替换**。  
-Coexists with [`games/fps/`](../fps/) (Tactical Assault); they do **not** replace each other.
+与 [`games/fps/`](../fps/)（战术突击）并存，互不替换。
 
-| | 中文 | English |
-|---|---|---|
-| 在线 Live | https://kwanwaipang.github.io/cursor-agent/games/street-duty/ | same URL |
-| 画质 Quality | `?q=low\|medium\|high\|ultra` | 默认弱设备 `low`，一般桌面 `medium`；高/超清需手动指定 |
-| 预热 Prewarm | `?prewarm=0` 跳过 · `?prewarm=1` 强制 | 仅 `ultra` 默认预热（约 20s 着色器编译） |
+| | |
+|---|---|
+| 在线 | https://kwanwaipang.github.io/GameAgent/games/street-duty/ |
+| 画质 | `?q=low\|medium\|high\|ultra`。弱设备默认 `low`，一般桌面默认 `medium`。高和超清要手动指定 |
+| 预热 | `?prewarm=0` 跳过，`?prewarm=1` 强制。只有 `ultra` 默认预热（着色器编译大约 20 秒） |
 
-馆级架构见仓库根目录 [ARCHITECTURE.md](../../ARCHITECTURE.md)。  
-Hub architecture: [ARCHITECTURE.md](../../ARCHITECTURE.md).
+馆级架构见 [ARCHITECTURE.md](../../ARCHITECTURE.md)。
 
----
+## 玩法
 
-## 玩法概要 / Gameplay summary
+- 加载完成后点击进入街区，锁定鼠标。
+- 开局 2 名队友在街头；敌人在街尾（大约 40–58 米），驻军更远。
+- 队友之间没有友伤（子弹和手雷都不互伤）；敌人仍会打中队友。
+- 玩家阵亡后 10 秒复活，回到出生点。界面有倒计时。
+- 双方挨打时会找掩体，小队交替压制和包抄。低画质人更少，但判断更集中。
+- 存活敌人过少时，导演会一个一个补兵，避免同一帧刷出一整波。
 
-- 加载完成后点击进入街区，锁定鼠标。  
-  After load, click to enter and lock the pointer.
-- 开局 **2 名队友**（蓝灰外观，积极跟推、包抄）在街头；敌人刷在 **街尾**（约 40–58 m），驻军也落在远端。  
-  Start with **2 allies** (blue-grey, aggressive push/flank) at the near end; hostiles open at the **far end** (~40–58 m), with garrison farther still.
-- **队友间无友伤**（子弹 / 手雷均不互伤）；敌人仍会伤害队友。  
-  **No friendly fire** among the fireteam (bullets and grenades); hostiles still wound allies.
-- 玩家阵亡后 **10 秒复活**（HUD 倒计时），回到出生点。  
-  After death the player **respawns in 10 seconds** (HUD countdown) at a spawn point.
-- 敌我都会在挨打时找掩体，小队交替压制 / 包抄；弱画质 **少人但更聪明**。  
-  Both sides seek cover under fire and rotate suppress/flank roles; low/medium quality uses **fewer, smarter** hostiles.
-- 存活敌方过少时，导演会分批补兵（避免同帧刷整波）。  
-  When hostiles drop too low, a director respawns them **one at a time** to avoid spawn hitches.
+## 操作
 
----
+| 键 | 作用 |
+|---|---|
+| WASD | 移动 |
+| 鼠标 | 瞄准 |
+| 左键 | 射击 |
+| 右键 | 开镜 |
+| R | 换弹 |
+| Shift | 冲刺 |
+| Z | 按住下蹲 |
+| Ctrl / C | 趴下 |
+| Q / E | 按住探头 |
+| 空格 | 跳跃 |
+| G | 手雷 |
+| Esc | 暂停 / 释放鼠标 |
 
-## 操作 / Controls
-
-| 键 Key | 中文 | English |
-|---|---|---|
-| WASD | 移动 | Move |
-| 鼠标 / Mouse | 瞄准 | Look |
-| 左键 LMB | 射击 | Fire |
-| 右键 RMB | 开镜 ADS | Aim down sights |
-| R | 换弹 | Reload |
-| Shift | 冲刺 | Sprint |
-| **Z** | **按住下蹲** | **Hold to crouch** |
-| Ctrl / C | 趴下 | Prone |
-| Q / E | 按住探头 | Hold to lean |
-| Space | 跳跃 | Jump |
-| G | 手雷 | Grenade |
-| Esc | 暂停 / 释放鼠标 | Pause / release pointer |
-
----
-
-## 本地开发 / Development
+## 本地开发
 
 ```bash
 cd games/street-duty
 npm install
-npm run dev          # Vite → index.source.html
+npm run dev
 ```
 
-开发用 `index.source.html`；**不要**指望根目录 `index.html` 走 Vite HMR（那是 Pages 产物入口）。  
-Dev uses `index.source.html`. The root `index.html` is the **Pages production entry**, not the HMR entry.
+开发用 `index.source.html`。根目录的 `index.html` 是 Pages 产物入口，不是热更新入口。
 
----
-
-## 构建与部署 / Build & deploy
+## 构建与部署
 
 ```bash
-npm run build        # vite build && node tools/sync-pages-build.mjs
+npm run build
 ```
 
-会生成并覆盖：
+会覆盖 `index.html` 和 `assets/index.source-*.js`。这两样必须提交到 `main`，尤其是 Pages 直接从分支根目录提供文件时。Actions 发布前也会再构建一次。
 
-- `index.html`
-- `assets/index.source-*.js`
-
-**必须把上述产物提交进 `main`**（尤其在 legacy / 分支根目录部署时）。Actions 工作流也会在发布前再构建一次。
-
-You **must commit** those artifacts to `main` (especially for legacy branch-root Pages). The Actions workflow also rebuilds before publish.
-
-发布前自检 / Smoke checks:
+发布前可以自检：
 
 ```bash
 grep -q './assets/' index.html
 ls assets/*.js
 ```
 
----
+## 画质
 
-## 画质建议 / Quality tips
-
-| 场景 Scene | 建议 Hint |
+| 场景 | 建议 |
 |---|---|
-| 笔记本集显 Laptop iGPU | `?q=low` 或 `medium` |
-| 验收流畅度 Smoothness check | `?q=low&prewarm=0` |
-| 截图 / Demo 录制 Capture | `?capture=1&lockstep=1`（工具链用，非日常游玩） |
+| 笔记本集显 | `?q=low` 或 `medium` |
+| 看流畅度 | `?q=low&prewarm=0` |
+| 截图或演示录制 | `?capture=1&lockstep=1`（给工具用，不是日常游玩） |
 
-默认按设备探测；弱设备不再默认 `ultra`，避免黑屏卡死。  
-Quality is auto-detected; weak GPUs no longer default to `ultra`.
+画质按设备探测。弱设备不再默认 `ultra`，以免黑屏卡住。
 
----
+## 相关文档
 
-## 文档 / Docs
-
-| 文档 Doc | 说明 |
+| 文档 | 说明 |
 |---|---|
-| [README.md](./README.md) | 上游英文说明 / Upstream English notes |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | 引擎合同（子系统、事件、硬规则）Engine contract |
-| [../../ARCHITECTURE.md](../../ARCHITECTURE.md) | 游戏馆级架构 Hub architecture |
+| [README.md](./README.md) | 英文说明 |
+| [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 引擎合同中文 |
+| [../../ARCHITECTURE.md](../../ARCHITECTURE.md) | 游戏馆架构 |
 | [LICENSE](./LICENSE) | MIT |
 
-子系统一览（详见引擎合同）：`render` · `materials` · `sky` · `world` · `physics` · `player` · `weapons` · `fx` · `ai` · `ui` · `audio`。
+子系统：`render` · `materials` · `sky` · `world` · `physics` · `player` · `weapons` · `fx` · `ai` · `ui` · `audio`。

@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+
 # 国际象棋 · 3D · 游戏馆
 
 WebGL 立体国际象棋，适配 Chess3D，并套入游戏馆统一界面与中文菜单。

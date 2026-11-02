@@ -1,35 +1,38 @@
-# Wizard Chess 3D — Living Stone Legions (原创高保真改版)
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
 
-本项目针对 `KwanWaiPang/cursor-agent/games/wizard-chess-3d/` 原始项目的视觉表现进行重制，保留原有 `chess.js` 国际象棋规则层与对战功能。风格参考哥特式巫师棋游戏，但模型、场景和动作均为原创程序化实现，不包含参考站的专有资源或模型。
+# 巫师棋 · 3D
 
-## 此次视觉重制
+这是游戏馆里的哥特圣殿巫师棋。规则层仍是 `chess.js`，场景和棋子是原创程序化雕塑，不包含参考站的专有模型或贴图。
 
-- 六种不同人物棋子：持盾长枪兵、骑马骑士、重甲战锤守卫、持魔杖与魔法书的教士、戴冠女术士、披风持剑国王。
-- 装备细节：盔甲、肩甲、长靴、面部、盾牌纹章、剑/锤/法杖、披风、皇冠、底座符文。
-- 哥特教堂：尖拱、石柱、彩窗玫瑰花饰、吊灯、彩色横幅、漂浮尘埃、火炬。
-- 棋盘：大理石棋格、符文刻纹、阵营灯光。
-- 演出：移动弹跳、人物摆臂、武器挥击、近身受击、石块碎裂、电影化镜头。
+仓库：`KwanWaiPang/GameAgent`，路径 `games/wizard-chess-3d/`。
 
-## 玩法功能（延续原版）
+## 画面
 
-- `chess.js` 规则：王车易位、吃过路兵、升变、将军、将死、和棋判定。
-- AI（3档）、本地双人、AI 自动演示；换边视角、悔棋、提示、四种镜头、音效。
-- 点击人物/棋格选择和下棋，拖动鼠标旋转，滚轮缩放。
+- 六种人物棋子：持盾长枪兵、骑马骑士、重甲战锤守卫、持魔杖与魔法书的教士、戴冠女术士、披风持剑国王
+- 装备：盔甲、肩甲、长靴、面部、盾牌纹章、剑 / 锤 / 法杖、披风、皇冠、底座符文
+- 哥特教堂：尖拱、石柱、彩窗、吊灯、横幅、尘埃、火炬
+- 大理石棋格、符文刻纹、阵营灯光
+- 移动、摆臂、挥击、受击、碎裂和电影化镜头
 
-## 部署到已有 GitHub Pages
+## 玩法
 
-将本压缩包的 `games/wizard-chess-3d/index.html` 替换你仓库 `cursor-agent` 下的同名文件（README 可一并替换），提交到 `main`。无需 npm、Vite 或构建步骤，保留当前 GitHub Pages 路径：
+- `chess.js`：王车易位、吃过路兵、升变、将军、将死、和棋
+- 三档 AI、本地双人、AI 自动演示；换边、悔棋、提示、四种镜头、音效
+- 点击人物或棋格走棋，拖动旋转，滚轮缩放
 
-`https://kwanwaipang.github.io/cursor-agent/games/wizard-chess-3d/`
+## 部署
 
-游戏通过 import map 加载以下第三方库，因此**运行时需要联网**：
+纯静态页，无需 npm 或 Vite。Pages 地址：
+
+https://kwanwaipang.github.io/GameAgent/games/wizard-chess-3d/
+
+运行时从 CDN 加载，因此游玩需要联网：
 
 - Three.js 0.160.1
-- OrbitControls (Three.js addons)
+- OrbitControls
 - chess.js 1.4.0
 
-## 当前限制
+## 限制
 
-这是「角色化程序雕塑」而不是从 Blender 导出的高精度扫描/骨骼 GLB 模型。人物与场景比原来的传统几何棋子复杂得多，但仍不能保证与参考网站的原版模型、法线贴图、纹理或战斗动作逐像素一致；将来如获得具有授权的 GLB/GLTF 动画资源，可替换 `createPiece()` 并保留规则层。
-
-已完成 JavaScript 模块语法及文件结构检查。由于当前测试环境阻止打开本地浏览器页面且不能加载依赖 CDN，未能进行最终 WebGL 视觉和棋局端到端验收。请在浏览器部署后检查画面与交互。
+这是程序雕塑，不是从 Blender 导出的高精度骨骼模型。获得有授权的 GLB / GLTF 后，可以替换 `createPiece()` 并保留规则层。

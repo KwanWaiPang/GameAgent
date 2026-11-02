@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-5c5348?style=for-the-badge)](./README.zh.md)
+[![English](https://img.shields.io/badge/English-c48a3a?style=for-the-badge)](./README.md)
+
 # Wizard Chess — The Sanctum
 
 A standalone, independently created Three.js Gothic fantasy chess game. Designed for GitHub Pages without a build system.

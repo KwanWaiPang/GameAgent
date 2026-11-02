@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-c48a3a?style=for-the-badge)](./README.md)
+[![English](https://img.shields.io/badge/English-5c5348?style=for-the-badge)](./README.en.md)
+
 # 围棋 · 游戏馆
 
 网页版围棋，支持本地双人对弈与浏览器内 AI，采用中国规则（子空皆地）。
