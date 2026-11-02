@@ -22,12 +22,16 @@ For a fuller architecture overview, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 | [`games/monopoly/`](./games/monopoly/) | 大富翁 · 世界之旅 | World Tour Monopoly | 桌游 Board game |
 | [`games/chess3d/`](./games/chess3d/) | 国际象棋 · 3D | 3D Chess | 3D 棋类 |
 | [`games/wizard-chess-3d/`](./games/wizard-chess-3d/) | 巫师棋 · 3D | Wizard Chess | 3D 棋类（哥特圣殿） |
+| [`games/wizard-chess-sanctum/`](./games/wizard-chess-sanctum/) | 巫师棋 2 | Wizard Chess 2 | 3D 棋类（圣殿） |
+| [`games/3D_xiangqi/`](./games/3D_xiangqi/) | 中国象棋 · 3D | 3D Xiangqi | 3D 棋类（楚河汉界） |
 | [`games/fps/`](./games/fps/) | 战术突击 · 3D | Tactical Assault | 3D FPS（红蓝对抗） |
 | [`games/street-duty/`](./games/street-duty/) | 街战突击 | Street Duty | 3D FPS（全程序化街战） |
 | [`games/pocket/`](./games/pocket/) | 口袋冒险 | Pocket Adventure | 第一人称 3D 卡通粉丝向开局 |
 | [`games/redcap/`](./games/redcap/) | 红帽奇遇 | Red Cap Quest | 网页平台跳跃（马里奥式致敬） |
 
 **巫师棋** (`wizard-chess-3d`)：哥特圣殿中的程序化石甲棋子；`chess.js` 规则，人机 / 本地双人 / 自动演示。纯静态页，运行时从 CDN 加载 Three.js 与 chess.js。
+**巫师棋 2** (`wizard-chess-sanctum`)：另一座圣殿式巫师棋，同样使用国际象棋规则。
+**中国象棋 · 3D** (`3D_xiangqi`)：楚河汉界立体沙盘，可接管红方或观看 AI 对弈。
 
 两款射击互不替换：
 

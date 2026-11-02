@@ -51,7 +51,7 @@ The hub draws a Three.js gallery only — it does not boot any game runtime. Cho
 
 ### 3.1 纯静态 / Static games
 
-`go` · `xiangqi` · `gomoku` · `junqi` · `monopoly` · `chess3d` · `wizard-chess-3d` · `fps` · `pocket` · `redcap`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap`
 
 - 打开即玩，无需 `npm`。  
   Open and play; no `npm` required.

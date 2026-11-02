@@ -13,6 +13,8 @@ const KIND = {
   junqi: { felt: 0x6e2430, glow: 0xe07a78, plaque: "#241418", ink: "#f6d0cc" },
   chess: { felt: 0x2f4a3c, glow: 0xd7c4a2, plaque: "#1b2420", ink: "#f3ead8" },
   wizard: { felt: 0x243044, glow: 0xe2b56a, plaque: "#141a24", ink: "#f0d7a4" },
+  wizard2: { felt: 0x2a2438, glow: 0xd7c4f0, plaque: "#1a1628", ink: "#f4ead4" },
+  xiangqi3d: { felt: 0x6e3428, glow: 0xe7c27a, plaque: "#2a1814", ink: "#f6e6d0" },
   mono: { felt: 0x2f8f62, glow: 0x8ee0b0, plaque: "#163028", ink: "#e7fff2" },
   fps: { felt: 0x3e4650, glow: 0x9eb0c4, plaque: "#1a1e24", ink: "#e6eef6" },
   street: { felt: 0x8a6844, glow: 0xf0c48a, plaque: "#2a2118", ink: "#f8e6cc" },
@@ -34,7 +36,6 @@ function readGames() {
       href: card.getAttribute("href"),
       name: card.querySelector("h2")?.textContent.trim() || "",
       blurb: card.querySelector("p")?.textContent.trim() || "",
-      mark: card.querySelector(".mark")?.textContent.trim() || "",
       cta: (card.querySelector(".cta")?.textContent || "进入").replace("→", "").trim(),
       cat: title?.textContent.trim() || "",
       theme: KIND[card.dataset.kind] || KIND.go,
@@ -53,27 +54,34 @@ function canvasTex(draw, w = 256, h = 256) {
   return tex;
 }
 
-function plaqueTexture(mark, theme) {
+function nameLines(name) {
+  const parts = name.split("·").map((part) => part.trim()).filter(Boolean);
+  return parts.length ? parts : [name];
+}
+
+function plaqueTexture(name, theme) {
+  const lines = nameLines(name);
   return canvasTex((g, w, h) => {
     g.fillStyle = "#120e0c";
     g.fillRect(0, 0, w, h);
     g.fillStyle = theme.plaque;
     g.fillRect(28, 28, w - 56, h - 56);
     g.strokeStyle = "#e2b56a";
-    g.lineWidth = 10;
-    g.strokeRect(16, 16, w - 32, h - 32);
-    g.strokeStyle = "rgba(226,181,106,0.45)";
-    g.lineWidth = 2;
-    g.beginPath();
-    g.moveTo(40, h * 0.72);
-    g.lineTo(w - 40, h * 0.72);
-    g.stroke();
+    g.lineWidth = 14;
+    g.strokeRect(22, 22, w - 44, h - 44);
     g.fillStyle = theme.ink;
-    g.font = '400 150px "ZCOOL XiaoWei", "Noto Serif SC", serif';
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(mark, w / 2, h * 0.4);
-  });
+    const longest = Math.max(...lines.map((line) => line.length), 1);
+    const size = Math.max(54, Math.min(108, Math.floor((w - 120) / longest)));
+    g.font = `400 ${size}px "ZCOOL XiaoWei", "Noto Serif SC", serif`;
+    const gap = size * 1.18;
+    let y = h * 0.4 - ((lines.length - 1) * gap) / 2;
+    for (const line of lines) {
+      g.fillText(line, w / 2, y);
+      y += gap;
+    }
+  }, 512, 640);
 }
 
 function boardTexture(bg, line, cells) {
@@ -275,7 +283,6 @@ function main() {
   let lastX = 0;
 
   const catEl = document.getElementById("lobby-cat");
-  const markEl = document.getElementById("lobby-mark");
   const nameEl = document.getElementById("lobby-name");
   const blurbEl = document.getElementById("lobby-blurb");
   const enterEl = document.getElementById("lobby-enter");
@@ -305,7 +312,6 @@ function main() {
     active = index;
     const game = games[index];
     catEl.textContent = game.cat;
-    markEl.textContent = game.mark;
     nameEl.textContent = game.name;
     blurbEl.textContent = game.blurb;
     enterEl.textContent = game.cta;
@@ -481,7 +487,7 @@ function buildPedestal(game, index, kit) {
   lip.position.y = 0.81;
   ped.add(lip);
 
-  const plaqueMat = new THREE.MeshBasicMaterial({ map: plaqueTexture(game.mark, game.theme) });
+  const plaqueMat = new THREE.MeshBasicMaterial({ map: plaqueTexture(game.name, game.theme) });
   const frameMat = new THREE.MeshStandardMaterial({
     color: 0x2a1c12,
     roughness: 0.7,
@@ -489,12 +495,12 @@ function buildPedestal(game, index, kit) {
     emissive: new THREE.Color(game.theme.glow),
     emissiveIntensity: 0.05,
   });
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.08, 0.04), frameMat);
-  frame.position.set(0, 1.28, -0.34);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.08, 1.28, 0.04), frameMat);
+  frame.position.set(0, 1.38, -0.34);
   ped.add(frame);
   ped.userData.frame = frame;
-  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.96), plaqueMat);
-  plaque.position.set(0, 1.28, -0.3);
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 1.16), plaqueMat);
+  plaque.position.set(0, 1.38, -0.3);
   ped.add(plaque);
 
   const dio = new THREE.Group();
@@ -530,7 +536,7 @@ function buildDiorama(kind, dio, ped) {
       put(sph, 0x161616, 0.02, 0.07, 0.1, 0.055, 0.04, 0.055),
     ];
     ped.userData.tick = (t) => stones.forEach((s, i) => { s.position.y = 0.07 + Math.sin(t * 2 + i) * 0.012; });
-  } else if (kind === "xiangqi") {
+  } else if (kind === "xiangqi" || kind === "xiangqi3d") {
     const board = put(new THREE.PlaneGeometry(0.66, 0.62), 0xe6c7a2, 0, 0.02, 0, 1, 1, 1);
     board.rotation.x = -Math.PI / 2;
     board.material.map = boardTexture("#f0d3b0", "#6b2e24", 9);
@@ -556,7 +562,7 @@ function buildDiorama(kind, dio, ped) {
     put(box, 0xf4efe6, -0.08, 0.16, -0.08, 0.08, 0.22, 0.08);
     put(sph, 0xf4efe6, -0.08, 0.3, -0.08, 0.05, 0.05, 0.05);
     put(box, 0x1a1a1a, 0.1, 0.18, 0.1, 0.08, 0.26, 0.08, { metalness: 0.4 });
-  } else if (kind === "wizard") {
+  } else if (kind === "wizard" || kind === "wizard2") {
     const board = put(new THREE.BoxGeometry(0.56, 0.045, 0.56), 0xffffff, 0, 0.03, 0, 1, 1, 1);
     board.material.map = checkTexture("#efe6d4", "#243044", 4);
     showMap(board);

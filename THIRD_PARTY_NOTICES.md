@@ -10,6 +10,18 @@ The Game Hub aggregates several open-source games under a shared UI shell.
 - 来源 / Source: [中国象棋 in HTML5](https://github.com/KwanWaiPang/Chess/tree/master/Chinese_Chess)（原作：一叶孤舟 / itlwei）
 - 许可证 / License: MIT（`games/xiangqi/LICENSE`）
 
+## 巫师棋 2 · Wizard Chess Sanctum（`games/wizard-chess-sanctum/`）
+
+- 来源 / Source: 本目录独立程序化场景与棋子 / Standalone procedural hall and pieces
+- 规则库 / Rules: [chess.js](https://github.com/jhlywa/chess.js) 1.4.0（BSD-2-Clause），运行时经 jsDelivr 加载
+- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r180（MIT），运行时经 jsDelivr 加载
+
+## 中国象棋 · 3D · Xiangqi diorama（`games/3D_xiangqi/`）
+
+- 来源 / Source: 本目录原创规则与立体沙盘 / Original rules and tabletop scene in this folder
+- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r160（MIT），运行时经 cdnjs 加载
+- 说明 / Note: 楚河汉界规则（九宫、马腿、炮架、将死等），不是国际象棋。 Xiangqi rules, not Western chess.
+
 ## 巫师棋 · Wizard Chess（`games/wizard-chess-3d/`）
 
 - 来源 / Source: 本仓库原创程序化场景与棋子 / Original procedural hall and pieces in this repository
