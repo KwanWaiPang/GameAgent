@@ -89,7 +89,8 @@
 - 来源：[xilinnihao-afk/sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) 0.39
 - 许可证：MIT（`games/sandline/LICENSE`）
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) 0.180.0（MIT）
-- 说明：游戏馆移植了规则、机器人、武器数值，以及沙漠旧城、雪地竞技场的程序化场景。人物、第一人称枪械、界面和音效为游戏馆程序化实现。未包含 Counter-Strike / Valve 的地图、角色、枪模或音频。原作者版权声明保留在 `games/sandline/LICENSE`。
+- 物理：[Rapier](https://github.com/dimforge/rapier) `@dimforge/rapier3d-compat`（Apache-2.0），仅用于第一人称摄像机代理
+- 说明：游戏目录使用上游客户端、界面、程序化枪械，以及沙漠旧城和雪地竞技场。未随源码发行的 Counter-Strike / Valve 地图、角色、经典手臂和音频没有纳入。缺少人物模型时使用程序化士兵。原作者版权声明保留在 `games/sandline/LICENSE`。
 
 ## 街战突击（`games/street-duty/`）
 

@@ -35,25 +35,8 @@ const SNOW_BOXES:MapBox[] = [
  ...[-11,11].flatMap(x=>[-13.65,13.65].map(z=>({x,z,w:2.6,d:2.3,h:1.65,kind:'crate' as const}))),
 ];
 export const MAPS:Record<MapId,MapDefinition>={
- desert:{id:'desert',name:'沙漠旧城',subtitle:'DUST QUARTER',description:'旧城巷战 · 双侧绕行 · 拆弹与救援',preview:'',mode:'demolition',size:DESERT_SIZE,boxes:DESERT_BOXES,blueSpawns:DESERT_BLUE,redSpawns:DESERT_RED,
-  bombSites:[{id:'A',x:-18,y:0,z:-4,radius:3.1},{id:'B',x:18,y:0,z:6,radius:3.1}],
-  hostageSpawns:[
-   {id:1,x:-6,y:0,z:-16,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-   {id:2,x:0,y:0,z:-16.5,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-   {id:3,x:6,y:0,z:-16,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-   {id:4,x:3,y:0,z:-14.5,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-  ],
-  rescueZones:[{id:'gate',x:0,y:0,z:17,radius:3.6}],
- },
- snow:{id:'snow',name:'雪地竞技场',subtitle:'ICE WORLD',description:'三路交锋 · 十字通路 · 拆弹与救援',preview:'',mode:'elimination',size:{width:44,depth:40},boxes:SNOW_BOXES,
-  bombSites:[{id:'A',x:-16,y:0,z:-15,radius:3},{id:'B',x:16,y:0,z:14,radius:3}],
-  hostageSpawns:[
-   {id:1,x:-1.2,y:0,z:-14,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-   {id:2,x:1.2,y:0,z:-15.2,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-   {id:3,x:0,y:0,z:-12,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-   {id:4,x:0.6,y:0,z:-16.4,yaw:0,status:'waiting',leaderId:null,moving:false,crouched:false},
-  ],
-  rescueZones:[{id:'north',x:0,y:0,z:16.4,radius:3.4}],
+ desert:{id:'desert',name:'沙漠旧城',subtitle:'DUST QUARTER',description:'旧城巷战 · 双侧绕行 · 持续对战',preview:'assets/ui/desert-preview.jpg',mode:'demolition',size:DESERT_SIZE,boxes:DESERT_BOXES,blueSpawns:DESERT_BLUE,redSpawns:DESERT_RED},
+ snow:{id:'snow',name:'雪地竞技场',subtitle:'ICE WORLD',description:'三路交锋 · 十字通路 · 持续对战',preview:'assets/ui/snow-preview.jpg',mode:'elimination',size:{width:44,depth:40},boxes:SNOW_BOXES,
  blueSpawns:[{x:-3,z:17},{x:-9,z:17},{x:9,z:17},{x:-17,z:17},{x:17,z:17},{x:3,z:17},{x:-13,z:18},{x:13,z:18},{x:-6,z:18},{x:6,z:18}],
  redSpawns:[{x:3,z:-17},{x:9,z:-17},{x:-9,z:-17},{x:17,z:-17},{x:-17,z:-17},{x:-3,z:-17},{x:13,z:-18},{x:-13,z:-18},{x:6,z:-18},{x:-6,z:-18}]},
  dust2:{id:'dust2',name:'经典沙漠 2',subtitle:'DE_DUST2 · CS 1.6',description:'A 大道 · 中门 · B 洞 · A 小道',preview:'assets/ui/dust2-preview.jpg',mode:'demolition',size:{width:112,depth:112},boxes:[],blueSpawns:[],redSpawns:[]},

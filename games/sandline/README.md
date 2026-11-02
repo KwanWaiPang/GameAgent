@@ -1,14 +1,14 @@
 # Sandline
 
-A single-player tactical shooter in the game hall. Rules, bots, weapon numbers, and the desert and snow arenas are adapted from [sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) (MIT). Soldiers, view models, the interface, and sound are procedural and original to this hall.
+A single-player tactical shooter in the game hall. The client, interface, procedural guns, and desert and snow arenas come from [sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) (MIT).
 
-Counter-Strike maps, characters, and gun models are not included. Demolition, hostage rescue, and bounty rounds are played on the original desert and snow arenas instead of Dust2, Assault, or Bloodstrike.
+The public source does not include Counter-Strike maps, characters, classic arms, or audio. Without those files the original procedural guns and a procedural soldier still play the desert and snow. Dust2, Assault, and Bloodstrike report that the map failed to prepare. Place licensed files in `public/assets/` as described in the upstream `ASSETS.md` and those maps and models load as in the original.
 
 This game does not replace [`games/fps/`](../fps/) or [`games/street-duty/`](../street-duty/).
 
 ## Modes
 
-Deathmatch, knife, pistol, arms race, defense, demolition, hostage rescue, and bounty. Team size runs from 3v3 to 10v10. You always play blue.
+Desert and snow: deathmatch, knife, pistol, arms race, and defense. Team size runs from 3v3 to 10v10. You always play blue. Dust2 is demolition, Assault is hostage rescue, and Bloodstrike is bounty; those three maps need the upstream map pack.
 
 ## Controls
 

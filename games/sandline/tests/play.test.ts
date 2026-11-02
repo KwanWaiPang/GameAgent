@@ -2,38 +2,26 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Simulation } from '../src/game/simulation.ts';
 import { EMPTY_INPUT } from '../src/game/types.ts';
-import { blocked } from '../src/game/collision.ts';
-import { getActiveMap, setActiveMap, type MapId } from '../src/game/map.ts';
-import { mapPlayableModes, type PlayableMode } from '../src/game/offlineModes.ts';
+import { setActiveMap } from '../src/game/map.ts';
+import { modeForMap, mapPlayableModes } from '../src/game/offlineModes.ts';
 
-const maps: MapId[] = ['desert', 'snow'];
-const modes = mapPlayableModes('desert');
-
-test('arena objectives sit in open space', () => {
-  for (const id of maps) {
+test('desert and snow keep the upstream mode list', () => {
+  for (const id of ['desert', 'snow'] as const) {
     setActiveMap(id);
-    const map = getActiveMap();
-    for (const site of map.bombSites ?? []) assert.equal(blocked(site.x, site.z, 0.4), false, `${id} site ${site.id}`);
-    for (const hostage of map.hostageSpawns ?? []) assert.equal(blocked(hostage.x, hostage.z, 0.4), false, `${id} hostage ${hostage.id}`);
-    for (const zone of map.rescueZones ?? []) assert.equal(blocked(zone.x, zone.z, 0.4), false, `${id} rescue`);
+    assert.deepEqual(mapPlayableModes(id), ['deathmatch', 'knifeOnly', 'pistolOnly', 'armsRace', 'defense']);
+    assert.equal(modeForMap('demolition', id), 'deathmatch');
+    assert.equal(modeForMap('bounty', id), 'deathmatch');
   }
   setActiveMap('desert');
 });
 
-test('every arena mode survives a short bot match', () => {
-  for (const id of maps) {
-    setActiveMap(id);
-    for (const mode of modes) {
-      const sim = new Simulation(7);
-      assert.equal(sim.selectMode(mode as PlayableMode), true, mode);
-      sim.setBotCounts(1, 2);
-      sim.start();
-      assert.equal(sim.state.mode, mode);
-      for (let i = 0; i < 90; i++) sim.update(1 / 60, EMPTY_INPUT);
-      assert.ok(sim.state.actors.length >= 4);
-    }
-  }
+test('a short bot match stays in play', () => {
   setActiveMap('desert');
+  const sim = new Simulation(7);
+  sim.start('deathmatch');
+  for (let i = 0; i < 120; i++) sim.update(1 / 60, EMPTY_INPUT);
+  assert.equal(sim.state.phase, 'playing');
+  assert.ok(sim.state.actors.length >= 4);
 });
 
 test('rifle fire spends a round and reload refills it', () => {

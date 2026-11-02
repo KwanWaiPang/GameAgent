@@ -22,6 +22,10 @@ const assets = resolve(root, 'assets');
 rmSync(assets, { recursive: true, force: true });
 cpSync(resolve(dist, 'assets'), assets, { recursive: true });
 writeFileSync(resolve(root, 'index.html'), html);
+for (const name of readdirSync(dist)) {
+  if (name === 'assets' || name === 'index.html' || name === 'index.source.html') continue;
+  cpSync(resolve(dist, name), resolve(root, name), { recursive: true });
+}
 const js = readdirSync(assets).filter((file) => file.endsWith('.js'));
 console.info(`[sync-pages-build] wrote index.html + assets (${js.join(', ')})`);
 void join;

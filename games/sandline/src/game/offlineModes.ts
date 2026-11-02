@@ -12,9 +12,8 @@ export const PLAYABLE_MODES = {
  bounty:{name:'自由交火 · 赏金回合',description:'3v3 / 5v5 / 8v8 / 10v10 · 首局手枪 · 赏金跨局买枪 · 全歼赢一局 · 先赢 3 回合'},
 } as const;
 export type PlayableMode=keyof typeof PLAYABLE_MODES;
-const ARENA_MODES:PlayableMode[]=['deathmatch','knifeOnly','pistolOnly','armsRace','defense','demolition','hostageRescue','bounty'];
-export function mapPlayableModes(mapId:MapId=getActiveMap().id):PlayableMode[]{return mapId==='desert'||mapId==='snow'?ARENA_MODES:mapId==='bloodstrike'?['bounty']:mapId==='assault'?['hostageRescue']:mapId==='dust2'?['demolition']:['deathmatch','knifeOnly','pistolOnly','armsRace','defense'];}
-export function modeForMap(requested:GameMode,mapId:MapId=getActiveMap().id):GameMode{return mapId==='desert'||mapId==='snow'?requested:mapId==='bloodstrike'?'bounty':mapId==='assault'?'hostageRescue':mapId==='dust2'?'demolition':requested==='bounty'||requested==='demolition'||requested==='hostageRescue'?'deathmatch':requested;}
+export function mapPlayableModes(mapId:MapId=getActiveMap().id):PlayableMode[]{return mapId==='bloodstrike'?['bounty']:mapId==='assault'?['hostageRescue']:mapId==='dust2'?['demolition']:['deathmatch','knifeOnly','pistolOnly','armsRace','defense'];}
+export function modeForMap(requested:GameMode,mapId:MapId=getActiveMap().id):GameMode{return mapId==='bloodstrike'?'bounty':mapId==='assault'?'hostageRescue':mapId==='dust2'?'demolition':requested==='bounty'||requested==='demolition'||requested==='hostageRescue'?'deathmatch':requested;}
 export const BOUNTY_KILL_REWARD=600;
 export const MODE_STORAGE_KEY='sandline-mode-v1';
 export function parseMode(value:string|null):PlayableMode{return value&&Object.hasOwn(PLAYABLE_MODES,value)?value as PlayableMode:'deathmatch';}

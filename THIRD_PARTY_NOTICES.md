@@ -89,7 +89,8 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - Source: [xilinnihao-afk/sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) 0.39
 - License: MIT (`games/sandline/LICENSE`)
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) 0.180.0 (MIT)
-- Note: this hall port keeps the rules, bots, weapon numbers, and the procedural desert and snow arenas. Soldiers, view models, interface, and audio are procedural and original to the hall. Counter-Strike / Valve maps, characters, gun models, and audio are not included. Upstream copyright stays in `games/sandline/LICENSE`.
+- Physics: [Rapier](https://github.com/dimforge/rapier) `@dimforge/rapier3d-compat` (Apache-2.0), used as the first-person camera proxy
+- Note: the game folder uses the upstream client, interface, procedural guns, and the desert and snow arenas. Counter-Strike / Valve maps, characters, classic arms, and audio are not in the public source drop. A procedural soldier is used when the character models are absent. Upstream copyright stays in `games/sandline/LICENSE`.
 
 ## Street Duty (`games/street-duty/`)
 

@@ -6,7 +6,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 4096,
     rollupOptions: {
       input: resolve(import.meta.dirname, 'index.source.html'),
       output: { manualChunks: { three: ['three'] } },

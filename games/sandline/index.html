@@ -1,123 +1,44 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>沙线行动 · 游戏馆</title>
-    <meta name="description" content="沙线行动：沙漠旧城与雪地竞技场。自由交火、刀战、手枪、军备竞赛、据点守卫、爆破、人质与赏金回合。" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="./assets/index.source-D304KW2h.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/three-BQcUe8vc.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-CcBucG0E.css">
-  </head>
-  <body>
-    <section id="menu" class="panel">
-      <header class="brand">
-        <p class="eyebrow"><a href="../../">游戏馆</a> · SANDLINE</p>
-        <h1>沙线行动</h1>
-        <p class="tag">蓝方出击。沙漠旧城与雪地竞技场，八种单机模式。</p>
-      </header>
-      <section>
-        <h2>战场</h2>
-        <div id="map-row" class="choice-row"></div>
-      </section>
-      <section>
-        <h2>模式</h2>
-        <div id="mode-row" class="choice-grid"></div>
-      </section>
-      <section>
-        <h2>人数</h2>
-        <div id="bot-row" class="choice-row"></div>
-      </section>
-      <button id="start" type="button" class="go">进入战场</button>
-      <ul class="help">
-        <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动 · <kbd>Shift</kbd> 冲刺 · <kbd>空格</kbd> 跳跃 · <kbd>C</kbd> 下蹲</li>
-        <li>左键射击 · 右键开镜 / 匕首刺击 · <kbd>R</kbd> 换弹 · <kbd>G</kbd> 手雷 · <kbd>E</kbd> 互动</li>
-        <li><kbd>1</kbd>–<kbd>8</kbd> 换枪 · 滚轮切换 · <kbd>B</kbd> 补给商店 · <kbd>Esc</kbd> 暂停</li>
-      </ul>
-      <p class="back"><a href="../../">← 返回游戏馆</a></p>
-    </section>
-
-    <section id="hud" class="hidden" aria-label="战斗界面">
-      <div class="top">
-        <span id="score">0 : 0</span>
-        <span id="clock">0:00</span>
-      </div>
-      <p id="banner" class="banner hidden"></p>
-      <ul id="feed" class="feed"></ul>
-      <ol id="race" class="race hidden"></ol>
-      <canvas id="radar" width="132" height="132" aria-hidden="true"></canvas>
-      <div id="crosshair" aria-hidden="true"></div>
-      <div id="hitmarker" class="hidden" aria-hidden="true"></div>
-      <div id="damage" aria-hidden="true"></div>
-      <div id="scope" aria-hidden="true"></div>
-      <p id="interact" class="interact hidden"></p>
-      <footer class="status">
-        <div class="vitals">
-          <div class="hp-track"><span id="hp-bar"></span></div>
-          <strong id="hp">100</strong>
-          <span class="armor">甲 <b id="armor">0</b></span>
-        </div>
-        <div class="gun">
-          <span id="weapon-name">AK-47 沙砾</span>
-          <strong id="ammo">30</strong><span id="reserve">/ 90</span>
-        </div>
-        <div class="kit">
-          <span id="money">$800</span>
-          <span>雷 <b id="grenades">1</b></span>
-        </div>
-      </footer>
-    </section>
-
-    <section id="shop" class="sheet hidden" aria-label="补给商店">
-      <header>
-        <h2>补给</h2>
-        <strong id="shop-money">$800</strong>
-        <button id="shop-close" type="button">关闭</button>
-      </header>
-      <p id="shop-reason"></p>
-      <div id="shop-items" class="shop-grid"></div>
-    </section>
-
-    <section id="defense" class="sheet hidden" aria-label="波间整备">
-      <h2 id="wave-label">坚守据点</h2>
-      <div id="upgrades" class="choice-grid"></div>
-      <button id="next-wave" type="button" class="go">开始下一波</button>
-    </section>
-
-    <section id="pause" class="panel mini hidden">
-      <h2>暂停</h2>
-      <button id="resume" type="button" class="go">继续</button>
-      <button id="quit" type="button">返回选单</button>
-    </section>
-
-    <section id="result" class="panel mini hidden">
-      <h2 id="result-title">行动结束</h2>
-      <p id="result-body"></p>
-      <button id="result-menu" type="button" class="go">返回选单</button>
-    </section>
-
-    <section id="touch" aria-label="触屏操作">
-      <div id="joystick"><span id="joystick-knob"></span></div>
-      <div id="look-zone"></div>
-      <div class="touch-actions">
-        <button id="grenade-button" type="button">雷</button>
-        <button id="swap-button" type="button">枪</button>
-        <button id="reload-button" type="button">换弹</button>
-        <button id="use-button" type="button">互动</button>
-        <button id="jump-button" type="button">跳</button>
-        <button id="crouch-button" type="button">蹲</button>
-        <button id="aim-button" type="button">镜</button>
-        <button id="fire-button" type="button">开火</button>
-      </div>
-    </section>
-
-    <section id="webgl-fail" class="panel mini hidden">
-      <h2>无法启动画面</h2>
-      <p>当前浏览器没有可用的 WebGL。请换用新版 Chrome、Edge 或 Safari，并打开硬件加速。</p>
-      <p class="back"><a href="../../">← 返回游戏馆</a></p>
-    </section>
-  </body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/><meta name="theme-color" content="#171c1b"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="description" content="沙线行动：原创手机单机战术射击游戏。"/><link rel="manifest" href="./manifest.webmanifest"/><link rel="icon" href="./icon.svg" type="image/svg+xml"/><link rel="apple-touch-icon" href="./icon-192.png"/><title>沙线行动 · SANDLINE</title><script>
+// Preserve a readable recovery path even if the lightweight module cannot load.
+(function () {
+  function showEntryFailure() {
+    var error = document.getElementById('entry-failure');
+    if (error) error.hidden = false;
+    else document.addEventListener('DOMContentLoaded', showEntryFailure, {once:true});
+  }
+  window.addEventListener('error', function (event) {
+    if (event.target && event.target.tagName === 'SCRIPT' && event.target.type === 'module') showEntryFailure();
+  }, true);
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      var loading = document.getElementById('startup-status');
+      if (loading && loading.dataset.started !== 'true') showEntryFailure();
+    }, 30000);
+  });
+})();
+</script>
+  <script type="module" crossorigin src="./assets/index.source-BZVrtv72.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/startup-BsCt5ber.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-9uhgAqk5.css">
+</head><body>
+<section id="portrait-startup" role="status" aria-label="横屏提示"><span aria-hidden="true">↻</span><strong>请横屏游玩《沙线行动》</strong><p>转动手机后继续</p></section>
+<section id="startup-status" class="loading-shell" aria-label="游戏加载">
+ <img id="loading-art" class="loading-art" alt="" hidden><div class="loading-shade"></div>
+ <div class="loading-title"><span>SANDLINE / TACTICAL OPERATIONS</span><h1>沙线行动</h1><p>选择战场 · 整装出击</p></div>
+ <div class="loading-card">
+  <div class="loading-brand">LOADING OPERATION</div>
+  <div id="startup-progress-area" role="status" aria-live="polite">
+   <strong id="startup-label">正在加载游戏程序…</strong>
+   <progress id="startup-progress" value="0" max="100" aria-label="游戏加载进度"></progress>
+   <span id="startup-progress-text">0%</span>
+   <p id="startup-detail">首次加载需要下载资源，请保持页面打开。</p>
+   <button id="startup-retry" hidden>重新加载</button>
+  </div>
+  <p class="loading-browser-tip">横屏作战 · 推荐使用 Chrome / Safari</p>
+  <nav class="loading-links" aria-label="加载帮助"><button data-community="help">操作说明</button><button data-community="feedback">问题反馈</button></nav>
+  <noscript><p>请启用 JavaScript 后重新打开游戏。</p></noscript>
+  <p id="entry-failure" hidden>入口程序加载失败，请检查网络后 <a href="" onclick="location.reload();return false">重新加载</a>。</p>
+ </div>
+</section>
+<script src="./site-config.js"></script>
+</body></html>
