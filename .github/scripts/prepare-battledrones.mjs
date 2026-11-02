@@ -126,7 +126,8 @@ rmSync(probe);
 
 transform("vite.config.ts", (source) => {
   source = replaceOnce(source, 'import { duelHash, ffaHash, simHash } from "./tools/arena/files";', 'import { simHash } from "./tools/arena/files";', "multiplayer build hashes");
-  source = replaceOnce(source, '    // a sound duel pairs only two phones running the same sim and duel code (SOUND-DUEL.md)\n    __DUEL_HASH__: JSON.stringify(duelHash(fileURLToPath(new URL(".", import.meta.url)))),\n    // a four-player online battle seats only pages running the same sim and battle code (FFA.md "Build check")\n    __FFA_HASH__: JSON.stringify(ffaHash(fileURLToPath(new URL(".", import.meta.url)))),\n', "", "multiplayer build constants");
+  source = source.replace(/    \/\/ a sound duel pairs[^\n]*\n    __DUEL_HASH__:[^\n]*\n    \/\/ a four-player online battle[^\n]*\n    __FFA_HASH__:[^\n]*\n/, "");
+  if (source.includes("__DUEL_HASH__") || source.includes("__FFA_HASH__")) throw new Error("Multiplayer build constants remain.");
   return replaceOnce(source, '        probe: "radio-probe.html"\n', "", "radio probe build entry");
 });
 
