@@ -1,8 +1,8 @@
 # 游戏馆 · Game Hub
 
-中文网页游戏集合：棋类、大富翁、两款 3D 射击、口袋冒险与红帽奇遇，统一大厅入口，纯前端运行，可部署到 GitHub Pages。
+中文网页游戏集合：棋类、巫师棋、大富翁、两款 3D 射击、口袋冒险与红帽奇遇，统一大厅入口，纯前端运行，可部署到 GitHub Pages。
 
-A Chinese web game collection — board games, Monopoly-style travel, two 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
+A Chinese web game collection — board games, wizard chess, Monopoly-style travel, two 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
 
 **在线地址 / Live:** https://kwanwaipang.github.io/cursor-agent/
 
@@ -21,10 +21,13 @@ For a fuller architecture overview, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 | [`games/junqi/`](./games/junqi/) | 军棋 | Junqi (dark chess) | 棋类 Board |
 | [`games/monopoly/`](./games/monopoly/) | 大富翁 · 世界之旅 | World Tour Monopoly | 桌游 Board game |
 | [`games/chess3d/`](./games/chess3d/) | 国际象棋 · 3D | 3D Chess | 3D 棋类 |
+| [`games/wizard-chess-3d/`](./games/wizard-chess-3d/) | 巫师棋 · 3D | Wizard Chess | 3D 棋类（哥特圣殿） |
 | [`games/fps/`](./games/fps/) | 战术突击 · 3D | Tactical Assault | 3D FPS（红蓝对抗） |
 | [`games/street-duty/`](./games/street-duty/) | 街战突击 | Street Duty | 3D FPS（全程序化街战） |
 | [`games/pocket/`](./games/pocket/) | 口袋冒险 | Pocket Adventure | 第一人称 3D 卡通粉丝向开局 |
 | [`games/redcap/`](./games/redcap/) | 红帽奇遇 | Red Cap Quest | 网页平台跳跃（马里奥式致敬） |
+
+**巫师棋** (`wizard-chess-3d`)：哥特圣殿中的程序化石甲棋子；`chess.js` 规则，人机 / 本地双人 / 自动演示。纯静态页，运行时从 CDN 加载 Three.js 与 chess.js。
 
 两款射击互不替换：
 
@@ -65,7 +68,7 @@ games/<name>/              # 各游戏独立目录 One folder per game
 
 ## 本地预览 / Local preview
 
-### 静态馆（棋类 / 大富翁 / 战术突击 / 红帽奇遇）
+### 静态馆（棋类 / 巫师棋 / 大富翁 / 战术突击 / 红帽奇遇）
 
 ```bash
 python3 -m http.server 8080
@@ -115,6 +118,7 @@ cd games/pocket && npm run build
 | [games/fps/README.md](./games/fps/README.md) | 战术突击玩法说明 |
 | [games/pocket/README.md](./games/pocket/README.md) | 口袋冒险说明 |
 | [games/redcap/README.md](./games/redcap/README.md) | 红帽奇遇说明 |
+| [games/wizard-chess-3d/README.md](./games/wizard-chess-3d/README.md) | 巫师棋说明 |
 
 ---
 

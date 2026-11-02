@@ -51,7 +51,7 @@ The hub does not bootstrap game runtimes; each card is a full navigation.
 
 ### 3.1 纯静态 / Static games
 
-`go` · `xiangqi` · `gomoku` · `junqi` · `monopoly` · `chess3d` · `fps` · `pocket` · `redcap`
+`go` · `xiangqi` · `gomoku` · `junqi` · `monopoly` · `chess3d` · `wizard-chess-3d` · `fps` · `pocket` · `redcap`
 
 - 打开即玩，无需 `npm`。  
   Open and play; no `npm` required.

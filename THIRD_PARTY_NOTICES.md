@@ -10,6 +10,13 @@ The Game Hub aggregates several open-source games under a shared UI shell.
 - 来源 / Source: [中国象棋 in HTML5](https://github.com/KwanWaiPang/Chess/tree/master/Chinese_Chess)（原作：一叶孤舟 / itlwei）
 - 许可证 / License: MIT（`games/xiangqi/LICENSE`）
 
+## 巫师棋 · Wizard Chess（`games/wizard-chess-3d/`）
+
+- 来源 / Source: 本仓库原创程序化场景与棋子 / Original procedural hall and pieces in this repository
+- 规则库 / Rules: [chess.js](https://github.com/jhlywa/chess.js) 1.4.0（BSD-2-Clause），运行时经 jsDelivr 加载
+- 渲染库 / Renderer: [Three.js](https://github.com/mrdoob/three.js) r160（MIT），含 `OrbitControls`，运行时经 jsDelivr 加载
+- 说明 / Note: 哥特圣殿风格为原创实现，不包含参考站的专有模型或贴图。纯静态页，游玩时需要联网。 Gothic hall and pieces are original; no proprietary reference-site assets. Static page; a network connection is required at runtime.
+
 ## 国际象棋 3D · Chess 3D（`games/chess3d/`）
 
 - 来源 / Source: [FrenchYann/Chess3D](https://github.com/FrenchYann/Chess3D)
