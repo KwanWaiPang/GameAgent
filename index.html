@@ -30,15 +30,54 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=ZCOOL+XiaoWei&display=swap"
       rel="stylesheet"
     />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="stylesheet" href="./css/shared.css" />
     <link rel="stylesheet" href="./css/hub.css" />
+    <link rel="stylesheet" href="./css/lobby.css" />
+    <script>
+      document.documentElement.classList.add("lobby-pending");
+      window.setTimeout(function () {
+        var root = document.documentElement;
+        if (!root.classList.contains("lobby-ready") && !root.classList.contains("lobby-flat")) {
+          root.classList.remove("lobby-pending");
+          root.classList.add("lobby-flat");
+        }
+      }, 9000);
+    </script>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23c48a3a'/%3E%3Ccircle cx='24' cy='32' r='10' fill='%231a1a1a'/%3E%3Ccircle cx='42' cy='32' r='10' fill='%23f7f1e6' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E"
     />
   </head>
   <body class="theme-yi">
-    <main class="shell">
+    <canvas id="lobby-canvas" aria-hidden="true"></canvas>
+    <div class="lobby-loading" id="lobby-loading">
+      <p class="lobby-kicker">圆形展厅</p>
+      <h1>游戏馆</h1>
+      <p>正在点亮灯火…</p>
+    </div>
+    <div class="lobby-ui" id="lobby-ui">
+      <header class="lobby-brand">
+        <p class="lobby-kicker">圆形展厅</p>
+        <h1>游戏馆</h1>
+        <p>拖动环视，点亮展台后进入。</p>
+      </header>
+      <button type="button" class="lobby-arrow lobby-prev" id="lobby-prev" aria-label="上一座展台">‹</button>
+      <button type="button" class="lobby-arrow lobby-next" id="lobby-next" aria-label="下一座展台">›</button>
+      <section class="lobby-card" aria-live="polite">
+        <p class="lobby-cat" id="lobby-cat"></p>
+        <div class="lobby-mark" id="lobby-mark"></div>
+        <h2 id="lobby-name"></h2>
+        <p id="lobby-blurb"></p>
+        <div class="lobby-actions">
+          <a class="lobby-enter" id="lobby-enter" href="./games/wizard-chess-3d/">进入圣殿</a>
+          <button type="button" class="lobby-list-btn" id="lobby-open-list">全部列表</button>
+        </div>
+      </section>
+      <nav class="lobby-rail" id="lobby-rail" aria-label="展台"></nav>
+    </div>
+    <main class="shell" id="hub-list">
+      <p class="list-back"><button type="button" id="lobby-close-list">← 返回展厅</button></p>
       <header class="hub-hero">
         <h1>游戏馆</h1>
         <p>一馆多玩。棋类、巫师棋、大富翁、射击、口袋冒险与红帽奇遇，开局即战，无需安装。</p>
@@ -54,7 +93,7 @@
       <section class="game-section" id="cat-board" aria-labelledby="ttl-board">
         <h2 class="section-title" id="ttl-board">棋类</h2>
         <div class="game-grid">
-          <a class="game-card" href="./games/go/">
+          <a class="game-card" data-kind="go" href="./games/go/">
             <div class="card-preview preview-go" aria-hidden="true"></div>
             <div class="mark">围</div>
             <h2>围棋</h2>
@@ -62,7 +101,7 @@
             <span class="cta">进入对局 →</span>
           </a>
 
-          <a class="game-card" href="./games/xiangqi/">
+          <a class="game-card" data-kind="xiangqi" href="./games/xiangqi/">
             <div class="card-preview preview-xiangqi" aria-hidden="true"></div>
             <div class="mark">象</div>
             <h2>中国象棋</h2>
@@ -70,7 +109,7 @@
             <span class="cta">进入对局 →</span>
           </a>
 
-          <a class="game-card" href="./games/gomoku/">
+          <a class="game-card" data-kind="gomoku" href="./games/gomoku/">
             <div class="card-preview preview-gomoku" aria-hidden="true"></div>
             <div class="mark">五</div>
             <h2>五子棋</h2>
@@ -78,7 +117,7 @@
             <span class="cta">进入对局 →</span>
           </a>
 
-          <a class="game-card" href="./games/junqi/">
+          <a class="game-card" data-kind="junqi" href="./games/junqi/">
             <div class="card-preview preview-junqi" aria-hidden="true"></div>
             <div class="mark">军</div>
             <h2>军棋</h2>
@@ -86,7 +125,7 @@
             <span class="cta">进入对局 →</span>
           </a>
 
-          <a class="game-card" href="./games/chess3d/">
+          <a class="game-card" data-kind="chess" href="./games/chess3d/">
             <div class="card-preview preview-chess3d" aria-hidden="true"></div>
             <div class="mark">国</div>
             <h2>国际象棋 · 3D</h2>
@@ -94,7 +133,7 @@
             <span class="cta">进入对局 →</span>
           </a>
 
-          <a class="game-card game-card-wizard" href="./games/wizard-chess-3d/">
+          <a class="game-card game-card-wizard" data-kind="wizard" href="./games/wizard-chess-3d/">
             <div class="card-preview preview-wizard" aria-hidden="true"></div>
             <div class="mark">巫</div>
             <h2>巫师棋 · 3D</h2>
@@ -107,7 +146,7 @@
       <section class="game-section" id="cat-table" aria-labelledby="ttl-table">
         <h2 class="section-title" id="ttl-table">桌游</h2>
         <div class="game-grid">
-          <a class="game-card" href="./games/monopoly/">
+          <a class="game-card" data-kind="mono" href="./games/monopoly/">
             <div class="card-preview preview-mono" aria-hidden="true"></div>
             <div class="mark">富</div>
             <h2>大富翁 · 世界之旅</h2>
@@ -121,7 +160,7 @@
         <h2 class="section-title" id="ttl-shoot">射击</h2>
         <p class="section-note">两款互不替换：战术突击是轻量红蓝街战；街战突击是全程序化街区。</p>
         <div class="game-grid">
-          <a class="game-card game-card-fps" href="./games/fps/">
+          <a class="game-card game-card-fps" data-kind="fps" href="./games/fps/">
             <div class="card-preview preview-fps" aria-hidden="true"></div>
             <div class="mark">战</div>
             <h2>战术突击 · 3D</h2>
@@ -129,7 +168,7 @@
             <span class="cta">进入战场 →</span>
           </a>
 
-          <a class="game-card game-card-street" href="./games/street-duty/">
+          <a class="game-card game-card-street" data-kind="street" href="./games/street-duty/">
             <div class="card-preview preview-street" aria-hidden="true"></div>
             <div class="mark">街</div>
             <h2>街战突击</h2>
@@ -142,7 +181,7 @@
       <section class="game-section" id="cat-adventure" aria-labelledby="ttl-adv">
         <h2 class="section-title" id="ttl-adv">冒险</h2>
         <div class="game-grid">
-          <a class="game-card game-card-pocket" href="./games/pocket/">
+          <a class="game-card game-card-pocket" data-kind="pocket" href="./games/pocket/">
             <div class="card-preview preview-pocket" aria-hidden="true"></div>
             <div class="mark">口</div>
             <h2>口袋冒险</h2>
@@ -150,7 +189,7 @@
             <span class="cta">开始冒险 →</span>
           </a>
 
-          <a class="game-card game-card-redcap" href="./games/redcap/">
+          <a class="game-card game-card-redcap" data-kind="redcap" href="./games/redcap/">
             <div class="card-preview preview-redcap" aria-hidden="true"></div>
             <div class="mark">帽</div>
             <h2>红帽奇遇</h2>
@@ -162,5 +201,13 @@
 
       <p class="footer-note">纯前端运行 · 可部署至 GitHub Pages</p>
     </main>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module" src="./js/hub-lobby.js"></script>
   </body>
 </html>

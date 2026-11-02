@@ -57,8 +57,8 @@ games/<name>/              # 各游戏独立目录 One folder per game
 
 约定 / Conventions:
 
-1. 大厅只负责导航；每个游戏自包含入口 `games/<name>/index.html`。  
-   The hub only navigates; each game owns `games/<name>/index.html`.
+1. 大厅是 Three.js 圆形展厅，并保留卡片列表；每个游戏自包含入口 `games/<name>/index.html`。  
+   The hub is a Three.js gallery plus the card list; each game owns `games/<name>/index.html`.
 2. 多数游戏是纯静态页面，无需构建。  
    Most games are plain static pages — no build step.
 3. **街战突击 / 口袋冒险例外**：Vite 构建产物提交为 `index.html` + `assets/`（Pages 从仓库根目录部署）。  

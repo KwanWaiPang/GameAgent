@@ -37,13 +37,13 @@ For the Street Duty engine contract (subsystems / events), see [`games/street-du
 
 | 层 Layer | 职责 Responsibility |
 |---|---|
-| **Hub** (`index.html`, `css/`) | 品牌、游戏卡片、链到各游戏 |
+| **Hub** (`index.html`, `css/`, `js/hub-lobby.js`) | 品牌、Three.js 圆形展厅、卡片列表备用 |
 | **Game shell** | 各游戏自有 `index.html` / CSS / JS；可选「← 游戏馆」返回 |
 | **Shared assets** (`assets/`) | 少数跨游戏静态资源（如共用音效） |
 | **CI / Pages** (`.github/workflows/`) | 构建街战、打包 `_site`、部署 |
 
-Hub 不加载任何游戏运行时；点击卡片即整页跳转。  
-The hub does not bootstrap game runtimes; each card is a full navigation.
+Hub 只用 Three.js 搭导航展厅，不加载各游戏运行时；点开展台或列表卡片即整页跳转。无 WebGL 时退回卡片列表。  
+The hub draws a Three.js gallery only — it does not boot any game runtime. Choosing a plinth or a list card navigates away. Without WebGL, the card list remains.
 
 ---
 
