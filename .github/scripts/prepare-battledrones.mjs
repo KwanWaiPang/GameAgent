@@ -76,6 +76,7 @@ transform("src/main.ts", (source) => {
     "lobby buttons/listeners/prefetch"
   );
   source = replaceOnce(source, '    duelRow.hidden = gameMode.mode !== "skirmish";\n', "", "multiplayer row visibility");
+  source = replaceOnce(source, "    const four = m.players === 4;\n", "", "unused multiplayer flag");
   source = cut(
     source,
     '    // a four-player map: no sound duel',
