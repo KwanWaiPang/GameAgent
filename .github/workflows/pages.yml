@@ -44,6 +44,13 @@ jobs:
           npm ci
           npm test
 
+      - name: Hulao Gate tests and syntax
+        run: |
+          node --experimental-default-type=module --check games/Hulao_Gate/game.js
+          node --experimental-default-type=module --check games/Hulao_Gate/character-assets.js
+          node --experimental-default-type=module --test games/Hulao_Gate/camera-physics.test.mjs games/Hulao_Gate/character-assets.test.mjs
+          node --experimental-default-type=module games/Hulao_Gate/visuals.test.mjs
+
       - name: Board + hub unit tests
         run: |
           node --experimental-default-type=module js/fit-board.test.js
