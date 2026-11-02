@@ -358,3 +358,44 @@ test("电脑对局能在天数内结束且现金不为负", () => {
   const winner = state.players[state.winner];
   if (!winner.bankrupt) assert.equal(netWorth(state, winner) >= 0, true);
 });
+
+test("清道拆障碍，免单符免租金", () => {
+  const state = game();
+  state.players[0].items = ["sweep"];
+  state.traps.push({ id: 4, kind: "mine", at: 2, owner: 1 });
+  assert.equal(useTool(state, { tool: "sweep" }).ok, true);
+  assert.equal(state.traps.length, 0);
+
+  const rent = game();
+  rent.cells[1].owner = 1;
+  rent.players[0].items = ["waiver"];
+  const cash = rent.players[0].cash;
+  roll(rent, 1);
+  assert.equal(rent.players[0].cash, cash);
+  assert.equal(rent.players[1].cash, 15000);
+  assert.deepEqual(rent.players[0].items, []);
+  assert.equal(rent.phase, "between");
+});
+
+test("定时炸弹贴身，按步数爆炸，停在地上不会自己炸", () => {
+  const idle = game();
+  idle.traps.push({ id: 8, kind: "bomb", at: 3, owner: 1, fuse: 8 });
+  endTurn(idle);
+  endTurn(idle);
+  assert.equal(idle.traps.length, 1);
+
+  const stick = game();
+  stick.traps.push({ id: 8, kind: "bomb", at: 1, owner: 1, fuse: 8 });
+  roll(stick, 1);
+  assert.equal(stick.traps.length, 0);
+  assert.equal(stick.players[0].bomb.fuse, 8);
+  assert.equal(stick.players[0].position, 1);
+
+  const boom = game();
+  boom.players[0].bomb = { fuse: 1, ownerId: 1 };
+  boom.players[0].position = 0;
+  roll(boom, 2);
+  assert.equal(boom.players[0].position, HOSPITAL_INDEX);
+  assert.equal(boom.players[0].bomb, null);
+  assert.equal(boom.players[0].haltWhy, "hospital");
+});

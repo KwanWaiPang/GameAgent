@@ -262,6 +262,16 @@ details summary { cursor: pointer; color: var(--gold); }
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
+.modal-card.slip {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(226, 181, 106, 0.45), transparent 42%),
+    linear-gradient(#f7f1e6, #efe2cc);
+  color: #2a2118;
+}
+.modal-card.slip h3,
+.modal-card.slip p { color: #2a2118; }
+.modal-card.slip button.ghost { color: #6e2430; border-color: rgba(110, 36, 48, 0.45); }
+
 .modal-card h3 { margin: 0 0 8px; }
 .modal-card p { margin: 0 0 12px; line-height: 1.55; }
 .kicker { color: var(--gold); letter-spacing: 0.12em; font-size: 0.78rem; }

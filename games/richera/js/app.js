@@ -44,6 +44,19 @@ let round = 0;
 let local = null;
 let shownDie = 0;
 
+const clips = {
+  die: new Audio("./assets/kenney/dieThrow1.ogg"),
+  coin: new Audio("./assets/kenney/chipsCollide1.ogg"),
+  card: new Audio("./assets/kenney/cardPlace1.ogg"),
+};
+
+function playClip(name) {
+  const clip = clips[name];
+  if (!clip) return;
+  clip.currentTime = 0;
+  clip.play().catch(() => {});
+}
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms / pace));
 }
@@ -153,6 +166,7 @@ function render() {
         p.deposit ? `存款 $${p.deposit}` : "",
         god,
         items,
+        p.bomb ? `炸弹 ${p.bomb.fuse} 步` : "",
         p.bankrupt ? "已破产" : `在${where}${halt}${dir}`,
       ].filter(Boolean);
       return `<li class="${p.id === state.turn && !p.bankrupt ? "current" : ""} ${p.bankrupt ? "out" : ""}">
@@ -172,7 +186,7 @@ function render() {
       btn.className = "ghost";
       btn.textContent = `${TOOLS[id].name}${n > 1 ? ` ×${n}` : ""}`;
       btn.title = TOOLS[id].blurb;
-      btn.disabled = busy || state.toolUsed || id === "shield";
+      btn.disabled = busy || state.toolUsed || id === "shield" || id === "waiver";
       btn.addEventListener("click", () => onTool(id));
       toolBox.appendChild(btn);
     }
@@ -194,6 +208,7 @@ function render() {
   } else result.hidden = true;
 
   const modal = $("modal");
+  modal.querySelector(".modal-card")?.classList.toggle("slip", state.pending?.type === "ack" && !local);
   if (local) {
     modal.hidden = false;
     $("modalTitle").textContent = local.title;
@@ -242,6 +257,7 @@ async function perform(action) {
     const plan = planRoll(live);
     if (!plan) return;
     shownDie = plan.face;
+    playClip("die");
     live.message = `${player.name} 掷出 ${plan.face}，正在走…`;
     render();
     await board.play(plan, player.id);
@@ -275,6 +291,8 @@ async function perform(action) {
   }
   const res = applyChoice(state, action);
   if (!res?.ok) state.message = res?.error || state.message;
+  else if (action.type === "buy") playClip("coin");
+  else if (action.type === "ack") playClip("card");
 }
 
 async function settle(ticket) {
@@ -331,9 +349,13 @@ function showLocal(title, text, buttons) {
 function onTool(tool) {
   if (busy || state.phase !== "idle" || !humanHere()) return;
   const me = current(state);
-  if (tool === "shield") {
-    state.message = "护身符会在遇险时自动用掉。";
+  if (tool === "shield" || tool === "waiver") {
+    state.message = TOOLS[tool].blurb;
     render();
+    return;
+  }
+  if (tool === "sweep") {
+    userAct({ type: "tool", tool });
     return;
   }
   if (tool === "reverse") {

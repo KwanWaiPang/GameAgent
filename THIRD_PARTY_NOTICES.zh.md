@@ -75,6 +75,7 @@
 - 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
 - 说明：三维街市沙盘。玩法致敬经典富翁类棋（单骰、买地盖楼、道具、钱庄、神仙），地名、人物、牌面与画面均为原创，不是商业作品的地图、角色或文案复刻
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) r180（MIT），含 `OrbitControls`，运行时经 jsDelivr 加载
+- 骰子、棋子和音效：[Kenney Board Game Pack](https://kenney.nl/assets/boardgame-pack)（CC0），见 `games/richera/assets/kenney/license.txt`
 
 ## 战术突击 3D（`games/fps/`）
 

@@ -53,7 +53,7 @@ function tokenPos(index, seat) {
     .clone()
     .add(out.clone().multiplyScalar(0.4))
     .add(side.multiplyScalar((seat - 1.5) * 0.32))
-    .setY(0.42);
+    .setY(0.28);
 }
 
 function labelTexture(title, sub, bg, ink) {
@@ -78,36 +78,6 @@ function labelTexture(title, sub, bg, ink) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
-  return tex;
-}
-
-function pipTexture(n) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 128;
-  const g = canvas.getContext("2d");
-  g.fillStyle = "#f4efe6";
-  g.fillRect(0, 0, 128, 128);
-  g.strokeStyle = "#d9d0c2";
-  g.strokeRect(4, 4, 120, 120);
-  const spots = {
-    1: [4],
-    2: [0, 8],
-    3: [0, 4, 8],
-    4: [0, 2, 6, 8],
-    5: [0, 2, 4, 6, 8],
-    6: [0, 2, 3, 5, 6, 8],
-  };
-  g.fillStyle = "#1c1916";
-  for (const spot of spots[n] || []) {
-    const x = 28 + (spot % 3) * 36;
-    const y = 28 + Math.floor(spot / 3) * 36;
-    g.beginPath();
-    g.arc(x, y, 8, 0, Math.PI * 2);
-    g.fill();
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -163,20 +133,20 @@ function std(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.04, ...extra });
 }
 
-function makeToken(color) {
-  const group = new THREE.Group();
-  const robe = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.18, 4, 10), std(color, { roughness: 0.45 }));
-  robe.position.y = 0.26;
-  robe.castShadow = true;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 12), std("#f0c2a0", { roughness: 0.5 }));
-  head.position.y = 0.52;
-  head.castShadow = true;
-  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.16, 10), std(color, { roughness: 0.4 }));
-  hat.position.y = 0.68;
-  hat.castShadow = true;
-  group.add(robe, head, hat);
-  group.scale.setScalar(1.2);
-  return group;
+const PAWN_URL = [
+  "./assets/kenney/pieceRed_border00.png",
+  "./assets/kenney/pieceBlue_border00.png",
+  "./assets/kenney/pieceGreen_border00.png",
+  "./assets/kenney/pieceYellow_border00.png",
+];
+
+function makeToken(seat) {
+  const tex = new THREE.TextureLoader().load(PAWN_URL[seat] || PAWN_URL[0]);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sprite.scale.set(0.62, 0.78, 1);
+  sprite.center.set(0.5, 0);
+  return sprite;
 }
 
 function makeBuilding(level, tint) {
@@ -324,6 +294,18 @@ export function createBoard(canvas, hooks = {}) {
   court.position.y = 0.08;
   court.receiveShadow = true;
   scene.add(court);
+  const roadMat = std(0x241c16, { roughness: 0.92 });
+  for (const [w, d, x, z] of [
+    [11.4, 0.9, 0, 5.15],
+    [11.4, 0.9, 0, -5.15],
+    [0.9, 11.4, 5.15, 0],
+    [0.9, 11.4, -5.15, 0],
+  ]) {
+    const road = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, d), roadMat);
+    road.position.set(x, 0.11, z);
+    road.receiveShadow = true;
+    scene.add(road);
+  }
 
   const skyline = new THREE.Group();
   for (let i = 0; i < 18; i++) {
@@ -381,8 +363,20 @@ export function createBoard(canvas, hooks = {}) {
     pegs.push(peg);
   }
 
-  const pipMats = [1, 2, 3, 4, 5, 6].map((n) => new THREE.MeshStandardMaterial({ map: pipTexture(n), roughness: 0.45 }));
-  const die = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), pipMats[0].clone());
+  const pipMats = [1, 2, 3, 4, 5, 6].map((n) => {
+    const tex = new THREE.TextureLoader().load(`./assets/kenney/dieWhite_border${n}.png`);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, metalness: 0.02 });
+  });
+  const die = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.62, 0.62), pipMats[0]);
+  const marker = new THREE.Mesh(
+    new THREE.RingGeometry(0.52, 0.66, 28),
+    new THREE.MeshBasicMaterial({ color: 0xe2b56a, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+  );
+  marker.rotation.x = -Math.PI / 2;
+  marker.position.y = 0.27;
+  scene.add(marker);
   die.castShadow = true;
   die.position.set(0, 0.7, 2.15);
   scene.add(die);
@@ -438,7 +432,7 @@ export function createBoard(canvas, hooks = {}) {
   function ensureTokens(state) {
     while (tokens.length < state.players.length) {
       const seat = tokens.length;
-      const token = makeToken(state.players[seat].color);
+      const token = makeToken(seat);
       token.userData.cell = 0;
       token.position.copy(tokenPos(0, seat));
       scene.add(token);
@@ -519,6 +513,19 @@ export function createBoard(canvas, hooks = {}) {
       }
     });
     highlight();
+    const here = state.players[state.turn];
+    if (here && !here.bankrupt && state.phase !== "ended") {
+      const spot = cellCenter(here.position);
+      marker.visible = true;
+      marker.position.set(spot.x, 0.27, spot.z);
+      marker.material.color.set(here.color || "#e2b56a");
+      if (!pickSet?.has(here.position)) {
+        tileMats[here.position].emissive = new THREE.Color(here.color || 0xe2b56a);
+        tileMats[here.position].emissiveIntensity = 0.18;
+      }
+    } else {
+      marker.visible = false;
+    }
   }
 
   function setDieFace(face) {
@@ -531,7 +538,7 @@ export function createBoard(canvas, hooks = {}) {
       pipMats[(n + 3) % 6],
       pipMats[(n + 4) % 6],
     ];
-    die.rotation.set(0, 0.4, 0);
+    die.rotation.set(0, 0.15, 0);
     die.position.y = 0.62;
   }
 
@@ -672,6 +679,8 @@ export function createBoard(canvas, hooks = {}) {
         token.position.y += Math.sin(time * 2.2 + seat) * 0.025;
       });
     }
+    const pulse = 1 + Math.sin(time * 4) * 0.05;
+    marker.scale.setScalar(pulse);
     trapRoot.traverse((node) => {
       if (node.userData?.pulse && node.material) {
         node.material.emissiveIntensity = 0.35 + Math.sin(time * 7) * 0.45;

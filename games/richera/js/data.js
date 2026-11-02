@@ -86,7 +86,9 @@ export const BOARD = [
 export const TOOLS = {
   block: { id: "block", name: "路障", price: 500, blurb: "放在前方八步内，走进去的人会停下" },
   mine: { id: "mine", name: "地雷", price: 800, blurb: "踩中的人付钱并进医馆。福神和护身符可挡" },
-  bomb: { id: "bomb", name: "定时炸弹", price: 1000, blurb: "三回合后爆炸，炸伤格子上的人，房子降一级" },
+  bomb: { id: "bomb", name: "定时炸弹", price: 1000, blurb: "贴在走过的人身上，再走 8 步爆炸，并拆掉那一格的房子" },
+  sweep: { id: "sweep", name: "清道", price: 700, blurb: "清掉前方六步内的路障、地雷和炸弹" },
+  waiver: { id: "waiver", name: "免单符", price: 900, blurb: "自动免掉下一次租金" },
   remote: { id: "remote", name: "遥控骰子", price: 1200, blurb: "指定 1 到 6 点，并立刻走" },
   reverse: { id: "reverse", name: "转向", price: 400, blurb: "自己掉头走" },
   stay: { id: "stay", name: "停留", price: 700, blurb: "指定一人，下一回合停下" },
@@ -96,7 +98,7 @@ export const TOOLS = {
   tax: { id: "tax", name: "查税", price: 1000, blurb: "向一名对手征收现金的一成半" },
 };
 
-export const TOOL_ORDER = ["block", "mine", "bomb", "remote", "reverse", "stay", "shield", "equalize", "demolish", "tax"];
+export const TOOL_ORDER = ["block", "mine", "bomb", "sweep", "waiver", "remote", "reverse", "stay", "shield", "equalize", "demolish", "tax"];
 
 export const CHANCE_CARDS = [
   { id: "bonus-gate", text: "城门发饷：立刻走到金城门，并领取俸禄。" },

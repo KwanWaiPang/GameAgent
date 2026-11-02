@@ -75,6 +75,7 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - License: MIT (repository root [`LICENSE`](./LICENSE))
 - Note: a 3D street-market richman. The loop nods to classic Chinese richman boards (one die, land, buildings, tools, a bank, visiting gods). Names, people, cards, and the board are original, not a copy of a commercial map, cast, or script
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) r180 (MIT), including `OrbitControls`, loaded at runtime from jsDelivr
+- Dice, pawns, and sounds: [Kenney Board Game Pack](https://kenney.nl/assets/boardgame-pack) (CC0), see `games/richera/assets/kenney/license.txt`
 
 ## Tactical Assault (`games/fps/`)
 

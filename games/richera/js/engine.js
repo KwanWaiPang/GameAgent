@@ -88,6 +88,7 @@ export function createGame(opts = {}) {
       halt: 0,
       haltWhy: "",
       remote: 0,
+      bomb: null,
       bankrupt: false,
     });
   }
@@ -200,30 +201,63 @@ export function planRoll(state, face) {
     value = Math.max(1, Math.min(6, value));
     if (player.god?.id === "weak") value = Math.max(1, value - 1);
   }
-  const path = previewPath(state, player.position, player.dir, value, player.id);
-  const landing = path[path.length - 1];
+  const full = previewPath(state, player.position, player.dir, value, player.id);
   const events = [];
-  if (player.dir > 0 && path.includes(START_INDEX)) {
-    const pack = salaryPacket(player);
-    events.push({ type: "salary", ...pack });
-  }
-  const trap = trapAt(state, landing);
+  let carried = player.bomb ? { fuse: player.bomb.fuse, ownerId: player.bomb.ownerId } : null;
+  const walked = [];
   let hospital = false;
-  if (trap?.kind === "block") {
-    events.push({ type: "block", id: trap.id, at: landing });
-  } else if (trap?.kind === "mine" && trap.owner !== player.id) {
-    const shielded = canAbsorb(player);
-    events.push({
-      type: "mine",
-      id: trap.id,
-      at: landing,
-      shielded,
-      ownerId: trap.owner,
-      fee: MINE_FEE,
-    });
-    if (!shielded) hospital = true;
+  for (const idx of full) {
+    walked.push(idx);
+    if (carried) {
+      carried = { fuse: carried.fuse - 1, ownerId: carried.ownerId };
+      if (carried.fuse <= 0) {
+        events.push({ type: "explode", at: idx, ownerId: carried.ownerId });
+        carried = null;
+        hospital = true;
+        break;
+      }
+    }
+    const trap = trapAt(state, idx);
+    if (trap?.kind === "bomb" && !carried) {
+      const shielded = canAbsorb(player);
+      events.push({
+        type: "stick",
+        id: trap.id,
+        at: idx,
+        fuse: trap.fuse || 8,
+        ownerId: trap.owner,
+        shielded,
+      });
+      if (!shielded) carried = { fuse: trap.fuse || 8, ownerId: trap.owner };
+    } else if (trap?.kind === "block") {
+      events.push({ type: "block", id: trap.id, at: idx });
+    } else if (trap?.kind === "mine" && trap.owner !== player.id) {
+      const shielded = canAbsorb(player);
+      events.push({
+        type: "mine",
+        id: trap.id,
+        at: idx,
+        shielded,
+        ownerId: trap.owner,
+        fee: MINE_FEE,
+      });
+      if (!shielded) hospital = true;
+    }
   }
-  return { face: value, remote, path, landing, events, hospital, from: player.position };
+  const landing = walked[walked.length - 1];
+  if (player.dir > 0 && walked.includes(START_INDEX)) {
+    events.unshift({ type: "salary", ...salaryPacket(player) });
+  }
+  return {
+    face: value,
+    remote,
+    path: walked,
+    landing,
+    events,
+    hospital,
+    from: player.position,
+    bomb: hospital ? null : carried,
+  };
 }
 
 function give(state, id, amount) {
@@ -323,6 +357,7 @@ function bankrupt(state, playerId, creditorId) {
   player.halt = 0;
   player.haltWhy = "";
   player.remote = 0;
+  player.bomb = null;
   player.bankrupt = true;
   for (const cell of state.cells) {
     if (cell.owner === playerId) {
@@ -432,6 +467,24 @@ function applyEvent(state, event) {
       log(state, `${player.name} 避开了地雷`);
     } else {
       forcePay(state, player.id, event.ownerId, event.fee, "地雷医药费");
+    }
+  } else if (event.type === "stick") {
+    removeTrap(state, event.id);
+    if (event.shielded) {
+      absorb(state, player);
+      log(state, `${player.name} 挡下了定时炸弹`);
+    } else {
+      log(state, `${player.name} 贴上定时炸弹，还要再走 ${event.fuse} 步`);
+    }
+  } else if (event.type === "explode") {
+    const cell = state.cells[event.at];
+    if (cell?.type === "property" && (cell.level || 0) > 0) {
+      cell.level -= 1;
+      log(state, `定时炸弹炸坏 ${cell.name}，降为${levelName(cell.level)}`);
+    }
+    log(state, `${player.name} 身上的定时炸弹炸开了`);
+    if (!player.bankrupt && state.phase !== "ended") {
+      forcePay(state, player.id, event.ownerId, BOMB_FEE, "炸弹医药费");
     }
   }
 }
@@ -679,8 +732,14 @@ function resolveLanding(state) {
       state.message = `站在自家的 ${cell.name}，可花 $${upgradeCost(cell)} 升级`;
       return;
     }
-    const rent = rentAmount(state, cell, who);
     const owner = state.players[cell.owner];
+    if (player.items.includes("waiver")) {
+      player.items.splice(player.items.indexOf("waiver"), 1);
+      log(state, `${player.name} 用免单符挡下了 ${cell.name} 的租金`);
+      setBetween(state, `${player.name} 免掉了这次租金`);
+      return;
+    }
+    const rent = rentAmount(state, cell, who);
     const res = pay(state, who, owner.id, rent, `${cell.name} 租金`, "between");
     if (res === "ok") setBetween(state, `${player.name} 向 ${owner.name} 付了 $${rent} 租金`);
     else if (res === "bust" && state.phase !== "ended") setBetween(state, `${player.name} 付租破产`);
@@ -765,13 +824,18 @@ export function commitRoll(state, plan) {
     applyEvent(state, event);
     if (state.phase === "ended") return { ok: true, plan };
   }
+  if (!player.bankrupt) player.bomb = plan.hospital ? null : plan.bomb || null;
   if (plan.hospital) {
     if (!player.bankrupt) {
       player.position = HOSPITAL_INDEX;
       player.halt = Math.max(player.halt, 2);
       player.haltWhy = "hospital";
+      player.bomb = null;
     }
-    if (state.phase !== "ended") setBetween(state, `${player.name} 踩中地雷，被送进医馆`);
+    if (state.phase !== "ended") {
+      const boom = plan.events.some((event) => event.type === "explode");
+      setBetween(state, boom ? `${player.name} 被炸弹送进医馆` : `${player.name} 踩中地雷，被送进医馆`);
+    }
     return { ok: true, plan };
   }
   player.position = plan.landing;
@@ -941,7 +1005,7 @@ export function useTool(state, spec) {
     if (!toolCells(state, tool).includes(cell)) return { ok: false, error: "不能放在那里" };
     takeItem(player, tool);
     const trap = { id: state.trapSeq++, kind: tool, at: cell, owner: player.id };
-    if (tool === "bomb") trap.fuse = 3;
+    if (tool === "bomb") trap.fuse = 8;
     state.traps.push(trap);
     state.toolUsed = true;
     log(state, `${player.name} 在「${state.cells[cell].name}」放下${TOOLS[tool].name}`);
@@ -1014,40 +1078,30 @@ export function useTool(state, spec) {
     return { ok: true };
   }
 
+  if (tool === "sweep") {
+    takeItem(player, tool);
+    state.toolUsed = true;
+    let pos = player.position;
+    let cleared = 0;
+    for (let step = 1; step <= 6; step++) {
+      pos = wrap(pos + player.dir);
+      const trap = trapAt(state, pos);
+      if (!trap) continue;
+      removeTrap(state, trap.id);
+      cleared += 1;
+    }
+    log(state, cleared ? `${player.name} 清掉前方 ${cleared} 处障碍` : `${player.name} 清了道，前方是空的`);
+    state.message = cleared ? `清掉 ${cleared} 处障碍` : "前方没有障碍";
+    return { ok: true };
+  }
+
   if (tool === "shield") return { ok: false, error: "护身符会在遇险时自动用掉" };
+  if (tool === "waiver") return { ok: false, error: "免单符会在付租时自动用掉" };
   return { ok: false, error: "用不了" };
 }
 
-function tickBombs(state) {
-  const bombs = state.traps.filter((t) => t.kind === "bomb");
-  const exploded = [];
-  for (const bomb of bombs) {
-    bomb.fuse -= 1;
-    if (bomb.fuse <= 0) exploded.push(bomb);
-  }
-  for (const bomb of exploded) {
-    const cell = state.cells[bomb.at];
-    if (cell.type === "property" && (cell.level || 0) > 0) {
-      cell.level -= 1;
-      log(state, `定时炸弹炸坏 ${cell.name}，降为${levelName(cell.level)}`);
-    } else {
-      log(state, `「${cell.name}」的定时炸弹炸开了`);
-    }
-    for (const player of state.players) {
-      if (player.bankrupt || player.position !== bomb.at) continue;
-      if (absorb(state, player)) continue;
-      if (state.phase === "ended") break;
-      forcePay(state, player.id, bomb.owner, BOMB_FEE, "炸弹医药费");
-      if (!player.bankrupt) {
-        player.position = HOSPITAL_INDEX;
-        player.halt = Math.max(player.halt, 2);
-        player.haltWhy = "hospital";
-        log(state, `${player.name} 被炸进医馆`);
-      }
-    }
-    state.traps = state.traps.filter((t) => t.id !== bomb.id);
-    if (state.phase === "ended") return;
-  }
+function tickBombs() {
+  // 地上的炸弹要等人踩上才贴身，之后按步数倒数，不在回合结束时自行爆炸。
 }
 
 function finishByScore(state) {
@@ -1444,6 +1498,7 @@ function scoreSteps(state, steps) {
   const cell = state.cells[land];
   const trap = trapAt(state, land);
   if (trap?.kind === "mine" && trap.owner !== player.id && !canAbsorb(player)) return -2200;
+  if (trap?.kind === "bomb" && !canAbsorb(player)) return -1500;
   if (cell.type === "property" && cell.owner == null) {
     if (player.cash >= cell.price + 1500) return 280 + Math.round(cell.price * 0.12);
     if (player.cash >= cell.price) return 40;
@@ -1508,6 +1563,16 @@ function aiTool(state) {
   if (has("stay") && richest && netWorth(state, richest) > netWorth(state, player) + 4000) {
     return { type: "tool", tool: "stay", playerId: richest.id };
   }
+  if (has("sweep")) {
+    let pos = player.position;
+    for (let step = 1; step <= 6; step++) {
+      pos = wrap(pos + player.dir);
+      const trap = trapAt(state, pos);
+      if (trap && !(trap.kind === "mine" && trap.owner === player.id)) {
+        return { type: "tool", tool: "sweep" };
+      }
+    }
+  }
   if (has("mine")) {
     const mineCell = state.cells
       .filter((c) => c.owner === player.id && (c.level || 0) >= 1 && toolCells(state, "mine").includes(c.index))
@@ -1556,7 +1621,7 @@ function bestBuild(state) {
 function pickShopTool(state) {
   const player = current(state);
   if (player.cash < 6000) return null;
-  const order = ["remote", "mine", "block", "shield", "bomb", "demolish", "tax", "stay", "equalize", "reverse"];
+  const order = ["remote", "mine", "sweep", "block", "waiver", "shield", "bomb", "demolish", "tax", "stay", "equalize", "reverse"];
   for (const id of order) {
     if (player.items.includes(id)) continue;
     if (player.cash >= TOOLS[id].price + 2500) return id;
