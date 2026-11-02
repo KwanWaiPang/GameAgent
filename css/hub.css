@@ -405,3 +405,12 @@
     font-size: 1.45rem;
   }
 }
+
+/* Battle Drones: original upstream key art is published with the standalone game. */
+.game-card-battledrones .mark { color: #4d99b7; }
+.game-card-battledrones::before {
+  background: radial-gradient(circle, rgba(45, 140, 190, .24), transparent 70%);
+}
+.preview-battledrones {
+  background: #0b1725 url("../games/BattleDrones/assets/ui/keyart-landscape.webp") center center / cover no-repeat;
+}
