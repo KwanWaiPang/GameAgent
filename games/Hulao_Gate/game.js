@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { makeDetailedWarrior, disposeDetailedWarrior } from './warrior-model.js';
 import { enhanceBattlefield, rockyPeak } from './battlefield-detail.js';
 import { detailTextures, lcg, makeCanvasTexture } from './procedural-maps.js';
+import { createCombatEffects } from './combat-effects.js';
+import { resolveCameraTarget } from './camera-physics.js';
 
 // 乱世无双 · 虎牢关 — an original, self-contained WebGL battle built for GitHub Pages.
 const $ = (id) => document.getElementById(id);
@@ -13,12 +15,12 @@ const MAX_ENEMIES = low ? 13 : 20;
 const TAU = Math.PI * 2;
 const params = new URLSearchParams(location.search);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let renderer, scene, camera, player, groundTexture, clock;
+let renderer, scene, camera, player, groundTexture, clock, combatEffects;
 let phase = 'boot', elapsed = 0, wave = 0, waveStarted = 0, pending = 0, spawnClock = 0, bossSpawned = false;
 let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0;
 let cameraYaw = 0, cameraPitch = 0.22, cameraDistance = mobile ? 7.1 : 7.3;
 let cameraX = 0, cameraZ = 0, cameraY = 5;
-let enemies = [], particles = [], slashes = [], fires = [], banners = [], blocked = [];
+let enemies = [], fires = [], banners = [], blocked = [];
 let keys = new Set(), pointer = { down: false, x: 0, y: 0, moved: 0 };
 let joystick = { x: 0, y: 0, id: -1 };
 let muted = false, audio = null, nextId = 1;
@@ -326,7 +328,7 @@ function makeCamp(){
       }
       const ridge=cyl(tent,materials.timber,0,2.35,0,.045,.045,3.5,6);ridge.rotation.x=Math.PI/2;
       if(j%2===0) makeBanner(x+side*4.2,z,.62,j%4===0?'green':'red');
-      blocked.push({x,z,r:3.6});
+      blocked.push({x,z,r:3.6,height:3.0});
     }
   }
   for(let i=0;i<10;i++){
@@ -414,7 +416,7 @@ function beginWave(n){wave=n;waveStarted=elapsed;const cfg=waveData(n);pending=c
   $('objective').textContent=cfg.goal;$('stage').textContent=cfg.name;toast(['','西凉军前锋，杀！','敌军增援！破阵而出！','虎牢关决战！'][n],2.4);
 }
 function resetGame(){for(const e of enemies){scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
-  for(const p of particles)scene.remove(p.obj);particles=[];for(const p of slashes)scene.remove(p.obj);slashes=[];
+  combatEffects.clear();
   if(player){scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;
   cameraYaw=0;cameraPitch=.20;cameraX=0;cameraY=6;cameraZ=54;
   $('ko-count').textContent='0';$('boss-hud').hidden=true;$('end-screen').hidden=true;$('pause-screen').hidden=true;$('start-screen').hidden=true;$('hud').hidden=false;
@@ -465,15 +467,8 @@ function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.model.userData.we
 }
 function showCombo(hits){const c=$('combo');c.hidden=false;$('combo-num').textContent=(Number($('combo-num').textContent)||0)+hits;
   comboClock=1.7;}
-function emitSparks(center,color,count){for(let i=0;i<(low?Math.ceil(count*.45):count);i++){
-  const m=mesh(new THREE.TetrahedronGeometry(pick(.045,.13),0),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,depthWrite:false}),scene,center.x+pick(-.3,.3),center.y+pick(-.15,.15),center.z+pick(-.3,.3),false);
-  particles.push({obj:m,v:V(pick(-6,6),pick(2,7),pick(-6,6)),life:pick(.35,.75),max:.75});}
-}
-function slash(radius,arc=2.2,skill=false){const geo=new THREE.RingGeometry(radius-.18,radius+.16,48,1,-arc*.5,arc);
-  const material=new THREE.MeshBasicMaterial({color:skill?0xffd389:0xf2cc9b,transparent:true,opacity:skill?.8:.7,side:THREE.DoubleSide,depthWrite:false});
-  const obj=mesh(geo,material,scene,player.model.position.x,skill?.5:1.15,player.model.position.z,false);obj.rotation.x=-Math.PI/2;
-  obj.rotation.z=player.model.rotation.y;slashes.push({obj,t:0,max:skill?.65:.27,skill});
-}
+function emitSparks(center,color,count){combatEffects.emitSparks(center,color,count);}
+function slash(radius,arc=2.2,skill=false){combatEffects.slash(player.model.position,player.model.rotation.y,radius,arc,skill);}
 function updateAttacks(dt){const a=player.attack;if(!a)return;a.t+=dt;
   if(a.kind==='skill' && a.t>=.12 && !a.slash){slash(4.8,TAU,true);slash(7,TAU,true);a.slash=true;}
   if(a.kind!=='skill' && a.t>=a.activeStart && !a.slash){slash(a.range*.78,a.arc,false);a.slash=true;}
@@ -557,11 +552,7 @@ function updateWave(dt){if(pending>0){spawnClock-=dt;const active=enemies.filter
     if(wave<3)beginWave(wave+1);else finish(true);
   }
 }
-function updateEffects(dt){for(const fx of particles){fx.life-=dt;fx.v.y-=dt*15;fx.obj.position.addScaledVector(fx.v,dt);fx.obj.material.opacity=Math.max(0,fx.life/fx.max);fx.obj.scale.setScalar(Math.max(.05,fx.life/fx.max));if(fx.life<=0){scene.remove(fx.obj);fx.obj.geometry.dispose();fx.obj.material.dispose();fx.remove=true;}}
-  particles=particles.filter(p=>!p.remove);
-  for(const fx of slashes){fx.t+=dt;const s=1+fx.t*2.5;fx.obj.scale.set(s,s,s);fx.obj.material.opacity=Math.max(0,(1-fx.t/fx.max)*.7);
-    if(fx.t>fx.max){scene.remove(fx.obj);fx.obj.geometry.dispose();fx.obj.material.dispose();fx.remove=true;}}
-  slashes=slashes.filter(x=>!x.remove);
+function updateEffects(dt){combatEffects.update(dt);
   for(const f of fires){const w=elapsed*6+f.offset;f.flame.scale.y=.9+Math.sin(w)*.1;f.flame.rotation.y=w*.45;f.inside.scale.y=.92+Math.sin(w*1.3)*.12;f.inside.rotation.y=f.flame.rotation.y;f.inside.material.opacity=.55+Math.sin(w*1.4)*.12;if(f.smoke){f.smoke.position.y=1.55+Math.sin(w*.3)*.08;f.smoke.material.opacity=.1+Math.sin(w*.5)*.03;f.smoke.rotation.y=w*.2;}f.light.intensity=(low?3.5:7)*(0.8+Math.sin(w)*.18);}
   if(!reduceMotion)for(const flag of banners){const pos=flag.geometry.attributes.position,base=flag.userData.base;
     for(let i=0;i<pos.count;i++){const x=base[i*3],y=base[i*3+1];pos.setZ(i,Math.sin(elapsed*2.5+x*2+y*1.2)*.19*(1+Math.abs(x)*.35));}
@@ -572,7 +563,8 @@ function updateEffects(dt){for(const fx of particles){fx.life-=dt;fx.v.y-=dt*15;
 }
 function updateCamera(dt){const focus=player.model.position;
   const dist=cameraDistance,ca=Math.cos(cameraPitch),sa=Math.sin(cameraPitch);
-  const target=V(focus.x+Math.sin(cameraYaw)*dist*ca,1.1+dist*.06+dist*sa,focus.z+Math.cos(cameraYaw)*dist*ca);
+  const desired=V(focus.x+Math.sin(cameraYaw)*dist*ca,1.1+dist*.06+dist*sa,focus.z+Math.cos(cameraYaw)*dist*ca);
+  const target=resolveCameraTarget(V(focus.x,2.1,focus.z),desired,blocked);
   const factor=1-Math.exp(-dt*7);
   cameraX=lerp(cameraX,target.x,factor);cameraY=lerp(cameraY,target.y,factor);cameraZ=lerp(cameraZ,target.z,factor);
   const randShake=shake>0?shake*pick(-1,1):0;
@@ -653,7 +645,7 @@ function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDel
   if(renderer){renderer.render(scene,camera);}
 }
 try{
-  setupRenderer();makeGround();makeWall();makeCamp();enhanceBattlefield(THREE,scene,materials,low,rand);createPlayer();attachInputs();
+  setupRenderer();combatEffects=createCombatEffects(THREE,scene,{low,random:rand});makeGround();makeWall();makeCamp();enhanceBattlefield(THREE,scene,materials,low,rand);createPlayer();attachInputs();
   phase='boot';updateCamera(1);$('boot-status').textContent='战场已集结 · 点击出阵';
   // Lightweight smoke motes near the gate; avoid large postprocessing dependencies.
   animate();
