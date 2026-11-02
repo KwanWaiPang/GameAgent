@@ -4,6 +4,8 @@ import { enhanceBattlefield, rockyPeak } from './battlefield-detail.js';
 import { detailTextures, lcg, makeCanvasTexture } from './procedural-maps.js';
 import { createCombatEffects } from './combat-effects.js';
 import { resolveCameraTarget } from './camera-physics.js';
+import { createCharacterAssets } from './character-assets.js';
+import { chooseEnemyStrike, hitInStrike, canParry, canEnemyEngage } from './combat-director.js';
 
 // 乱世无双 · 虎牢关 — an original, self-contained WebGL battle built for GitHub Pages.
 const $ = (id) => document.getElementById(id);
@@ -15,15 +17,15 @@ const MAX_ENEMIES = low ? 13 : 20;
 const TAU = Math.PI * 2;
 const params = new URLSearchParams(location.search);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let renderer, scene, camera, player, groundTexture, clock, combatEffects;
+let renderer, scene, camera, player, groundTexture, clock, combatEffects, characterAssets;
 let phase = 'boot', elapsed = 0, wave = 0, waveStarted = 0, pending = 0, spawnClock = 0, bossSpawned = false;
-let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0;
+let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0, hitStop = 0;
 let cameraYaw = 0, cameraPitch = 0.22, cameraDistance = mobile ? 7.1 : 7.3;
 let cameraX = 0, cameraZ = 0, cameraY = 5;
 let enemies = [], fires = [], banners = [], blocked = [];
 let keys = new Set(), pointer = { down: false, x: 0, y: 0, moved: 0 };
 let joystick = { x: 0, y: 0, id: -1 };
-let muted = false, audio = null, nextId = 1;
+let muted = false, audio = null, nextId = 1, lockTarget = null, hudClock = 0, warningRing = null, warningShapes = null;
 let seeded = 731927;
 const rand = () => ((seeded = (1664525 * seeded + 1013904223) >>> 0) / 4294967296);
 const pick = (a,b) => a + (b-a)*rand();
@@ -396,28 +398,45 @@ function makeFire(x,z){
 
 function makeWarrior(kind='soldier'){return makeDetailedWarrior(THREE,kind,low);}
 function createPlayer(){
-  const model=makeWarrior('hero');model.scale.setScalar(1.05);model.position.set(0,0,42);scene.add(model);
-  player={id:0,model,hp:100,maxHp:100,energy:80,attack:null,attackQueue:null,skillCD:0,invuln:0,dodge:0,dodgeDir:V(),facing:Math.PI,walk:0,velocity:V(),hitStun:0};
+  const model=makeWarrior('hero');model.scale.setScalar(1.05);model.position.set(0,0,42);scene.add(model);characterAssets.attach(model,'hero');
+  player={id:0,model,hp:100,maxHp:100,energy:80,attack:null,attackQueue:null,skillCD:0,invuln:0,dodge:0,dodgeDir:V(),facing:Math.PI,walk:0,velocity:V(),hitStun:0,parry:0,parryCD:0};
   model.rotation.y=0;return player;
 }
 function enemyStats(kind){return kind==='boss'?{hp:660,speed:2.75,reach:3.3,damage:17,scale:1.16}:
   kind==='elite'?{hp:110,speed:2.85,reach:2.3,damage:12,scale:1.04}:{hp:55,speed:3.1,reach:2.1,damage:7,scale:1};}
+function createBossWarning(){if(warningRing)return;
+  const geometry=new THREE.RingGeometry(.86,1,80);
+  const material=new THREE.MeshBasicMaterial({color:0xff6240,side:THREE.DoubleSide,transparent:true,opacity:.45,depthWrite:false,depthTest:true});
+  warningShapes={shockwave:geometry,cleave:new THREE.RingGeometry(.08,1,64,1,Math.PI/2-2.65/2,2.65),thrust:new THREE.RingGeometry(.08,1,64,1,Math.PI/2-1.05/2,1.05)};
+  warningRing=new THREE.Mesh(geometry,material);warningRing.rotation.order='YXZ';warningRing.rotation.x=-Math.PI/2;warningRing.position.y=.095;
+  warningRing.visible=false;warningRing.renderOrder=3;warningRing.frustumCulled=false;scene.add(warningRing);
+}
+function updateBossWarning(){if(!warningRing)return;const e=enemies.find(e=>e.kind==='boss'&&!e.dead&&e.windup>0&&e.strike);
+  if(!e){warningRing.visible=false;return;}
+  const radius=e.strike.reach;warningRing.visible=true;
+  warningRing.position.set(e.model.position.x,.105,e.model.position.z);
+  warningRing.geometry=warningShapes[e.strike.type]||warningShapes.shockwave;
+  warningRing.rotation.y=e.strike.type==='shockwave'?0:e.model.rotation.y;
+  warningRing.scale.set(radius,radius,1);
+  warningRing.material.opacity=.32+.26*(.5+.5*Math.sin(elapsed*16));
+  warningRing.material.color.setHex(e.strike.type==='shockwave'?0xff3524:0xffa05d);
+}
 function spawnEnemy(kind='soldier'){
   const dist=pick(19,32),angle=pick(-1.14,1.14),x=clamp(player.model.position.x+Math.sin(angle)*dist,-31,31);
   let z=clamp(player.model.position.z-Math.cos(angle)*dist,-52,48);
   if(kind==='boss'){z=-37;}
-  const st=enemyStats(kind);const model=makeWarrior(kind);model.scale.setScalar(st.scale);model.position.set(kind==='boss'?0:x,0,z);scene.add(model);
-  const enemy={id:nextId++,kind,model,hp:st.hp,maxHp:st.hp,speed:st.speed,reach:st.reach,damage:st.damage,windup:0,attackCD:pick(.2,1.0),stun:0,walk:rand()*TAU,dead:false,death:0,hitFlash:0,knock:V(),facing:0};
-  enemies.push(enemy);if(kind==='boss'){$('boss-hud').hidden=false;$('boss-fill').style.width='100%';toast('飞将吕布，亲临战阵！',2.5);}
+  const st=enemyStats(kind);const model=makeWarrior(kind);model.scale.setScalar(st.scale);model.position.set(kind==='boss'?0:x,0,z);scene.add(model);characterAssets.attach(model,kind);
+  const enemy={id:nextId++,kind,model,hp:st.hp,maxHp:st.hp,speed:st.speed,reach:st.reach,damage:st.damage,windup:0,strike:null,attackCD:pick(.2,1.0),stun:0,walk:rand()*TAU,dead:false,death:0,hitFlash:0,knock:V(),facing:0};
+  enemies.push(enemy);if(kind==='boss'){createBossWarning();$('boss-hud').hidden=false;$('boss-fill').style.width='100%';toast('飞将吕布，亲临战阵！',2.5);}
   return enemy;
 }
 function waveData(n){return n===1?{count:11,elite:0,name:'第一阵 · 西凉先锋',goal:'击溃西凉军前锋'}:n===2?{count:16,elite:4,name:'第二阵 · 精锐压境',goal:'冲破西凉精锐'}:{count:20,elite:7,name:'第三阵 · 飞将当关',goal:'斩破吕布与守关军'};}
 function beginWave(n){wave=n;waveStarted=elapsed;const cfg=waveData(n);pending=cfg.count;spawnClock=0;bossSpawned=false;
   $('objective').textContent=cfg.goal;$('stage').textContent=cfg.name;toast(['','西凉军前锋，杀！','敌军增援！破阵而出！','虎牢关决战！'][n],2.4);
 }
-function resetGame(){for(const e of enemies){scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
-  combatEffects.clear();
-  if(player){scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;
+function resetGame(){for(const e of enemies){characterAssets.detach(e.model);scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
+  combatEffects.clear();if(warningRing)warningRing.visible=false;
+  if(player){characterAssets.detach(player.model);scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;hitStop=0;hudClock=0;lockTarget=null;
   cameraYaw=0;cameraPitch=.20;cameraX=0;cameraY=6;cameraZ=54;
   $('ko-count').textContent='0';$('boss-hud').hidden=true;$('end-screen').hidden=true;$('pause-screen').hidden=true;$('start-screen').hidden=true;$('hud').hidden=false;
   $('mobile-controls').hidden=!mobile;keys.clear();joystick.x=joystick.y=0;
@@ -439,6 +458,8 @@ function launchAttack(kind){if(!player)return;let tier=0;
   if(kind==='light'){tier=combo<3?combo:0;combo=(tier+1)%3;comboClock=1.3;}
   else{combo=0;comboClock=0;}
   const skill=kind==='skill',heavy=kind==='heavy';if(skill){player.energy-=50;player.skillCD=10.5;}
+  player.motionToken=(player.motionToken||0)+1;
+  if(lockTarget&&!lockTarget.dead){const v=lockTarget.model.position.clone().sub(player.model.position);if(v.lengthSq()<150)player.model.rotation.y=facingTo(v.x,v.z);}
   player.attack={kind,t:0,duration:skill?1.05:heavy?.82:.43+tier*.05,activeStart:skill?.23:heavy?.27:.13,activeEnd:skill?.61:heavy?.55:.30,
     damage:skill?150:heavy?82:32+tier*9,range:skill?8.7:heavy?5.2:4.2+tier*.25,arc:skill?TAU:heavy?2.45:2.35,hit:new Set(),tier};
   player.attackQueue=null;sound(skill?170:heavy?100:145,skill?.48:.15,skill?'saw':'hit');
@@ -450,26 +471,33 @@ function doAttackDamage(atk){const p=player.model.position;let hits=0;
     if(dist>atk.range)continue;
     const yaw=facingTo(v.x,v.z);if(atk.arc<TAU && Math.abs(normalizeAngle(yaw-player.model.rotation.y))>atk.arc*.5)continue;
     atk.hit.add(enemy.id);hits++;
-    enemy.hp-=atk.damage;enemy.stun=atk.kind==='skill'?.8:atk.kind==='heavy'?.5:.22;enemy.hitFlash=.16;
+    enemy.hp-=atk.damage;enemy.motionToken=(enemy.motionToken||0)+1;enemy.stun=atk.kind==='skill'?.8:atk.kind==='heavy'?.5:.22;enemy.hitFlash=.16;
     enemy.knock.add(v.setY(0).normalize().multiplyScalar(atk.kind==='skill'?13:atk.kind==='heavy'?8:4.5));
     emitSparks(enemy.model.position.clone().add(V(0,1.5,0)),atk.kind==='skill'?0xffd079:0xffb67d,atk.kind==='skill'?16:8);
     if(enemy.kind==='boss')$('boss-fill').style.width=`${Math.max(0,enemy.hp/enemy.maxHp*100)}%`;
     if(enemy.hp<=0)killEnemy(enemy);
     else sound(95,.07,'hit');
   }
-  if(hits){player.energy=clamp(player.energy+hits*(atk.kind==='skill'?0:5),0,100);shake=Math.max(shake,Math.min(.32,.1+hits*.03));
+  if(hits){hitStop=Math.max(hitStop,atk.kind==='skill'?.09:atk.kind==='heavy'?.07:.038);player.energy=clamp(player.energy+hits*(atk.kind==='skill'?0:5),0,100);shake=Math.max(shake,Math.min(.32,.1+hits*.03));
     showCombo(hits);sound(atk.kind==='skill'?70:65,.09,'hit');}
 }
-function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.model.userData.weapon.rotation.z=.32;
+function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.motionToken=(e.motionToken||0)+1;e.model.userData.weapon.rotation.z=.32;
   kills++;$('ko-count').textContent=kills;sound(e.kind==='boss'?55:85,.20,'fall');
   emitSparks(e.model.position.clone().add(V(0,1.1,0)),0xe9a66e,9);
-  if(e.kind==='boss')toast('飞将已败！',2);
+  if(e===lockTarget)lockTarget=null;
+   if(e.kind==='boss')toast('飞将已败！',2);
 }
 function showCombo(hits){const c=$('combo');c.hidden=false;$('combo-num').textContent=(Number($('combo-num').textContent)||0)+hits;
   comboClock=1.7;}
 function emitSparks(center,color,count){combatEffects.emitSparks(center,color,count);}
 function slash(radius,arc=2.2,skill=false){combatEffects.slash(player.model.position,player.model.rotation.y,radius,arc,skill);}
 function updateAttacks(dt){const a=player.attack;if(!a)return;a.t+=dt;
+  // Short forward commitment adds weight without camera-space teleportation.
+  if(a.t>a.activeStart*.65&&a.t<a.activeEnd){
+    const thrust=a.kind==='skill'?1.25:a.kind==='heavy'?2.15:3.1;
+    const yaw=player.model.rotation.y;
+    moveSafe(player.model,-Math.sin(yaw)*thrust*dt,-Math.cos(yaw)*thrust*dt,.56);
+  }
   if(a.kind==='skill' && a.t>=.12 && !a.slash){slash(4.8,TAU,true);slash(7,TAU,true);a.slash=true;}
   if(a.kind!=='skill' && a.t>=a.activeStart && !a.slash){slash(a.range*.78,a.arc,false);a.slash=true;}
   if(a.t>=a.activeStart && a.t<=a.activeEnd)doAttackDamage(a);
@@ -482,21 +510,24 @@ function updateAttacks(dt){const a=player.attack;if(!a)return;a.t+=dt;
   if(a.t>=a.duration){player.attack=null;rig.rotation.y=0;weapon.rotation.z=0;weapon.rotation.x=0;rightArm.rotation.set(0,0,0);leftArm.rotation.set(0,0,0);
     if(player.attackQueue){const k=player.attackQueue;player.attackQueue=null;launchAttack(k);}}
 }
+function doParry(){if(phase!=='playing'||player.parryCD>0||player.dodge>0||player.hitStun>0)return;player.parry=.26;player.parryCD=.75;player.attack=null;player.attackQueue=null;player.motionToken=(player.motionToken||0)+1;sound(440,.09,'air');}
+function cycleLock(){const available=enemies.filter(e=>!e.dead&&e.model.position.distanceToSquared(player.model.position)<450);if(!available.length){lockTarget=null;return;}available.sort((a,b)=>a.model.position.distanceToSquared(player.model.position)-b.model.position.distanceToSquared(player.model.position));lockTarget=available[(Math.max(-1,available.indexOf(lockTarget))+1)%available.length];toast(lockTarget.kind==='boss'?'锁定 · 吕布':'锁定 · 敌军',.8);}
 function doDodge(){if(phase!=='playing'||player.dodge>0||player.hitStun>0)return;
   if(player.attack&&player.attack.kind==='skill')return;player.attack=null;player.attackQueue=null;player.model.userData.weapon.rotation.set(0,0,0);
   const input=moveInput();const dx=Math.cos(cameraYaw)*input.x-Math.sin(cameraYaw)*input.y;
   const dz=-Math.sin(cameraYaw)*input.x-Math.cos(cameraYaw)*input.y;
   player.dodgeDir.set(dx,0,dz);if(player.dodgeDir.lengthSq()<.01)player.dodgeDir.set(-Math.sin(player.model.rotation.y),0,-Math.cos(player.model.rotation.y));
-  player.dodgeDir.normalize();player.dodge=.47;player.invuln=.52;emitSparks(player.model.position.clone().add(V(0,.22,0)),0xc8ac84,9);sound(200,.11,'air');
+  player.motionToken=(player.motionToken||0)+1;player.dodgeDir.normalize();player.dodge=.47;player.invuln=.52;emitSparks(player.model.position.clone().add(V(0,.22,0)),0xc8ac84,9);sound(200,.11,'air');
 }
 function moveInput(){let x=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
   let y=(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0);
   x+=joystick.x;y+=joystick.y;const len=Math.hypot(x,y);return len>1?{x:x/len,y:y/len}:{x,y};}
-function updatePlayer(dt){const p=player;p.invuln=Math.max(0,p.invuln-dt);p.skillCD=Math.max(0,p.skillCD-dt);p.hitStun=Math.max(0,p.hitStun-dt);
+function updatePlayer(dt){const p=player;p.parry=Math.max(0,p.parry-dt);p.parryCD=Math.max(0,p.parryCD-dt);p.invuln=Math.max(0,p.invuln-dt);p.skillCD=Math.max(0,p.skillCD-dt);p.hitStun=Math.max(0,p.hitStun-dt);
   const input=moveInput(),moving=Math.hypot(input.x,input.y)>.05;
   const dx=Math.cos(cameraYaw)*input.x-Math.sin(cameraYaw)*input.y;
   const dz=-Math.sin(cameraYaw)*input.x-Math.cos(cameraYaw)*input.y;
-  if(p.dodge>0){moveSafe(p.model,p.dodgeDir.x*dt*14,p.dodgeDir.z*dt*14,.56);p.dodge=Math.max(0,p.dodge-dt);p.model.userData.rig.rotation.z=Math.sin((1-p.dodge/.47)*Math.PI)*-.35;}
+  if(lockTarget&&!lockTarget.dead&&!p.attack&&!p.dodge){const v=lockTarget.model.position.clone().sub(p.model.position);if(v.lengthSq()<200)rotateTo(p.model,facingTo(v.x,v.z),dt,6);else lockTarget=null;}
+   if(p.dodge>0){moveSafe(p.model,p.dodgeDir.x*dt*14,p.dodgeDir.z*dt*14,.56);p.dodge=Math.max(0,p.dodge-dt);p.model.userData.rig.rotation.z=Math.sin((1-p.dodge/.47)*Math.PI)*-.35;}
   else{
     p.model.userData.rig.rotation.z=0;
     const factor=p.attack?(p.attack.kind==='skill'?.04:.38):p.hitStun>0?0:1;
@@ -513,7 +544,11 @@ function updatePlayer(dt){const p=player;p.invuln=Math.max(0,p.invuln-dt);p.skil
   p.energy=clamp(p.energy+dt*1.8,0,100);
 }
 function damagePlayer(amount,attacker){if(player.invuln>0||phase!=='playing')return;
-  player.hp=Math.max(0,player.hp-amount);player.invuln=.85;player.hitStun=.24;shake=.4;flashTimer=.18;
+  if(canParry(player.parry,player.model.position,player.model.rotation.y,attacker.model.position)){
+    player.parry=0;player.energy=clamp(player.energy+12,0,100);player.invuln=.35;attacker.stun=1.1;attacker.windup=0;attacker.strike=null;attacker.attackCD=1.8;attacker.motionToken=(attacker.motionToken||0)+1;
+    emitSparks(player.model.position.clone().add(V(0,1.5,0)),0xffefb0,28);shake=.22;hitStop=.075;toast('完美格挡 · 破招！',.8);sound(550,.25,'hit');return;
+  }
+  player.hp=Math.max(0,player.hp-amount);player.motionToken=(player.motionToken||0)+1;player.invuln=.85;player.hitStun=.24;shake=.4;flashTimer=.18;
   $('hit-flash').classList.add('active');sound(55,.24,'fall');
   const away=player.model.position.clone().sub(attacker.model.position).setY(0).normalize();moveSafe(player.model,away.x*1.4,away.z*1.4);
   emitSparks(player.model.position.clone().add(V(0,1.3,0)),0xf2c28b,8);
@@ -521,22 +556,30 @@ function damagePlayer(amount,attacker){if(player.invuln>0||phase!=='playing')ret
 }
 function updateEnemies(dt){const target=player.model.position;
   for(const e of enemies){const ud=e.model.userData;
-    if(e.dead){e.death+=dt;ud.rig.rotation.z=lerp(ud.rig.rotation.z,1.48,Math.min(1,dt*4));ud.rig.position.y=lerp(ud.rig.position.y,-.45,Math.min(1,dt*4));if(e.death>2.2){scene.remove(e.model);disposeDetailedWarrior(e.model);e.remove=true;}continue;}
+    if(e.dead){e.death+=dt;ud.rig.rotation.z=lerp(ud.rig.rotation.z,1.48,Math.min(1,dt*4));ud.rig.position.y=lerp(ud.rig.position.y,-.45,Math.min(1,dt*4));if(e.death>2.2){characterAssets.detach(e.model);scene.remove(e.model);disposeDetailedWarrior(e.model);e.remove=true;}continue;}
     e.stun=Math.max(0,e.stun-dt);e.hitFlash=Math.max(0,e.hitFlash-dt);e.attackCD=Math.max(0,e.attackCD-dt);
     // Each enemy has a simple stagger / telegraph / strike / recovery state machine.
     const delta=target.clone().sub(e.model.position),dist=Math.max(.01,Math.hypot(delta.x,delta.z));
     rotateTo(e.model,facingTo(delta.x,delta.z),dt,e.kind==='boss'?5.4:7.5);
+    e.walking=false;
     if(e.stun>0){moveSafe(e.model,e.knock.x*dt,e.knock.z*dt,e.kind==='boss'?.85:.5);e.knock.multiplyScalar(Math.exp(-dt*9));}
-    else if(e.windup>0){e.windup-=dt;ud.weapon.rotation.z=-.8+Math.sin((.7-e.windup)*7)*.5;
-      if(e.windup<=0){ud.weapon.rotation.z=0;e.attackCD=e.kind==='boss'?2:pick(1.15,1.9);
-        if(dist<e.reach+1 && Math.abs(normalizeAngle(facingTo(delta.x,delta.z)-e.model.rotation.y))<1.3){damagePlayer(e.damage,e);}
-        if(e.kind==='boss'){slashEnemy(e);}}
-    }else if(dist<e.reach+pick(.1,.25) && e.attackCD<=0){e.windup=e.kind==='boss'?.78:.54;}
-    else if(dist>e.reach*.78){let vx=delta.x/dist,vz=delta.z/dist;
+    else if(e.windup>0){e.windup-=dt;ud.weapon.rotation.z=-.8+Math.sin(elapsed*9)*.28;
+      if(e.windup<=0){ud.weapon.rotation.z=0;const strike=e.strike||chooseEnemyStrike(e.kind,e.hp/e.maxHp,rand);e.strike=null;e.attackCD=strike.recovery;
+        if(hitInStrike(strike,e.model.position,target,e.model.rotation.y))damagePlayer(strike.damage,e);
+        if(e.kind==='boss'){slashEnemy(e);if(strike.type==='shockwave'){emitSparks(e.model.position.clone().add(V(0,.2,0)),0xff743e,32);shake=.32;}}
+      }
+    }else if(dist<(e.kind==='boss'?5.2:e.reach+.3)&&e.attackCD<=0){
+      const count=enemies.filter(o=>o!==e&&!o.dead&&o.windup>0&&o.model.position.distanceToSquared(target)<100).length;
+      if(canEnemyEngage(count,e.kind)){
+        e.strike=chooseEnemyStrike(e.kind,e.hp/e.maxHp,rand);e.windup=e.strike.windup;e.motionToken=(e.motionToken||0)+1;
+        if(e.kind==='boss'&&e.strike.type==='shockwave')toast('吕布蓄势 · 方天裂地！',1.05);
+      }
+    }
+        else if(dist>e.reach*.78){let vx=delta.x/dist,vz=delta.z/dist;
       // Gentle separation avoids complete overlap without costly physics simulation.
       for(const other of enemies){if(other===e||other.dead)continue;const ox=e.model.position.x-other.model.position.x,oz=e.model.position.z-other.model.position.z,d2=ox*ox+oz*oz;
         if(d2<3.2&&d2>.01){const f=(3.2-d2)*.33;vx+=ox*f;vz+=oz*f;}}
-      const l=Math.hypot(vx,vz)||1;moveSafe(e.model,vx/l*e.speed*dt,vz/l*e.speed*dt,e.kind==='boss'?.85:.5);e.walk+=dt*8;
+      const l=Math.hypot(vx,vz)||1;e.walking=true;moveSafe(e.model,vx/l*e.speed*dt,vz/l*e.speed*dt,e.kind==='boss'?.85:.5);e.walk+=dt*8;
     }
     if(e.stun<=0){ud.rig.userData.rightArm.rotation.x=-Math.sin(e.walk)*.19;ud.rig.userData.leftArm.rotation.x=Math.sin(e.walk)*.19;const stride=Math.min(1,(dist-e.reach*.75)/3);ud.legs[0].rotation.x=Math.sin(e.walk)*.36*stride;ud.legs[1].rotation.x=-Math.sin(e.walk)*.36*stride;}
     ud.rig.position.y=Math.sin(e.walk*2)*.035;
@@ -545,6 +588,22 @@ function updateEnemies(dt){const target=player.model.position;
   enemies=enemies.filter(e=>!e.remove);
 }
 function slashEnemy(e){const pos=e.model.position.clone();emitSparks(pos.add(V(0,1,0)),0xff5140,13);shake=Math.max(shake,.24);}
+function updateCharacterMotion(dt) {
+  if(!characterAssets || !player)return;
+  const p=player;
+  const moving=Math.hypot(moveInput().x,moveInput().y)>.08;
+  const playerState=p.hitStun>0?'hit':p.dodge>0?'dodge':p.attack
+    ?p.attack.kind==='skill'?'skill':p.attack.kind==='heavy'?'heavy':'attack'
+    :moving?(keys.has('shift')?'run':'walk'):'idle';
+  characterAssets.setState(p.model,playerState,p.motionToken||0,p.attack?.duration||0);
+  for(const e of enemies){
+    const motion=e.dead?'death':e.stun>0?'hit':e.windup>0?'attack'
+      :e.walking?'walk':'idle';
+    characterAssets.setState(e.model,motion,e.motionToken||e.id,
+      motion==='attack'?(e.strike?.windup||.6):0);
+  }
+  characterAssets.update(dt);
+}
 function updateWave(dt){if(pending>0){spawnClock-=dt;const active=enemies.filter(e=>!e.dead).length;
     if(spawnClock<=0 && active<MAX_ENEMIES){const idx=waveData(wave).count-pending;spawnEnemy(wave>1&&idx%4===0?'elite':'soldier');pending--;spawnClock=pick(.55,1.35);}}
   if(wave===3&&!bossSpawned&&elapsed-waveStarted>7){spawnEnemy('boss');bossSpawned=true;}
@@ -552,7 +611,7 @@ function updateWave(dt){if(pending>0){spawnClock-=dt;const active=enemies.filter
     if(wave<3)beginWave(wave+1);else finish(true);
   }
 }
-function updateEffects(dt){combatEffects.update(dt);
+function updateEffects(dt){combatEffects.update(dt);updateBossWarning();
   for(const f of fires){const w=elapsed*6+f.offset;f.flame.scale.y=.9+Math.sin(w)*.1;f.flame.rotation.y=w*.45;f.inside.scale.y=.92+Math.sin(w*1.3)*.12;f.inside.rotation.y=f.flame.rotation.y;f.inside.material.opacity=.55+Math.sin(w*1.4)*.12;if(f.smoke){f.smoke.position.y=1.55+Math.sin(w*.3)*.08;f.smoke.material.opacity=.1+Math.sin(w*.5)*.03;f.smoke.rotation.y=w*.2;}f.light.intensity=(low?3.5:7)*(0.8+Math.sin(w)*.18);}
   if(!reduceMotion)for(const flag of banners){const pos=flag.geometry.attributes.position,base=flag.userData.base;
     for(let i=0;i<pos.count;i++){const x=base[i*3],y=base[i*3+1];pos.setZ(i,Math.sin(elapsed*2.5+x*2+y*1.2)*.19*(1+Math.abs(x)*.35));}
@@ -562,6 +621,7 @@ function updateEffects(dt){combatEffects.update(dt);
   if(comboClock>0){comboClock-=dt;if(comboClock<=0){$('combo').hidden=true;$('combo-num').textContent='0';}}
 }
 function updateCamera(dt){const focus=player.model.position;
+  if(lockTarget&&!lockTarget.dead){const dir=lockTarget.model.position.clone().sub(focus);if(dir.lengthSq()<350){const desiredYaw=Math.atan2(-dir.x,-dir.z);cameraYaw+=normalizeAngle(desiredYaw-cameraYaw)*Math.min(1,dt*1.6);}else lockTarget=null;}
   const dist=cameraDistance,ca=Math.cos(cameraPitch),sa=Math.sin(cameraPitch);
   const desired=V(focus.x+Math.sin(cameraYaw)*dist*ca,1.1+dist*.06+dist*sa,focus.z+Math.cos(cameraYaw)*dist*ca);
   const target=resolveCameraTarget(V(focus.x,2.1,focus.z),desired,blocked);
@@ -576,6 +636,8 @@ function refreshHud(){if(!player)return;
   $('energy-fill').style.width=`${player.energy}%`;
   $('skill-state').textContent=player.skillCD>0?`${player.skillCD.toFixed(1)}s`:player.energy<50?'蓄势中':'就绪';
   if(phase==='playing')drawRadar();
+  const threatening=enemies.find(e=>e.kind==='boss'&&!e.dead&&e.windup>0&&e.strike);
+  const tip=$('battle-tip');if(tip){tip.hidden=!threatening;if(threatening)tip.textContent=`⚠ ${threatening.strike.label} · 闪避 Space / 格挡 F`;}
 }
 function drawRadar(){const c=$('radar'),g=c.getContext('2d'),w=c.width,h=c.height,r=w/2-10;
   g.clearRect(0,0,w,h);g.save();g.translate(w/2,h/2);g.beginPath();g.arc(0,0,r,0,TAU);g.clip();
@@ -608,7 +670,7 @@ function attachInputs(){
     const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
     if(k==='escape'){if(phase==='playing'||phase==='paused')pause();return;}
     if(phase!=='playing'||e.repeat)return;
-    if(k==='j')requestAttack('light');if(k==='k')requestAttack('heavy');if(k==='q')requestAttack('skill');if(k===' ')doDodge();
+    if(k==='f')doParry();if(k==='tab'){e.preventDefault();cycleLock();}if(k==='j')requestAttack('light');if(k==='k')requestAttack('heavy');if(k==='q')requestAttack('skill');if(k===' ')doDodge();
   });
   window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());});
   window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -629,26 +691,31 @@ function attachInputs(){
   joy.addEventListener('pointermove',e=>{if(e.pointerId===joystick.id)moveJoy(e);});
   const stopJoy=e=>{if(e.pointerId!==joystick.id)return;joystick.id=-1;joystick.x=joystick.y=0;stick.style.transform='translate(0,0)';};
   joy.addEventListener('pointerup',stopJoy);joy.addEventListener('pointercancel',stopJoy);
-  for(const [id,action] of [['touch-attack',()=>requestAttack('light')],['touch-heavy',()=>requestAttack('heavy')],['touch-skill',()=>requestAttack('skill')],['touch-dodge',doDodge]]){
+  for(const [id,action] of [['touch-attack',()=>requestAttack('light')],['touch-heavy',()=>requestAttack('heavy')],['touch-skill',()=>requestAttack('skill')],['touch-dodge',doDodge],['touch-parry',doParry]]){
     $(id).addEventListener('pointerdown',e=>{e.preventDefault();action();});}
   $('start-btn').addEventListener('click',()=>{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume?.();resetGame();});
   $('restart-btn').addEventListener('click',resetGame);$('restart-pause').addEventListener('click',resetGame);
   $('resume-btn').addEventListener('click',pause);$('pause-btn').addEventListener('click',pause);
   $('sound-btn').addEventListener('click',()=>{muted=!muted;$('sound-btn').textContent=muted?'♪̸':'♪';});
 }
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.048);elapsed+=phase==='playing'?dt:0;
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.048);
+  // Impact hit-stop only freezes simulation, not the browser rendering loop.
+  const simulationDt=phase==='playing'&&hitStop>0?0:dt;
+  hitStop=Math.max(0,hitStop-dt);
+  elapsed+=phase==='playing'?simulationDt:0;
   if(phase==='playing'){
-    updatePlayer(dt);updateEnemies(dt);updateWave(dt);updateEffects(dt);updateCamera(dt);
-    if((Math.floor(elapsed*10)%2)===0)refreshHud();
+    updatePlayer(simulationDt);updateEnemies(simulationDt);updateWave(simulationDt);updateCharacterMotion(simulationDt);updateEffects(simulationDt);updateCamera(dt);
+    hudClock+=dt;if(hudClock>=.11){refreshHud();hudClock=0;}
   }else if(player){if(phase==='boot'){player.model.userData.rig.position.y=Math.sin(performance.now()*.001)*.04;}
     updateCamera(dt);for(const f of fires){f.flame.rotation.y+=dt*.4;}}
   if(renderer){renderer.render(scene,camera);}
 }
 try{
-  setupRenderer();combatEffects=createCombatEffects(THREE,scene,{low,random:rand});makeGround();makeWall();makeCamp();enhanceBattlefield(THREE,scene,materials,low,rand);createPlayer();attachInputs();
+  setupRenderer();combatEffects=createCombatEffects(THREE,scene,{low,random:rand});characterAssets=createCharacterAssets(THREE,{low});makeGround();makeWall();makeCamp();enhanceBattlefield(THREE,scene,materials,low,rand);createPlayer();attachInputs();
+  characterAssets.prepare().then(({loaded})=>{if(loaded)console.info('Hulao: loaded licensed GLB character types:',loaded);});
   phase='boot';updateCamera(1);$('boot-status').textContent='战场已集结 · 点击出阵';
   // Lightweight smoke motes near the gate; avoid large postprocessing dependencies.
   animate();
   window.__HULAO_READY__=true;
-  window.__HULAO_STATE__=()=>({phase,wave,kills,enemies:enemies.filter(e=>!e.dead).length,hp:player.hp,energy:player.energy});
+  window.__HULAO_STATE__=()=>({phase,wave,kills,enemies:enemies.filter(e=>!e.dead).length,hp:player.hp,energy:player.energy,locked:lockTarget?.kind||null,parryReady:player.parryCD<=0});
 }catch(err){console.error('Hulao Gate initialization failed',err);$('error-message').textContent=err.message||String(err);$('error-screen').hidden=false;$('boot-status').textContent='无法初始化 WebGL';}

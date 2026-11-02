@@ -26,6 +26,7 @@ export function resolveCameraTarget(origin, desired, obstacles, { halfWidth = 33
     if (atHeight > (b.height ?? 2.8) + clearance) continue;
     nearest = Math.max(0.18, enter - 0.055);
   }
-  if (nearest < 1) target.copy(origin).lerp(target, nearest);
+  // Preserve the desired endpoint: copy(origin) would overwrite it before lerp.
+  if (nearest < 1) return origin.clone().lerp(target, nearest);
   return target;
 }
