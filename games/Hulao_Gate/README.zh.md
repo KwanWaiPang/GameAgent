@@ -57,6 +57,9 @@ node --check game.js
 node --check warrior-model.js
 node --check battlefield-detail.js
 node --check procedural-maps.js
+node --check combat-effects.js
+node --check camera-physics.js
+node --test camera-physics.test.mjs
 ```
 
 `?q=low` 强制低画质。调试时可查看 `window.__HULAO_READY__` 和 `window.__HULAO_STATE__()`。
@@ -64,3 +67,12 @@ node --check procedural-maps.js
 ## 限制
 
 这是轻量 WebGL 原型。人物和场景是程序化的，不是扫描人体或动作捕捉。音效是 Web Audio 合成。Three.js（MIT）经 CDN 引入；没有第三方游戏的模型或贴图。
+
+
+## 写实动作游戏升级路线
+
+当前独立开发分支完成第一轮性能与镜头基础升级：战斗火花使用单个 `InstancedMesh` 批量渲染（高画质最多 192 个、低画质最多 72 个），刀光对象和对应几何体循环复用，重开游戏清空特效而无需重复 GPU 资源分配；镜头会避开战场边界及营帐简化碰撞体。原有键位与游戏流程不变。
+
+下一步建议引入**具有明确再分发授权**的三国题材 GLB/glTF 角色、独立动画剪辑，以及按角色类型配置的骨骼动画状态机。现有程序化模型继续作为资源加载失败时的后备方案，避免破坏静态站点的可玩性。
+
+> 本阶段未引入第三方角色资产；尚需真实浏览器 FPS、GPU draw calls 和多设备操作测试。
