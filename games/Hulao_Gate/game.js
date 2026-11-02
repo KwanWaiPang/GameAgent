@@ -25,7 +25,7 @@ let cameraX = 0, cameraZ = 0, cameraY = 5;
 let enemies = [], fires = [], banners = [], blocked = [];
 let keys = new Set(), pointer = { down: false, x: 0, y: 0, moved: 0 };
 let joystick = { x: 0, y: 0, id: -1 };
-let muted = false, audio = null, nextId = 1, lockTarget = null, hudClock = 0;
+let muted = false, audio = null, nextId = 1, lockTarget = null, hudClock = 0, warningRing = null;
 let seeded = 731927;
 const rand = () => ((seeded = (1664525 * seeded + 1013904223) >>> 0) / 4294967296);
 const pick = (a,b) => a + (b-a)*rand();
@@ -404,13 +404,27 @@ function createPlayer(){
 }
 function enemyStats(kind){return kind==='boss'?{hp:660,speed:2.75,reach:3.3,damage:17,scale:1.16}:
   kind==='elite'?{hp:110,speed:2.85,reach:2.3,damage:12,scale:1.04}:{hp:55,speed:3.1,reach:2.1,damage:7,scale:1};}
+function createBossWarning(){if(warningRing)return;
+  const geometry=new THREE.RingGeometry(.86,1,80);
+  const material=new THREE.MeshBasicMaterial({color:0xff6240,side:THREE.DoubleSide,transparent:true,opacity:.45,depthWrite:false,depthTest:true});
+  warningRing=new THREE.Mesh(geometry,material);warningRing.rotation.x=-Math.PI/2;warningRing.position.y=.095;
+  warningRing.visible=false;warningRing.renderOrder=3;warningRing.frustumCulled=false;scene.add(warningRing);
+}
+function updateBossWarning(){if(!warningRing)return;const e=enemies.find(e=>e.kind==='boss'&&!e.dead&&e.windup>0&&e.strike);
+  if(!e){warningRing.visible=false;return;}
+  const radius=e.strike.reach;warningRing.visible=true;
+  warningRing.position.set(e.model.position.x,.105,e.model.position.z);
+  warningRing.scale.set(radius,radius,1);
+  warningRing.material.opacity=.32+.26*(.5+.5*Math.sin(elapsed*16));
+  warningRing.material.color.setHex(e.strike.type==='shockwave'?0xff3524:0xffa05d);
+}
 function spawnEnemy(kind='soldier'){
   const dist=pick(19,32),angle=pick(-1.14,1.14),x=clamp(player.model.position.x+Math.sin(angle)*dist,-31,31);
   let z=clamp(player.model.position.z-Math.cos(angle)*dist,-52,48);
   if(kind==='boss'){z=-37;}
   const st=enemyStats(kind);const model=makeWarrior(kind);model.scale.setScalar(st.scale);model.position.set(kind==='boss'?0:x,0,z);scene.add(model);characterAssets.attach(model,kind);
   const enemy={id:nextId++,kind,model,hp:st.hp,maxHp:st.hp,speed:st.speed,reach:st.reach,damage:st.damage,windup:0,strike:null,attackCD:pick(.2,1.0),stun:0,walk:rand()*TAU,dead:false,death:0,hitFlash:0,knock:V(),facing:0};
-  enemies.push(enemy);if(kind==='boss'){$('boss-hud').hidden=false;$('boss-fill').style.width='100%';toast('飞将吕布，亲临战阵！',2.5);}
+  enemies.push(enemy);if(kind==='boss'){createBossWarning();$('boss-hud').hidden=false;$('boss-fill').style.width='100%';toast('飞将吕布，亲临战阵！',2.5);}
   return enemy;
 }
 function waveData(n){return n===1?{count:11,elite:0,name:'第一阵 · 西凉先锋',goal:'击溃西凉军前锋'}:n===2?{count:16,elite:4,name:'第二阵 · 精锐压境',goal:'冲破西凉精锐'}:{count:20,elite:7,name:'第三阵 · 飞将当关',goal:'斩破吕布与守关军'};}
@@ -418,7 +432,7 @@ function beginWave(n){wave=n;waveStarted=elapsed;const cfg=waveData(n);pending=c
   $('objective').textContent=cfg.goal;$('stage').textContent=cfg.name;toast(['','西凉军前锋，杀！','敌军增援！破阵而出！','虎牢关决战！'][n],2.4);
 }
 function resetGame(){for(const e of enemies){characterAssets.detach(e.model);scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
-  combatEffects.clear();
+  combatEffects.clear();if(warningRing)warningRing.visible=false;
   if(player){characterAssets.detach(player.model);scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;hitStop=0;hudClock=0;lockTarget=null;
   cameraYaw=0;cameraPitch=.20;cameraX=0;cameraY=6;cameraZ=54;
   $('ko-count').textContent='0';$('boss-hud').hidden=true;$('end-screen').hidden=true;$('pause-screen').hidden=true;$('start-screen').hidden=true;$('hud').hidden=false;
@@ -594,7 +608,7 @@ function updateWave(dt){if(pending>0){spawnClock-=dt;const active=enemies.filter
     if(wave<3)beginWave(wave+1);else finish(true);
   }
 }
-function updateEffects(dt){combatEffects.update(dt);
+function updateEffects(dt){combatEffects.update(dt);updateBossWarning();
   for(const f of fires){const w=elapsed*6+f.offset;f.flame.scale.y=.9+Math.sin(w)*.1;f.flame.rotation.y=w*.45;f.inside.scale.y=.92+Math.sin(w*1.3)*.12;f.inside.rotation.y=f.flame.rotation.y;f.inside.material.opacity=.55+Math.sin(w*1.4)*.12;if(f.smoke){f.smoke.position.y=1.55+Math.sin(w*.3)*.08;f.smoke.material.opacity=.1+Math.sin(w*.5)*.03;f.smoke.rotation.y=w*.2;}f.light.intensity=(low?3.5:7)*(0.8+Math.sin(w)*.18);}
   if(!reduceMotion)for(const flag of banners){const pos=flag.geometry.attributes.position,base=flag.userData.base;
     for(let i=0;i<pos.count;i++){const x=base[i*3],y=base[i*3+1];pos.setZ(i,Math.sin(elapsed*2.5+x*2+y*1.2)*.19*(1+Math.abs(x)*.35));}
