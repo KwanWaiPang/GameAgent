@@ -51,6 +51,31 @@ jobs:
           node --experimental-default-type=module --test games/Hulao_Gate/camera-physics.test.mjs games/Hulao_Gate/character-assets.test.mjs games/Hulao_Gate/combat-director.test.mjs
           node --experimental-default-type=module games/Hulao_Gate/visuals.test.mjs
 
+      - name: Checkout pinned Battle Drones to verify single-player integration
+        uses: actions/checkout@v4
+        with:
+          repository: simonw/battledrones
+          ref: ca4f13b36013e1980289046e731a295d2bf02a3e
+          path: .battledrones-upstream
+          persist-credentials: false
+
+      - name: Setup Battle Drones Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: .battledrones-upstream/package-lock.json
+
+      - name: Verify Battle Drones single-player build
+        run: |
+          node .github/scripts/prepare-battledrones.mjs .battledrones-upstream
+          cd .battledrones-upstream
+          npm ci
+          npm run build
+          test -f dist/index.html
+          test -f dist/assets/ui/keyart-landscape.webp
+          grep -q 'gameagent-return' dist/assets/*.css
+
       - name: Board + hub unit tests
         run: |
           node --experimental-default-type=module js/fit-board.test.js
@@ -195,6 +220,9 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: .battledrones-upstream/package-lock.json
+
+      - name: Adapt Battle Drones for single-player GameAgent
+        run: node .github/scripts/prepare-battledrones.mjs .battledrones-upstream
 
       - name: Build Battle Drones
         working-directory: .battledrones-upstream
