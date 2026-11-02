@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#090c14">
-<title>WIZARD CHESS — Sanctum of Kings</title>
+<title>WIZARD CHESS 3D — Living Stone Legions</title>
 <style>
 :root{--gold:#d4ad6e;--gold2:#8b6c46;--paper:#e8e1d2;--dim:#9394a4;--glass:rgba(13,18,30,.9)}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b12;color:var(--paper);font-family:Georgia,'Times New Roman','Noto Serif SC',serif}button,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
@@ -23,7 +23,7 @@
 <body>
 <canvas id="scene" aria-label="可互动的 3D 国际象棋棋盘"></canvas><div id="vignette"></div>
 <div id="hud">
- <header class="brand"><div class="eyebrow">THE ANCIENT ORDER PRESENTS</div><h1>WIZARD <span>CHESS</span></h1><small>SANCTUM OF KINGS · THREE.JS EDITION</small></header>
+ <header class="brand"><div class="eyebrow">THE ANCIENT ORDER PRESENTS</div><h1>WIZARD <span>CHESS</span></h1><small>THE LIVING STONE LEGIONS · BATTLE EDITION</small></header>
  <div class="top-actions"><button class="btn" id="soundBtn">♫ 声音：开</button><button class="btn" id="menuBtn">⚙ 游戏设置</button></div>
  <div class="toast" id="toast"></div>
  <aside class="panel">
@@ -36,10 +36,10 @@
    <div class="grid2"><button class="btn accent" id="newBtn">⚔ 新的对局</button><button class="btn" id="undoBtn">↶ 悔棋</button><button class="btn" id="hintBtn">✦ 提示</button><button class="btn" id="flipBtn">⟳ 换边视角</button></div>
    <div class="grid2"><div><div class="control-label">对战模式</div><select id="mode"><option value="ai">挑战 AI</option><option value="local">双人本地</option><option value="demo">AI 自动演示</option></select></div><div><div class="control-label">AI 难度</div><select id="difficulty"><option value="1">学徒 / 简单</option><option value="2" selected>骑士 / 普通</option><option value="3">大法师 / 困难</option></select></div></div>
  </aside>
- <div class="hint-footer">单击棋子选择 · 点击光圈落子 · 拖动画面旋转 · 滚轮缩放<br>吃子时自动进入电影镜头 · H 隐藏界面</div>
+ <div class="hint-footer">单击人物选择 · 点击魔法符文落子 · 拖动画面旋转 · 滚轮缩放<br>吃子时自动进入电影镜头 · H 隐藏界面</div>
  <nav class="quick-cams"><button class="btn small active" data-cam="isometric">◆ 战术视角</button><button class="btn small" data-cam="top">▦ 俯视</button><button class="btn small" data-cam="low">◈ 电影视角</button><button class="btn small" data-cam="wide">⌂ 大教堂</button></nav>
 </div>
-<div class="overlay show" id="welcome"><div class="dialog"><div class="tiny">✦ ENTER THE SANCTUM ✦</div><h2>王者的圣殿</h2><p>在远古石砌大教堂中，指挥会行动的棋子。<br>每一次吃子，都是一场魔法对决。</p><div class="grid2"><div><div class="control-label">执棋阵营</div><select id="sideChoice"><option value="w">曙光 · 白方</option><option value="b">暗影 · 黑方</option></select></div><div><div class="control-label">对战模式</div><select id="startMode"><option value="ai">人机对战</option><option value="local">本地双人</option><option value="demo">自动演示</option></select></div></div><button class="btn accent" id="startBtn">⚔ 进入棋盘</button></div></div>
+<div class="overlay show" id="welcome"><div class="dialog"><div class="tiny">✦ ENTER THE SANCTUM ✦</div><h2>王者的圣殿</h2><p>在哥特式圣殿中指挥骑士、术士与石甲军团。<br>每一次吃子，都是一场魔法对决。</p><div class="grid2"><div><div class="control-label">执棋阵营</div><select id="sideChoice"><option value="w">曙光 · 白方</option><option value="b">暗影 · 黑方</option></select></div><div><div class="control-label">对战模式</div><select id="startMode"><option value="ai">人机对战</option><option value="local">本地双人</option><option value="demo">自动演示</option></select></div></div><button class="btn accent" id="startBtn">⚔ 进入棋盘</button></div></div>
 <div class="overlay" id="promotion"><div class="dialog"><div class="tiny">THE ASCENSION</div><h2>士兵晋升</h2><p>选择你希望士兵晋升的棋子</p><div class="promotion-options" id="promotionChoices"></div></div></div>
 <div class="overlay" id="endGame"><div class="dialog"><div class="tiny">✦ THE FINAL CHAPTER ✦</div><h2 id="endTitle">对局结束</h2><p id="endDesc"></p><button class="btn accent" id="replayBtn">再次挑战</button><button class="btn" id="closeEndBtn">查看棋盘</button></div></div>
 <script type="module">
@@ -52,18 +52,18 @@ const $=id=>document.getElementById(id);
 const game=new Chess();
 const canvas=$('scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.8));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.6));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.42;
+renderer.toneMappingExposure=1.35;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b111c);scene.fog=new THREE.FogExp2(0x101927,.018);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b111c);scene.fog=new THREE.FogExp2(0x101927,.013);
 const camera=new THREE.PerspectiveCamera(42,1,.1,220);
 const orbit=new OrbitControls(camera,canvas);orbit.enableDamping=true;orbit.dampingFactor=.075;orbit.minDistance=10;orbit.maxDistance=48;orbit.maxPolarAngle=Math.PI/2-.08;orbit.target.set(0,1,0);orbit.enablePan=false;
 const hemi=new THREE.HemisphereLight(0xb5d9ff,0x312015,1.7);scene.add(hemi);
 const ambient=new THREE.AmbientLight(0x9c8cad,.45);scene.add(ambient);
 function light(color,intensity,x,y,z,shadow=false){let l=new THREE.PointLight(color,intensity,35,1.6);l.position.set(x,y,z);if(shadow){l.castShadow=true;l.shadow.mapSize.set(1024,1024);l.shadow.bias=-.00022;l.shadow.radius=4}scene.add(l);return l;}
-light(0xffbd6f,125,-9,10,4,true);light(0x72a9f3,92,9,12,-9);light(0xff873b,65,7,5,12);const keyLight=new THREE.DirectionalLight(0xf5e9d5,2.25);keyLight.position.set(3,17,12);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);keyLight.shadow.camera.left=-18;keyLight.shadow.camera.right=18;keyLight.shadow.camera.top=18;keyLight.shadow.camera.bottom=-18;keyLight.shadow.bias=-.0003;scene.add(keyLight);
+light(0xffbd6f,125,-9,10,4,true);light(0x72a9f3,92,9,12,-9);light(0xff873b,65,7,5,12);const keyLight=new THREE.DirectionalLight(0xf5e9d5,2.6);keyLight.position.set(3,17,12);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);keyLight.shadow.camera.left=-18;keyLight.shadow.camera.right=18;keyLight.shadow.camera.top=18;keyLight.shadow.camera.bottom=-18;keyLight.shadow.bias=-.0003;scene.add(keyLight);
 const mat=(color,roughness=.73,metalness=.05,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const stone=mat(0x333c4b,.96),stoneEdge=mat(0x4e5462,.94),blackStone=mat(0x212b35,.88),gold=mat(0xc6a36b,.31,.65),goldDark=mat(0x756047,.5,.65),whiteStone=mat(0xd4d3c8,.51,.08),obsidian=mat(0x2c3443,.43,.3),whiteGlow=mat(0x91dcff,.3,.08,{emissive:0x285c79,emissiveIntensity:.45}),blackGlow=mat(0xffbc70,.35,.1,{emissive:0x874019,emissiveIntensity:.48}),floorMat=mat(0x252c35,1);
 const boxGeo=new THREE.BoxGeometry(1,1,1),sphereGeo=new THREE.SphereGeometry(1,16,12);
@@ -118,6 +118,79 @@ function buildHall(){
   }
 }
 buildHall();
+// Additional cathedral architecture: pointed arches, leaded stained-glass, chandeliers and vault ribs.
+function decorateHall(){
+ const tracery=mat(0x6b6b72,.85,.16),blue=mat(0x355374,.54,.17,{emissive:0x19334b,emissiveIntensity:.8});
+ const burgundy=mat(0x643d52,.9),aurum=mat(0xb69354,.4,.61),limestone=mat(0x6e7374,.96);
+ function archCurve(parent,x,y,z,w,h,material,axis='xy',width=.11){
+  let pts=[];for(let s=0;s<=16;s++){
+   let u=s/16,xx=x-w/2+w*u,yy=y+h*(1-Math.pow(Math.abs(2*u-1),.72));
+   pts.push(axis==='xy'?[xx,yy,z]:[x,yy,z-w/2+w*u]);
+  }ribbon(parent,pts,width,material)
+ }
+ for(const x of [-10,0,10]){
+  // Arched leaded windows, faceted hand-painted panes (on rear wall).
+  const G=new THREE.Group();G.position.set(x,7.85,-19.08);scene.add(G);
+  for(let row=0;row<6;row++)for(let col=0;col<3;col++){
+   const cx=(col-1)*1.25,cy=(row-2.45)*1.07;
+   const colors=[0x326b9a,0x793d5b,0x9a793e,0x4b8090,0x825c77];
+   const cl=colors[(row+2*col+Math.round((x+10)/10))%colors.length];
+   const material=new THREE.MeshBasicMaterial({color:cl,transparent:true,opacity:.48,side:THREE.DoubleSide});
+   let panel=mesh(new THREE.PlaneGeometry(1.15,1.0),material,G,cx,cy,.03);panel.castShadow=false;
+   if((row+col)%2===0){let shard=mesh(new THREE.PlaneGeometry(.54,.8),new THREE.MeshBasicMaterial({color:0xc38f69,transparent:true,opacity:.23,side:THREE.DoubleSide}),G,cx+.17,cy,.06);shard.rotation.z=.47;shard.castShadow=false}
+  }
+  archCurve(G,0,3.13,.12,4.45,1.8,tracery,'xy',.20);
+  for(let i=-2;i<=2;i++){
+   let a=i*1.08;beam(G,[a,-3.4,.13],[a,3.18-.65*Math.abs(i),.13],.065,limestone);
+  }
+  for(let y of [-2,-.25,1.5])beam(G,[-2.24,y,.15],[2.24,y,.15],.055,tracery);
+  const rose=mesh(new THREE.TorusGeometry(.61,.085,8,32),aurum,G,0,2.62,.2);rose.castShadow=false;
+  for(let j=0;j<8;j++){const a=j*Math.PI/4;beam(G,[0,2.62,.2],[Math.cos(a)*.58,2.62+Math.sin(a)*.58,.2],.034,aurum)}
+ }
+ // Twin vaulted colonnades and arches across the nave.
+ for(const z of [-18,-9,0,9,18]){
+  archCurve(scene,0,11.9,z,30,5.5,limestone,'xy',.19);
+  for(const sx of [-1,1]){
+   archCurve(scene,sx*15,11.9,z,15,6.1,tracery,'xy',.09);
+   ribbon(scene,[[sx*15.1,14.1,z],[sx*12.7,16.9,z*.96],[sx*6,18.7,z*.82],[0,19.8,z*.55]],.13,limestone);
+  }
+ }
+ // Lancet niches carved into side walls.
+ for(const sx of [-1,1])for(const z of [-13,-4,5,14]){
+  archCurve(scene,sx*16.4,5.5,z,5.5,4.1,limestone,'yz',.16);
+  for(const dz of [-2.25,2.25])beam(scene,[sx*16.40,2.4,z+dz],[sx*16.4,5.8,z+dz],.14,tracery);
+  let o=mesh(new THREE.PlaneGeometry(2.3,4.7),new THREE.MeshBasicMaterial({color:sx<0?0x354968:0x73594b,transparent:true,opacity:.42,side:THREE.DoubleSide}),scene,sx*16.38,6.35,z);o.rotation.y=Math.PI/2;o.castShadow=false;
+ }
+ // Hanging bronze ring chandeliers with candle flames.
+ for(const z of [-12,11]){
+  const G=new THREE.Group();G.position.set(0,11.9,z);scene.add(G);
+  beam(G,[0,7.6,0],[0,2.1,0],.07,aurum);
+  const r=mesh(new THREE.TorusGeometry(2.2,.105,9,36),aurum,G,0,2.0,0,Math.PI/2);r.castShadow=false;
+  for(let i=0;i<10;i++){const a=i*Math.PI/5,px=Math.cos(a)*2.2,pz=Math.sin(a)*2.2;
+   beam(G,[px,1.94,pz],[px,2.56,pz],.05,aurum);
+   let flame=spike(G,px,2.75,pz,.09,.33,blackGlow,6);flame.userData.flame=true;flames.push(flame);
+  }
+ }
+ // Cloth standards, heraldic motifs, and floor decorations.
+ for(const sx of [-1,1])for(const z of [-10,9]){
+  const G=new THREE.Group();G.position.set(sx*14.5,8.8,z);G.rotation.y=sx*Math.PI/2;scene.add(G);
+  const hanging=mesh(new THREE.PlaneGeometry(2.15,5.1),sx>0?burgundy:blue,G,0,-.45,0);hanging.material.side=THREE.DoubleSide;
+  cube(G,2.32,.12,.15,0,2.18,0,aurum);
+  const diamond=mesh(new THREE.PlaneGeometry(1.1,1.1),aurum,G,0,.5,.014);diamond.rotation.z=Math.PI/4;
+  let badge=mesh(new THREE.OctahedronGeometry(.35),sx>0?blackGlow:whiteGlow,G,0,.48,.045);badge.scale.z=.15;
+ }
+ for(let i=0;i<9;i++){
+  const a=i*Math.PI*2/9,r=10.4;
+  const tile=mesh(new THREE.TorusGeometry(.23,.024,6,24),aurum,scene,Math.cos(a)*r,.02,Math.sin(a)*r,Math.PI/2);tile.castShadow=false;
+ }
+ // Dust illuminated by stained-glass ambient light.
+ const cloudG=new THREE.BufferGeometry(),cloud=[];
+ for(let i=0;i<200;i++){let x=(Math.random()-.5)*34,y=1+Math.random()*15,z=(Math.random()-.5)*36;cloud.push(x,y,z)}
+ cloudG.setAttribute('position',new THREE.Float32BufferAttribute(cloud,3));
+ const motes=new THREE.Points(cloudG,new THREE.PointsMaterial({color:0xd9c49b,size:.055,transparent:true,opacity:.25,depthWrite:false}));scene.add(motes);
+}
+decorateHall();
+
 // Altar and coordinate-accurate 8x8 board (a1 front-left when White faces the board).
 const board=new THREE.Group();scene.add(board);const SQ=1.42,BOARD=SQ*8,boardHeight=1.12;
 cube(board,BOARD+2.25,.55,BOARD+2.25,0,.31,0,blackStone);
@@ -137,6 +210,19 @@ for(let i=0;i<8;i++){
  const n=makeLabel(''+(i+1),28,'#bca07a');n.position.set(-BOARD/2-.43,.84,(3.5-i)*SQ);n.rotation.x=-Math.PI/2;n.scale.set(.18,.18,1);board.add(n);
 }
 function makeLabel(text,size,color){const c=document.createElement('canvas');c.width=96;c.height=96;const g=c.getContext('2d');g.fillStyle=color;g.font=`bold ${size}px Georgia`;g.textAlign='center';g.textBaseline='middle';g.fillText(text,48,48);const tex=new THREE.CanvasTexture(c);let m=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide});return new THREE.Mesh(new THREE.PlaneGeometry(1,1),m)}
+// A faint arcane glyph inside each carved marble cell. This does not affect hit testing.
+function runeTex(){
+ const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+ g.clearRect(0,0,128,128);g.strokeStyle='rgba(215,178,110,.82)';g.lineWidth=2.1;
+ g.beginPath();g.arc(64,64,44,0,Math.PI*2);g.stroke();
+ g.beginPath();g.arc(64,64,36,0,Math.PI*2);g.stroke();
+ for(let i=0;i<8;i++){let a=i*Math.PI/4;g.beginPath();g.moveTo(64+Math.cos(a)*28,64+Math.sin(a)*28);g.lineTo(64+Math.cos(a)*44,64+Math.sin(a)*44);g.stroke()}
+ g.beginPath();g.moveTo(64,28);g.lineTo(91,80);g.lineTo(37,80);g.closePath();g.stroke();
+ g.beginPath();g.moveTo(64,100);g.lineTo(91,48);g.lineTo(37,48);g.closePath();g.stroke();
+ return new THREE.CanvasTexture(c);
+}
+const runeTexture=runeTex(),runeMat=new THREE.MeshBasicMaterial({map:runeTexture,transparent:true,opacity:.13,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1});
+for(const tile of tiles){const r=mesh(new THREE.PlaneGeometry(SQ*.66,SQ*.66),runeMat,board,tile.position.x,boardHeight+.058,tile.position.z,-Math.PI/2);r.castShadow=false;r.receiveShadow=false}
 const targetMat=new THREE.MeshBasicMaterial({color:0x6cdcff,transparent:true,opacity:.56,depthWrite:false});const dangerMat=new THREE.MeshBasicMaterial({color:0xff7050,transparent:true,opacity:.78,depthWrite:false});const selectionMat=new THREE.MeshBasicMaterial({color:0xf6c46f,transparent:true,opacity:.8,depthWrite:false});
 const marks=[];
 function coords(square){const f='abcdefgh'.indexOf(square[0]),r=Number(square[1])-1;return new THREE.Vector3((f-3.5)*SQ,boardHeight+.095,(3.5-r)*SQ)}
@@ -146,45 +232,218 @@ function marker(square,kind){const pos=coords(square);const g=new THREE.Group();
  g.userData.kind=kind;g.userData.square=square;marks.push(g)
 }
 function clearMarks(){for(const o of marks)scene.remove(o);marks.length=0}
-// Procedural individual character silhouettes: a unique rook / horse / bishop / king / queen / pawn.
-function createPiece(type,color){
- const group=new THREE.Group(),body=new THREE.Group();group.add(body);
- const m=color==='w'?whiteStone:obsidian, trim=color==='w'?goldDark:gold,glow=color==='w'?whiteGlow:blackGlow;
- cyl(body,.39,.46,.18,0,.09,0,trim,32);cyl(body,.33,.38,.16,0,.22,0,m,28);cyl(body,.27,.33,.075,0,.32,0,trim,28);
- const height=type==='p'?1.24:type==='r'?1.7:type==='n'?1.8:type==='b'?1.93:type==='q'?2.12:2.28;
- if(type==='p'){
-   cyl(body,.22,.32,.5,0,.60,0,m,18);ball(body,.25,0,1.04,0,m);cyl(body,.16,.21,.12,0,1.30,0,trim);ball(body,.10,0,1.41,0,glow);
- }else if(type==='r'){
-   cyl(body,.27,.38,.92,0,.83,0,m,12);cyl(body,.38,.30,.14,0,1.36,0,trim,12);cyl(body,.40,.40,.22,0,1.52,0,m,12);
-   for(let i=0;i<6;i++){let a=i*Math.PI/3;cube(body,.17,.27,.19,Math.cos(a)*.30,1.72,Math.sin(a)*.30,trim).rotation.y=-a}
- }else if(type==='n'){
-   cyl(body,.29,.37,.66,0,.64,0,m,12);const horse=mesh(new THREE.BoxGeometry(.51,.75,.42),m,body,0,1.19,-.07);horse.rotation.x=-.28;
-   const head=mesh(new THREE.BoxGeometry(.54,.42,.68),m,body,0,1.55,-.23);head.rotation.x=-.15;
-   mesh(new THREE.ConeGeometry(.14,.42,6),m,body,-.18,1.90,-.05);
-   mesh(new THREE.ConeGeometry(.14,.42,6),m,body,.18,1.90,-.05);
-   for(const sx of [-1,1])ball(body,.055,sx*.28,1.62,-.44,glow);
-   cube(body,.15,.6,.15,0,1.45,.18,trim).rotation.x=.16;
- }else if(type==='b'){
-   cyl(body,.28,.35,.73,0,.7,0,m,24);ball(body,.30,0,1.30,0,m);
-   mesh(new THREE.ConeGeometry(.29,.67,12),m,body,0,1.76,0);ring(body,.26,.04,1.38,trim);ball(body,.075,0,2.11,0,glow);
- }else if(type==='q'){
-   cyl(body,.28,.4,.86,0,.75,0,m,24);ball(body,.29,0,1.39,0,m);
-   cyl(body,.45,.26,.20,0,1.67,0,trim,12);
-   for(let i=0;i<7;i++){let a=i*2*Math.PI/7;const x=Math.cos(a)*.36,z=Math.sin(a)*.36;
-     let spike=mesh(new THREE.ConeGeometry(.115,.44,5),m,body,x,1.94,z);ball(body,.07,x,2.18,z,glow)}
-   ball(body,.16,0,1.99,0,trim);
- }else{
-   cyl(body,.3,.4,.95,0,.77,0,m,24);cyl(body,.34,.3,.18,0,1.39,0,trim);
-   ball(body,.31,0,1.64,0,m);cyl(body,.27,.3,.12,0,1.93,0,trim);
-   cube(body,.15,.59,.15,0,2.24,0,trim);cube(body,.43,.15,.15,0,2.34,0,trim);
-   for(const i of [-1,1])ball(body,.04,i*.21,1.67,-.25,glow);
- }
- for(let i=0;i<4;i++){
-   const a=i*Math.PI/2;const gem=mesh(new THREE.OctahedronGeometry(.075),glow,body,Math.cos(a)*.29,.28,Math.sin(a)*.29);
- }
- group.userData.type=type;group.userData.color=color;group.userData.body=body;
+// Sculpted fantasy miniatures, deliberately separate from the chess.js rule model.
+// Forward = +Z; figures are rotated to face opposing armies.
+const figGeo = {
+  sphere: new THREE.SphereGeometry(1,16,12),
+  orb: new THREE.IcosahedronGeometry(1,1),
+  cone: new THREE.ConeGeometry(1,1,12),
+  oct: new THREE.OctahedronGeometry(1),
+};
+const ivoryPalette={stone:mat(0xe0d6c2,.79,.06),armor:mat(0x9ea5ac,.38,.56),deep:mat(0x414a55,.76,.12),cloth:mat(0x67778a,.89),edge:mat(0xd7b778,.31,.72),face:mat(0xc9baa5,.82),ink:mat(0x27333d,.6),magic:mat(0x83d9fa,.25,.15,{emissive:0x258fbc,emissiveIntensity:1.7}),leather:mat(0x625448,.83),gem:mat(0x42d2f8,.22,.18,{emissive:0x0b9ecd,emissiveIntensity:1.2})};
+const duskPalette={stone:mat(0x48515f,.77,.12),armor:mat(0x353c4b,.4,.48),deep:mat(0x141b28,.79,.14),cloth:mat(0x4f3145,.82),edge:mat(0xa67a52,.33,.68),face:mat(0x696b75,.8),ink:mat(0x0c1120,.66),magic:mat(0xff9668,.26,.14,{emissive:0xad3417,emissiveIntensity:2}),leather:mat(0x28232b,.84),gem:mat(0xe55e53,.3,.18,{emissive:0xb32313,emissiveIntensity:1.6})};
+function oval(p,x,y,z,sx,sy,sz,m,detail=0){let o=mesh(detail?figGeo.orb:figGeo.sphere,m,p,x,y,z);o.scale.set(sx,sy,sz);return o}
+function beam(p,a,b,r,m,sides=9){let x=new THREE.Vector3(...a),y=new THREE.Vector3(...b),delta=y.clone().sub(x);let o=mesh(new THREE.CylinderGeometry(r,r*.91,delta.length(),sides),m,p,...x.clone().add(y).multiplyScalar(.5).toArray());o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return o}
+function spike(p,x,y,z,r,h,m,n=7){return mesh(new THREE.ConeGeometry(r,h,n),m,p,x,y,z)}
+function tetra(p,x,y,z,r,m){let a=mesh(new THREE.TetrahedronGeometry(r),m,p,x,y,z);return a}
+function ribbon(p, pts, thick, m){const curve=new THREE.CatmullRomCurve3(pts.map(v=>new THREE.Vector3(...v)));return mesh(new THREE.TubeGeometry(curve,Math.max(10,pts.length*5),thick,5,false),m,p)}
+function robe(p, bottom, top, height, y, m, seed=0, start=0,end=2*Math.PI){
+ const n=28,h=8,vs=[],norm=[],uv=[],indices=[];
+ for(let j=0;j<=h;j++){let t=j/h;for(let i=0;i<=n;i++){
+  let a=start+(end-start)*i/n;let folded=(.043*Math.sin(a*9+seed)+.018*Math.sin(a*17+seed))*(1-t);
+  let radius=(bottom*(1-t)+top*t)+folded;
+  vs.push(Math.cos(a)*radius,y+t*height+.016*Math.sin(a*5+seed)*(1-t),Math.sin(a)*radius);uv.push(i/n,t);
+ }}for(let j=0;j<h;j++)for(let i=0;i<n;i++){const q=j*(n+1)+i;indices.push(q,q+1,q+n+1,q+1,q+n+2,q+n+1)}
+ let geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vs,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();let x=mesh(geometry,m,p);x.material.side=THREE.DoubleSide;return x;
+}
+function cape(p,m,wide=0.45,len=1.1){
+ const v=[],indices=[];const count=10,rows=8;for(let r=0;r<=rows;r++){
+  let t=r/rows;for(let j=0;j<=count;j++){let u=(j/count-.5)*2;
+   v.push(u*wide*(.6+.75*t),1.32-t*len+.024*Math.cos(u*11),-.16-t*.25+Math.abs(u)*.16*t+.035*Math.cos(u*8+t*3));
+  }}for(let r=0;r<rows;r++)for(let j=0;j<count;j++){let a=r*(count+1)+j;indices.push(a,a+1,a+count+1,a+1,a+count+2,a+count+1)}
+ let g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setIndex(indices);g.computeVertexNormals();const c=mesh(g,m,p);c.material.side=THREE.DoubleSide;return c;
+}
+function disk(p,r,y,m){const o=mesh(new THREE.TorusGeometry(r,.024,6,36),m,p,0,y,0,Math.PI/2);return o}
+function shield(p, x,y,z, P,scale=1){
+ const group=new THREE.Group();group.position.set(x,y,z);group.scale.setScalar(scale);p.add(group);
+ const shape=new THREE.Shape();shape.moveTo(-.29,.34);shape.lineTo(.29,.34);shape.lineTo(.32,.08);shape.quadraticCurveTo(.28,-.34,0,-.52);shape.quadraticCurveTo(-.28,-.34,-.32,.08);shape.closePath();
+ const plate=mesh(new THREE.ExtrudeGeometry(shape,{depth:.07,bevelEnabled:true,bevelThickness:.025,bevelSize:.022,bevelSegments:1,steps:1}),P.armor,group);plate.rotation.y=0;
+ const trim=mesh(new THREE.ShapeGeometry(shape),P.edge,group,0,0,.10);trim.scale.set(.85,.86,1);
+ const badge=mesh(new THREE.OctahedronGeometry(.11),P.gem,group,0,-.02,.12);badge.scale.set(.7,1.7,.32);
+ for(const dx of [-.235,.235]){beam(group,[dx,-.06,.14],[dx*.87,.26,.14],.018,P.edge,6)}
  return group;
 }
+function sword(p,P,kind='sword'){
+ const rig=new THREE.Group();p.add(rig);
+ beam(rig,[0,-.20,0],[0,.02,0],.046,P.leather,8);
+ beam(rig,[-.16,.012,0],[.16,.012,0],.032,P.edge,8);
+ oval(rig,0,-.24,0,.075,.065,.074,P.edge);
+ if(kind==='staff'){
+  beam(rig,[0,.02,0],[0,1.17,0],.045,P.edge,9);
+  for(const dx of [-.12,.12])ribbon(rig,[[0,.82,0],[dx,1.01,0],[dx*.8,1.20,0]],.022,P.armor);
+  let g=mesh(new THREE.OctahedronGeometry(.15),P.gem,rig,0,1.20,0);g.scale.set(.85,1.35,.8);
+ }else if(kind==='hammer'){
+  beam(rig,[0,.02,0],[0,.76,0],.055,P.leather,9);
+  const h=oval(rig,0,.76,0,.31,.19,.20,P.armor);h.rotation.z=.15;
+  for(const dx of [-.3,.3])spike(rig,dx,.78,0,.16,.27,P.edge,4).rotation.z=dx>0?-Math.PI/2:Math.PI/2;
+ }else{
+  const g=new THREE.BufferGeometry();const z=.05;const verts=[-.075,.04,z,.075,.04,z,-.065,.78,.02,.065,.78,.02,0,1.04,0, -.075,.04,-z,.075,.04,-z,-.065,.78,-.02,.065,.78,-.02,0,1.04,0];g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex([0,1,2,1,3,2,2,3,4,5,7,6,7,8,6,6,8,9,0,2,5,5,2,7,1,6,3,6,8,3,2,4,7,7,4,8]);g.computeVertexNormals();mesh(g,P.armor,rig);beam(rig,[0,.12,.065],[0,.78,.025],.012,P.edge,5);
+ }
+ return rig;
+}
+function humanFigure(body,P,role){
+ // Distinctive readable articulated silhouette: boots, legs, breastplate, pauldrons and face.
+ const regal=['k','q','b'].includes(role),height=regal?1.75:1.48;
+ const legs=new THREE.Group();body.add(legs);
+ for(const s of [-1,1]){
+  oval(legs,s*.14,.47,0,.135,.31,.15,P.deep);
+  oval(legs,s*.14,.22,.11,.155,.14,.23,P.armor);
+  oval(legs,s*.14,.56,.13,.115,.10,.11,P.edge);
+ }
+ const torso=new THREE.Group();body.add(torso);
+ torso.position.set(0,.87,0);
+ oval(torso,0,.23,0,.31,.43,.22,P.armor); // armor over stylized anatomy
+ const chest=oval(torso,0,.24,.20,.26,.28,.07,P.stone);
+ for(const s of [-1,1]){
+   oval(torso,s*.165,.24,.228,.08,.23,.038,P.edge);
+   oval(torso,s*.36,.47,.02,.19,.18,.24,P.armor);
+   const hip=oval(torso,s*.22,-.19,0,.16,.18,.2,P.deep);
+   const ar=new THREE.Group();ar.position.set(s*.35,.41,.03);torso.add(ar);
+   oval(ar,0,-.22,.03,.115,.28,.13,P.stone);
+   oval(ar,0,-.45,.055,.13,.13,.12,P.armor);
+   oval(ar,0,-.52,.13,.105,.105,.13,P.deep);
+   if(s===-1)torso.userData.left=ar;else torso.userData.right=ar;
+ }
+ beam(torso,[-.22,-.12,.24],[.22,-.12,.24],.052,P.edge);
+ for(const s of [-1,1])spike(torso,s*.35,.56,0,.12,.18,P.edge,6).rotation.z=-s*.38;
+ let neck=oval(torso,0,.67,.015,.13,.13,.13,P.face);
+ const head=new THREE.Group();head.position.set(0,.83,.01);torso.add(head);
+ oval(head,0,.10,.02,.23,.27,.22,P.face);
+ oval(head,0,.03,.24,.07,.095,.065,P.face); // nose
+ for(const s of [-1,1]){
+  oval(head,s*.092,.14,.223,.05,.033,.022,P.ink);
+  beam(head,[s*.045,.21,.237],[s*.145,.215,.207],.020,P.deep,6);
+ }
+ ribbon(head,[[-.095,-.015,.198],[0,-.035,.237],[.095,-.015,.198]],.015,P.deep);
+ if(regal){robe(body,.46,.24,1.0,.32,P.cloth,role==='q'?2:0);cape(torso,P.cloth,role==='k'?.52:.47,1.14);}
+ else {robe(body,.34,.25,.55,.37,P.leather,1.5);}
+ const belt=oval(body,0,.78,0,.38,.075,.24,P.edge);
+ oval(body,0,.78,.23,.10,.085,.065,P.gem);
+ return {torso,head,left:torso.userData.left,right:torso.userData.right,legs};
+}
+function addHelm(head,P,style='guard'){
+ oval(head,0,.31,0,.25,.15,.245,P.armor);
+ if(style==='guard'){
+  const fin=spike(head,0,.49,-.01,.21,.35,P.edge);fin.scale.z=.42;
+  const brow=oval(head,0,.22,.185,.24,.06,.09,P.edge);
+  for(const sx of [-1,1])oval(head,sx*.19,.04,.055,.08,.19,.16,P.armor);
+ }else if(style==='crown'){
+  const band=mesh(new THREE.CylinderGeometry(.29,.28,.12,10),P.edge,head,0,.35,0);
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;spike(head,Math.cos(a)*.23,.49,Math.sin(a)*.23,.07,.25,P.edge,5)}
+  oval(head,0,.55,0,.084,.09,.08,P.gem);
+ }else if(style==='hood'){
+  const cone=spike(head,0,.43,-.09,.34,.53,P.cloth,10);cone.rotation.x=-.14;
+  oval(head,0,.30,.12,.27,.09,.20,P.deep);
+ }
+}
+function makeHorse(body,P){
+ const horse=new THREE.Group();horse.position.y=.18;body.add(horse);
+ oval(horse,0,.58,0,.27,.34,.50,P.stone);
+ for(const x of [-.20,.20])for(const z of [-.31,.33]){
+  beam(horse,[x,.48,z],[x,.16,z+.035],.072,P.stone);
+  oval(horse,x,.11,z+.04,.11,.075,.15,P.armor);
+ }
+ oval(horse,0,.96,.32,.20,.45,.23,P.stone).rotation.x=.38;
+ const head=oval(horse,0,1.20,.49,.22,.28,.24,P.stone);head.rotation.x=-.15;
+ const muzzle=oval(horse,0,1.03,.69,.19,.16,.27,P.face);
+ for(const s of [-1,1]){
+  spike(horse,s*.15,1.53,.40,.095,.32,P.armor,6);
+  oval(horse,s*.22,1.28,.64,.038,.045,.028,P.gem);
+ }
+ ribbon(horse,[[0,1.45,.25],[0,1.25,.16],[0,1.01,.05],[0,.88,-.35]],.05,P.deep);
+ beam(horse,[-.22,1.18,.57],[.22,1.18,.57],.019,P.edge);
+ for(const s of [-1,1])ribbon(horse,[[s*.2,1.18,.5],[s*.19,1.0,.69],[s*.13,.81,.5]],.015,P.edge);
+ const rider=new THREE.Group();rider.position.set(0,.87,-.12);rider.scale.setScalar(.68);horse.add(rider);
+ const rig=humanFigure(rider,P,'p');addHelm(rig.head,P,'guard');const lance=sword(rig.right,P,'staff');lance.position.set(.01,-.48,.14);lance.rotation.z=-.22;
+ const sw=shield(rig.left,0,-.45,.18,P,.83);sw.rotation.y=.3;
+ return {horse,rider,rig,weapon:lance};
+}
+function createPiece(type,color){
+ const group=new THREE.Group();const P=color==='w'?ivoryPalette:duskPalette;
+ const body=new THREE.Group();group.add(body);
+ // Low rune-inscribed sculptural plinth, not the traditional lathed chess silhouette.
+ cyl(body,.48,.49,.11,0,.055,0,P.deep,12);
+ cyl(body,.46,.48,.07,0,.13,0,P.edge,12);
+ cyl(body,.435,.45,.16,0,.24,0,P.stone,12);
+ disk(body,.42,.329,P.magic);
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;const gem=mesh(new THREE.BoxGeometry(.085,.11,.06),P.edge,body,Math.cos(a)*.44,.275,Math.sin(a)*.44);gem.rotation.y=-a}
+ const roots={base:body};let rig=null;
+ if(type==='n'){
+  const h=makeHorse(body,P);roots.rig=h.rig;roots.weapon=h.weapon;roots.horse=h.horse;
+ }else if(type==='r'){
+  // An armored siege guardian / war golem wielding a stone hammer.
+  let sculpt=new THREE.Group();body.add(sculpt);sculpt.position.y=.03;sculpt.scale.set(1.05,1.13,1.05);
+  rig=humanFigure(sculpt,P,'r');addHelm(rig.head,P,'guard');
+  const armor=oval(rig.torso,0,.25,.26,.32,.35,.10,P.stone);armor.scale.x=1.1;
+  for(let i=0;i<4;i++){
+   let x=(i-1.5)*.18;spike(rig.head,x,.51,-.04,.10,.27,P.armor,4);
+  }
+  const weapon=sword(rig.right,P,'hammer');weapon.position.set(0,-.44,.12);weapon.rotation.z=-.1;roots.weapon=weapon;
+  shield(rig.left,0,-.45,.19,P,.7);
+  for(const sx of [-1,1]){
+   oval(rig.torso,sx*.45,.43,.02,.24,.24,.25,P.armor);
+   for(let z=-1;z<=1;z++)spike(rig.torso,sx*.44,.61,z*.1,.09,.16,P.edge,4);
+  }
+  roots.rig=rig;
+ }else{
+  rig=humanFigure(body,P,type);roots.rig=rig;
+  if(type==='p'){
+   addHelm(rig.head,P,'guard');
+   const shieldObj=shield(rig.left,0,-.42,.18,P,.82);shieldObj.rotation.y=-.28;
+   const spear=sword(rig.right,P,'staff');spear.position.set(0,-.49,.12);spear.rotation.z=.08;roots.weapon=spear;
+  }else if(type==='b'){
+   addHelm(rig.head,P,'hood');
+   // Arched mitre and open spell book for a stone cleric.
+   const brim=oval(rig.head,0,.12,.19,.25,.06,.10,P.edge);
+   let book=new THREE.Group();book.position.set(-.15,-.46,.23);rig.left.add(book);
+   for(const sx of [-1,1]){const pg=cube(book,.22,.025,.26,sx*.10,0,0,P.stone);pg.rotation.z=sx*.16;pg.rotation.y=sx*.28}
+   const staff=sword(rig.right,P,'staff');staff.position.set(0,-.50,.15);roots.weapon=staff;
+   for(let j=0;j<4;j++){let a=j*Math.PI/2;spike(rig.head,Math.cos(a)*.18,.43,Math.sin(a)*.18,.06,.18,P.edge,5)}
+  }else if(type==='q'){
+   addHelm(rig.head,P,'crown');
+   for(const s of [-1,1]){
+    let fan=spike(rig.torso,s*.42,.75,-.06,.17,.55,P.edge,7);fan.rotation.z=-s*.40;
+   }
+   cape(rig.torso,P.cloth,.65,1.19);
+   let scepter=sword(rig.right,P,'staff');scepter.position.set(0,-.48,.12);roots.weapon=scepter;
+   oval(rig.torso,0,.29,.33,.14,.20,.05,P.gem);
+  }else if(type==='k'){
+   addHelm(rig.head,P,'crown');
+   oval(rig.head,0,-.12,.16,.15,.20,.12,P.face); // king beard
+   for(let i=0;i<5;i++)spike(rig.head,(i-2)*.062,-.26,.20,.044,.22,P.face,5).rotation.z=(i-2)*.10;
+   const blade=sword(rig.right,P,'sword');blade.position.set(0,-.44,.13);blade.rotation.z=-.09;roots.weapon=blade;
+   const guard=shield(rig.left,0,-.45,.20,P,.9);guard.rotation.y=-.3;
+   oval(rig.torso,0,.33,.28,.15,.17,.048,P.edge);
+   cape(rig.torso,P.cloth,.62,1.26);
+  }
+ }
+ // White faces towards the opposing back rank; black faces towards White.
+ body.rotation.y=color==='w'?Math.PI:0;
+ group.userData={type,color,body,rig:roots.rig,weapon:roots.weapon||null,restY:0,phase:0};
+ // Reserve individual selection events for group roots; the piece model itself is visual only.
+ group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+ return group;
+}
+
+// Speckled stone surface makes the sculpted armies read as carved materials instead of plastic primitives.
+function stoneGrain(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#dedede';x.fillRect(0,0,256,256);
+ let seed=16791;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ for(let i=0;i<18000;i++){const l=140+Math.floor(rnd()*110);x.fillStyle=`rgba(${l},${l},${l},${.05+rnd()*.17})`;x.fillRect(rnd()*256,rnd()*256,1+rnd()*3,1+rnd()*3)}
+ for(let i=0;i<13;i++){x.strokeStyle='rgba(72,68,65,.11)';x.lineWidth=.3+rnd()*.55;x.beginPath();const px=rnd()*256,py=rnd()*256;x.moveTo(px,py);x.bezierCurveTo(px+rnd()*50,py-15,px+rnd()*75,py+20,px+rnd()*100,py+40);x.stroke()}
+ const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;return tex}
+const stoneGrainTexture=stoneGrain();
+for(const M of [whiteStone,obsidian,ivoryPalette.stone,ivoryPalette.armor,ivoryPalette.face,duskPalette.stone,duskPalette.armor,duskPalette.face]){M.bumpMap=stoneGrainTexture;M.bumpScale=.045;M.needsUpdate=true}
+
 const pieces=new Map(),fx=[];let selected=null,animation=null,busy=false,mode='ai',playerColor='w',flip=false,started=false,sound=true,endShown=false,aiJob=0,moveCache=[];
 function rebuildPieces(){if(animation){scene.remove(animation.mover);if(animation.taken)scene.remove(animation.taken)}for(const p of pieces.values())scene.remove(p);pieces.clear();for(const file of 'abcdefgh')for(let rank=1;rank<=8;rank++){
  let sq=file+rank,p=game.get(sq);if(!p)continue;const obj=createPiece(p.type,p.color);obj.position.copy(coords(sq));obj.position.y=boardHeight+.14;obj.userData.square=sq;obj.userData.restY=obj.position.y;scene.add(obj);pieces.set(sq,obj)
@@ -209,7 +468,7 @@ function showPromote(from,to){const div=$('promotionChoices');div.innerHTML='';c
 function showResult(){if(!game.isGameOver()||endShown)return;endShown=true;$('endTitle').textContent=game.isCheckmate()?'将死 · 胜负已分':'棋局终章';$('endDesc').textContent=statusString();$('endGame').classList.add('show')}
 let camTween=null,desiredCam=null;function camTo(pos,target,duration=1050){const now=performance.now();camTween={from:camera.position.clone(),to:new THREE.Vector3(...pos),targetFrom:orbit.target.clone(),targetTo:new THREE.Vector3(...target),start:now,duration};orbit.enabled=false}
 function camPreset(name){let p;
- if(name==='top')p=[0,27,1.8];else if(name==='low')p=[flip?-.5:.5,7,flip?-21:21];else if(name==='wide')p=[22,22,30];else p=[flip?-14:14,17,flip?-19:19];
+ if(name==='top')p=[0,27,1.8];else if(name==='low')p=[flip?-.5:.5,7,flip?-21:21];else if(name==='wide')p=[22,22,30];else p=[flip?-12.7:12.7,14.4,flip?-16.6:16.6];
  camTo(p,[0,1,0],1000);document.querySelectorAll('[data-cam]').forEach(b=>b.classList.toggle('active',b.dataset.cam===name))
 }
 function particlesAt(pos,color){const material=mat(color==='w'?0xe7e0d3:0x3a4655,.75);for(let i=0;i<25;i++){
@@ -226,7 +485,7 @@ function performMove(spec){
  const from=mover.position.clone(),to=coords(legal.to);to.y=boardHeight+.14;
  const isCapture=!!taken;const start=performance.now();
  if(isCapture){const target=to.clone();const direction=from.clone().sub(target).normalize();const side=new THREE.Vector3((from.x+target.x)/2+direction.x*3.1,5.5,(from.z+target.z)/2+direction.z*3.4);camTo([side.x,side.y,side.z],[target.x,1.1,target.z],900)}
- animation={start,duration:isCapture?1680:680,from,to,mover,taken,hit:false,legal,done:()=>{
+ animation={start,duration:isCapture?2050:850,from,to,mover,taken,hit:false,legal,previousFacing:mover.rotation.y,done:()=>{
    if(taken)scene.remove(taken);
    mover.position.copy(to);pieces.set(legal.to,mover);mover.userData.square=legal.to;
    if(legal.flags.includes('k')||legal.flags.includes('q')){
@@ -305,13 +564,32 @@ resize();rebuildPieces();camPreset('isometric');
 const clock=new THREE.Clock();let last=performance.now();
 function animate(time){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);
  if(camTween){const f=Math.min((time-camTween.start)/camTween.duration,1),t=f*f*(3-2*f);camera.position.lerpVectors(camTween.from,camTween.to,t);orbit.target.lerpVectors(camTween.targetFrom,camTween.targetTo,t);if(f>=1){camTween=null;orbit.enabled=true}}
- if(animation){const a=animation,t=Math.min((time-a.start)/a.duration,1),u=Math.min(t/(a.taken?.70:.88),1);const e=u*u*(3-2*u);
-   a.mover.position.lerpVectors(a.from,a.to,e);a.mover.position.y=a.from.y+Math.sin(Math.PI*u)*(a.taken?.9:.36);
-   a.mover.rotation.y=Math.sin(t*Math.PI*2)*.14;
-   if(a.taken&&t>=.70&&!a.hit){a.hit=true;particlesAt(a.to,a.taken.userData.color);playSound('attack');scene.remove(a.taken)}
-   if(t>=1){a.mover.rotation.y=0;const complete=a.done;animation=null;complete()}
+ if(animation){
+  const a=animation,t=Math.min((time-a.start)/a.duration,1);
+  const run=a.taken?Math.min(t/.51,1):Math.min(t/.90,1);
+  const smooth=run*run*(3-2*run),rise=a.taken?.32:.20;
+  a.mover.position.lerpVectors(a.from,a.to,smooth);
+  a.mover.position.y=a.from.y+Math.sin(Math.PI*run)*rise;
+  // Character animation: an intentional windup, strike and return rather than a sliding chess piece.
+  const rig=a.mover.userData.rig;
+  const wind=a.taken?Math.max(0,Math.min(1,(t-.35)/.16)):0;
+  const strike=a.taken?Math.max(0,Math.min(1,(t-.51)/.18)):0;
+  const recovery=a.taken?Math.max(0,Math.min(1,(t-.72)/.25)):0;
+  const motion=a.taken?(wind*.7-strike*1.85+recovery*1.15):0;
+  if(rig){rig.right.rotation.x=motion;rig.left.rotation.z=Math.sin(run*Math.PI*3)*.12;rig.torso.rotation.z=(a.taken?-.12*Math.sin(Math.PI*Math.min(t/.78,1)):0);rig.head.rotation.y=Math.sin(t*4)*.12}
+  a.mover.rotation.y=Math.sin(Math.PI*run)*.07;
+  if(a.taken){
+   const v=a.taken.userData.rig;
+   if(v){v.torso.rotation.x=t>.66?-Math.min(1,(t-.66)*7)*.55:0;v.head.rotation.z=t>.66?Math.min(1,(t-.66)*5)*.3:0}
+   if(t>=.69&&!a.hit){a.hit=true;particlesAt(a.to,a.taken.userData.color);playSound('attack');scene.remove(a.taken)}
+  }
+  if(t>=1){
+   a.mover.rotation.y=a.previousFacing;
+   if(rig){rig.right.rotation.x=0;rig.left.rotation.z=0;rig.torso.rotation.z=0;rig.head.rotation.y=0}
+   const complete=a.done;animation=null;complete();
+  }
  }
- for(const o of pieces.values()){if(animation&&animation.mover===o)continue;const b=o.userData.body;b.position.y=.023*Math.sin(time*.0018+(o.position.x+o.position.z));}
+ for(const o of pieces.values()){if(animation&&animation.mover===o)continue;const b=o.userData.body;b.position.y=.019*Math.sin(time*.0017+(o.position.x+o.position.z));const rig=o.userData.rig;if(rig){rig.head.rotation.y=.042*Math.sin(time*.0009+o.position.x);rig.right.rotation.x=.025*Math.sin(time*.0012+o.position.z);}}
  for(let i=fx.length-1;i>=0;i--){const o=fx[i];o.userData.life-=dt;if(o.userData.pulse){o.scale.addScalar(dt*7);o.material.opacity=Math.max(0,o.userData.life*1.8)}else{o.userData.vel.y-=10*dt;o.position.addScaledVector(o.userData.vel,dt);o.rotation.x+=o.userData.spin.x*dt;o.rotation.y+=o.userData.spin.y*dt;if(o.position.y<boardHeight+.02){o.position.y=boardHeight+.02;o.userData.vel.multiplyScalar(.35)}}if(o.userData.life<=0){scene.remove(o);fx.splice(i,1)}}
  for(let i=0;i<flames.length;i++){const f=flames[i];f.scale.set(1+.18*Math.sin(time*.012+i*3),1+.14*Math.sin(time*.018+i*2),1)}
  for(const m of marks){m.children[0].rotation.z+=dt*(m.userData.kind==='selected'?-.9:.6)}

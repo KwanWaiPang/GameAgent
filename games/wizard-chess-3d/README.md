@@ -1,38 +1,35 @@
-# Wizard Chess — Sanctum of Kings
+# Wizard Chess 3D — Living Stone Legions (原创高保真改版)
 
-Independent, procedural Three.js interpretation of a cinematic gothic-cathedral wizard chess demo.
+本项目针对 `KwanWaiPang/cursor-agent/games/wizard-chess-3d/` 原始项目的视觉表现进行重制，保留原有 `chess.js` 国际象棋规则层与对战功能。风格参考哥特式巫师棋游戏，但模型、场景和动作均为原创程序化实现，不包含参考站的专有资源或模型。
 
-## Run
+## 此次视觉重制
 
-Open `index.html` through a local HTTP server (ES modules need HTTP, not file://):
+- 六种不同人物棋子：持盾长枪兵、骑马骑士、重甲战锤守卫、持魔杖与魔法书的教士、戴冠女术士、披风持剑国王。
+- 装备细节：盔甲、肩甲、长靴、面部、盾牌纹章、剑/锤/法杖、披风、皇冠、底座符文。
+- 哥特教堂：尖拱、石柱、彩窗玫瑰花饰、吊灯、彩色横幅、漂浮尘埃、火炬。
+- 棋盘：大理石棋格、符文刻纹、阵营灯光。
+- 演出：移动弹跳、人物摆臂、武器挥击、近身受击、石块碎裂、电影化镜头。
 
-```bash
-python -m http.server 8000
-```
+## 玩法功能（延续原版）
 
-Visit `http://localhost:8000`.
+- `chess.js` 规则：王车易位、吃过路兵、升变、将军、将死、和棋判定。
+- AI（3档）、本地双人、AI 自动演示；换边视角、悔棋、提示、四种镜头、音效。
+- 点击人物/棋格选择和下棋，拖动鼠标旋转，滚轮缩放。
 
-## Publish on GitHub Pages
+## 部署到已有 GitHub Pages
 
-1. Create a public GitHub repository.
-2. Upload `index.html` at the repository root (README is optional).
-3. Repository **Settings → Pages → Build and deployment → Deploy from a branch**.
-4. Select `main` and `/ (root)`, then Save.
-5. Your URL should become `https://YOURNAME.github.io/REPOSITORY/` after GitHub Pages deploys.
+将本压缩包的 `games/wizard-chess-3d/index.html` 替换你仓库 `cursor-agent` 下的同名文件（README 可一并替换），提交到 `main`。无需 npm、Vite 或构建步骤，保留当前 GitHub Pages 路径：
 
-No build process, Node installation, or backend needed. Internet access is required for two CDN dependencies (`three` and `chess.js`). No remote assets, models, textures, sound files, AI APIs, or account setup are used. The computer opponent runs locally.
+`https://kwanwaipang.github.io/cursor-agent/games/wizard-chess-3d/`
 
-## Features
+游戏通过 import map 加载以下第三方库，因此**运行时需要联网**：
 
-- A procedurally modeled Gothic great hall, chess altar, lit braziers and stained-glass windows.
-- Distinct procedural ivory and obsidian king, queen, bishop, knight, rook, pawn models.
-- Complete legal chess via `chess.js`: castling, en passant, promotion, check, checkmate, stalemate and draws.
-- Player versus local AI, pass-and-play, auto-demo.
-- Move/capture effects, stone shatter debris, cinematic tracking camera, chess log, hint and undo.
-- Orbit and zoom camera, four camera presets, audio synthesis, mobile-friendly HUD.
+- Three.js 0.160.1
+- OrbitControls (Three.js addons)
+- chess.js 1.4.0
 
-This is an original reimplementation, **not an identical extraction** of the reference site's 3D models, textures, animation rigs or source code.
+## 当前限制
 
-## Attribution
+这是「角色化程序雕塑」而不是从 Blender 导出的高精度扫描/骨骼 GLB 模型。人物与场景比原来的传统几何棋子复杂得多，但仍不能保证与参考网站的原版模型、法线贴图、纹理或战斗动作逐像素一致；将来如获得具有授权的 GLB/GLTF 动画资源，可替换 `createPiece()` 并保留规则层。
 
-Uses the [Three.js](https://threejs.org/) and [chess.js](https://github.com/jhlywa/chess.js) runtime libraries via CDN. Their respective licenses are maintained by the upstream projects. No code or artwork from the referenced commercial demo is included.
+已完成 JavaScript 模块语法及文件结构检查。由于当前测试环境阻止打开本地浏览器页面且不能加载依赖 CDN，未能进行最终 WebGL 视觉和棋局端到端验收。请在浏览器部署后检查画面与交互。
