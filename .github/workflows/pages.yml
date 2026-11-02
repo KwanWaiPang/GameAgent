@@ -29,7 +29,14 @@ jobs:
           cache: npm
           cache-dependency-path: |
             games/street-duty/package-lock.json
+            games/sandline/package-lock.json
             games/pocket/package-lock.json
+
+      - name: Sandline tests
+        working-directory: games/sandline
+        run: |
+          npm ci
+          npm test
 
       - name: Pocket adventure tests
         working-directory: games/pocket
@@ -47,6 +54,7 @@ jobs:
           node --experimental-default-type=module games/go/js/kifu.test.js
           node --experimental-default-type=module games/go/js/katago-bridge.test.js
           node --experimental-default-type=module --test games/junqi/js/engine.test.js
+          node --experimental-default-type=module --test games/richera/js/engine.test.js
           node --experimental-default-type=module --test games/redcap/js/fit.test.js
           node --experimental-default-type=module --test games/street-duty/src/core/quality.test.js
 
@@ -68,6 +76,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             games/street-duty/package-lock.json
+            games/sandline/package-lock.json
             games/pocket/package-lock.json
 
       - name: Build street-duty
@@ -76,6 +85,14 @@ jobs:
           npm ci
           npm run build
           # Guard: production index must reference hashed assets, not /src/main.js
+          grep -q './assets/' index.html
+          ls assets/*.js >/dev/null
+
+      - name: Build sandline
+        working-directory: games/sandline
+        run: |
+          npm ci
+          npm run build
           grep -q './assets/' index.html
           ls assets/*.js >/dev/null
 
@@ -99,6 +116,18 @@ jobs:
           mkdir -p _site
           cp index.html .nojekyll README.md ARCHITECTURE.md THIRD_PARTY_NOTICES.md LICENSE _site/
           cp -r css js games assets _site/
+          # 沙线行动：同样只保留构建产物
+          rm -rf _site/games/sandline/src \
+                 _site/games/sandline/tools \
+                 _site/games/sandline/tests \
+                 _site/games/sandline/node_modules \
+                 _site/games/sandline/dist \
+                 _site/games/sandline/*.md \
+                 _site/games/sandline/package.json \
+                 _site/games/sandline/package-lock.json \
+                 _site/games/sandline/vite.config.ts \
+                 _site/games/sandline/tsconfig.json \
+                 _site/games/sandline/index.source.html
           # 街战突击：发布同步后的构建（index.html + assets/），去掉源码树
           # （仓库 Pages 当前为 legacy/branch 部署时，main 上的同内容也会生效）
           rm -rf _site/games/street-duty/src \
@@ -139,6 +168,7 @@ jobs:
           find _site -name '*.map' -delete
           find _site -path '*/3D/fbx/*' -delete 2>/dev/null || true
           grep -q './assets/' _site/games/street-duty/index.html
+          grep -q './assets/' _site/games/sandline/index.html
           grep -q './assets/' _site/games/pocket/index.html
 
       - name: Setup Pages

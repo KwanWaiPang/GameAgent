@@ -16,8 +16,10 @@ const KIND = {
   wizard2: { felt: 0x2a2438, glow: 0xd7c4f0, plaque: "#1a1628", ink: "#f4ead4" },
   xiangqi3d: { felt: 0x6e3428, glow: 0xe7c27a, plaque: "#2a1814", ink: "#f6e6d0" },
   mono: { felt: 0x2f8f62, glow: 0x8ee0b0, plaque: "#163028", ink: "#e7fff2" },
+  richera: { felt: 0x6e2430, glow: 0xe2b56a, plaque: "#2a1614", ink: "#f8e7cf" },
   fps: { felt: 0x3e4650, glow: 0x9eb0c4, plaque: "#1a1e24", ink: "#e6eef6" },
   street: { felt: 0x8a6844, glow: 0xf0c48a, plaque: "#2a2118", ink: "#f8e6cc" },
+  sandline: { felt: 0xc4a574, glow: 0xf0e2c0, plaque: "#2a2116", ink: "#f8edd8" },
   pocket: { felt: 0x3d8a48, glow: 0xf06058, plaque: "#16301c", ink: "#ffe8e4" },
   redcap: { felt: 0x3d74c8, glow: 0xf07068, plaque: "#1a2740", ink: "#ffe4e0" },
 };
@@ -586,6 +588,13 @@ function buildDiorama(kind, dio, ped) {
       put(box, color, x, 0.05, z, 0.16, 0.06, 0.12);
     });
     put(box, 0xf4efe4, 0, 0.1, 0, 0.08, 0.08, 0.08);
+  } else if (kind === "richera") {
+    put(box, 0x6e2430, 0, 0.04, 0, 0.62, 0.05, 0.62);
+    put(box, 0xd3544a, -0.16, 0.16, 0.16, 0.12, 0.18, 0.12);
+    put(box, 0xe0a045, 0.02, 0.22, -0.02, 0.12, 0.32, 0.12);
+    const tower = put(box, 0xf4efe4, 0.16, 0.28, -0.14, 0.1, 0.42, 0.1);
+    put(box, 0xe2b56a, 0, 0.12, 0, 0.08, 0.08, 0.08);
+    ped.userData.tick = (t) => { tower.position.y = 0.28 + Math.sin(t * 2) * 0.01; };
   } else if (kind === "fps") {
     put(box, 0x6a7068, 0, 0.08, 0, 0.5, 0.08, 0.16);
     put(box, 0x8b2a2a, -0.12, 0.22, 0.04, 0.1, 0.26, 0.08);
@@ -603,6 +612,11 @@ function buildDiorama(kind, dio, ped) {
       windows[1].material.emissive = new THREE.Color(0xffc98a);
       windows[1].material.emissiveIntensity = 0.35 + Math.sin(t * 3) * 0.25;
     };
+  } else if (kind === "sandline") {
+    put(box, 0xd8c4a0, 0, 0.04, 0, 0.62, 0.06, 0.4);
+    put(box, 0xc4a574, -0.16, 0.16, -0.04, 0.12, 0.22, 0.16);
+    put(box, 0xe8dcc4, 0.14, 0.2, 0.02, 0.14, 0.3, 0.12);
+    put(box, 0x8a6238, 0.02, 0.1, 0.12, 0.28, 0.08, 0.06);
   } else if (kind === "pocket") {
     put(new THREE.CircleGeometry(0.28, 20), 0x3d8f45, 0, 0.02, 0, 1, 1, 1).rotation.x = -Math.PI / 2;
     const ball = new THREE.Group();

@@ -30,8 +30,8 @@ The Street Duty engine contract is [`games/street-duty/ARCHITECTURE.md`](./games
                                │
         ┌──────────┬───────────┴──────┬────────────┬──────────┐
         ▼          ▼                  ▼            ▼          ▼
-   games/go/…  games/fps/   games/street-duty/  games/pocket/  games/redcap/
-   static boards  static FPS    Vite FPS         static 3D      platformer
+   games/go/…  games/fps/   games/street-duty/  games/sandline/  games/pocket/  games/redcap/
+   static boards  static FPS    Vite street       Vite sandline  static 3D      platformer
 ```
 
 | Layer | Responsibility |
@@ -49,13 +49,13 @@ The hub draws a Three.js gallery only. It does not boot any game runtime. Choosi
 
 ### 3.1 Static
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap`
 
 Open and play. No `npm`. Any static file server is enough.
 
 ### 3.2 Built
 
-`street-duty` and `pocket` use Vite. Street Duty's flow:
+`street-duty`, `sandline`, and `pocket` use Vite. Street Duty and Sandline both sync the build to `index.html` + `assets/` in the game folder. Street Duty's flow:
 
 ```
 src/  +  index.source.html   →  vite build  →  dist/
@@ -88,6 +88,8 @@ Production must load the hashed `assets/*.js`. Do not ship the Vite source HTML 
 | Deploy | Static | Built artifacts |
 
 They do not import each other and must not replace each other. Edit one without touching the other.
+
+Sandline (`games/sandline/`) is a third shooter in its own folder. Rules are adapted from sandline-threejs-fps (MIT). The desert and snow arenas stay in source. Soldiers, guns, and audio are procedural, with no Counter-Strike maps or models. It ships a build, the same way Street Duty does.
 
 ---
 
@@ -131,7 +133,7 @@ If Pages still serves the `main` root as-is, the committed `games/street-duty/in
 
 1. **New game:** self-contained under `games/<slug>/`, then add a hub card.
 2. **Street Duty:** edit `src/` → `npm run build` → commit the synced `index.html` and `assets/`.
-3. Do not mix or overwrite `fps` and `street-duty`.
+3. Do not mix or overwrite `fps`, `street-duty`, and `sandline`.
 4. When vendors change, update [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and the [Chinese notices](./THIRD_PARTY_NOTICES.zh.md).
 5. Hub docs live at the repo root, one file per language. The Street Duty engine contract stays under `games/street-duty/`.
 

@@ -89,6 +89,14 @@
   background: radial-gradient(circle, rgba(90, 107, 58, 0.22), transparent 65%);
 }
 
+.game-card-sandline .mark {
+  color: #c4a574;
+}
+
+.game-card-sandline::before {
+  background: radial-gradient(circle, rgba(196, 165, 116, 0.28), transparent 65%);
+}
+
 .game-card-street .mark {
   color: #6b4a2e;
 }
@@ -211,12 +219,27 @@
     linear-gradient(135deg, #7ad6ff, #ffd56a 50%, #ff9f7a);
 }
 
+.preview-richera {
+  background:
+    linear-gradient(#f4efe4, #f4efe4) 62% 58% / 14% 42% no-repeat,
+    linear-gradient(#e0a045, #e0a045) 46% 66% / 16% 28% no-repeat,
+    linear-gradient(#d3544a, #d3544a) 30% 72% / 16% 18% no-repeat,
+    linear-gradient(#6e2430, #6e2430) 50% 78% / 78% 46% no-repeat,
+    #141a28;
+}
+
 .preview-fps {
   background:
     linear-gradient(90deg, #8b2a2a 0 42%, #1e88e5 42% 100%),
     #3a3e44;
   background-blend-mode: multiply;
   background-color: #6a7068;
+}
+
+.preview-sandline {
+  background:
+    linear-gradient(#e7d3a8 0 46%, #c4a574 46% 70%, #8a6238 70%),
+    radial-gradient(circle at 70% 28%, #f4efe4 0 8px, transparent 9px);
 }
 
 .preview-street {

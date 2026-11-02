@@ -69,12 +69,26 @@
 - 说明：实体棋「世界之旅」式环线；城市与界面为游戏馆原创配置，不是商业大富翁产品的官方地图
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) r180（MIT），含 `OrbitControls`、`RoundedBoxGeometry`、`RoomEnvironment`，运行时经 jsDelivr 加载
 
+## 金城纪（`games/richera/`）
+
+- 来源：本仓库原创
+- 许可证：MIT（仓库根目录 [`LICENSE`](./LICENSE)）
+- 说明：三维街市沙盘。玩法致敬经典富翁类棋（单骰、买地盖楼、道具、钱庄、神仙），地名、人物、牌面与画面均为原创，不是商业作品的地图、角色或文案复刻
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) r180（MIT），含 `OrbitControls`，运行时经 jsDelivr 加载
+
 ## 战术突击 3D（`games/fps/`）
 
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT）
 - 指针锁定：Three.js examples `PointerLockControls`（MIT）
 - 枪声素材：基于维基共享资源「9 mm gunshot-mike-koenig-123.wav」（CC BY-SA 4.0）；换弹片段改编自 [Mixkit](https://mixkit.co/free-sound-effects/)
 - 玩法、场景、AK 第一人称模型与角色：本仓库原创
+
+## 沙线行动（`games/sandline/`）
+
+- 来源：[xilinnihao-afk/sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) 0.39
+- 许可证：MIT（`games/sandline/LICENSE`）
+- 渲染库：[Three.js](https://github.com/mrdoob/three.js) 0.180.0（MIT）
+- 说明：游戏馆移植了规则、机器人、武器数值，以及沙漠旧城、雪地竞技场的程序化场景。人物、第一人称枪械、界面和音效为游戏馆程序化实现。未包含 Counter-Strike / Valve 的地图、角色、枪模或音频。原作者版权声明保留在 `games/sandline/LICENSE`。
 
 ## 街战突击（`games/street-duty/`）
 

@@ -69,12 +69,26 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - Note: a physical “world tour” loop. Cities and UI are hub-authored, not an official Monopoly product map.
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) r180 (MIT), including `OrbitControls`, `RoundedBoxGeometry` and `RoomEnvironment`, loaded at runtime from jsDelivr
 
+## Gold City Chronicle (`games/richera/`)
+
+- Source: original to this repository
+- License: MIT (repository root [`LICENSE`](./LICENSE))
+- Note: a 3D street-market richman. The loop nods to classic Chinese richman boards (one die, land, buildings, tools, a bank, visiting gods). Names, people, cards, and the board are original, not a copy of a commercial map, cast, or script
+- Renderer: [Three.js](https://github.com/mrdoob/three.js) r180 (MIT), including `OrbitControls`, loaded at runtime from jsDelivr
+
 ## Tactical Assault (`games/fps/`)
 
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) r160 (MIT)
 - Pointer lock: Three.js examples `PointerLockControls` (MIT)
 - Gunshot samples: based on Wikimedia Commons “9 mm gunshot-mike-koenig-123.wav” (CC BY-SA 4.0). Reload clips adapted from [Mixkit](https://mixkit.co/free-sound-effects/)
 - Gameplay, scene, AK viewmodel, and characters: original to this repository
+
+## Sandline (`games/sandline/`)
+
+- Source: [xilinnihao-afk/sandline-threejs-fps](https://github.com/xilinnihao-afk/sandline-threejs-fps) 0.39
+- License: MIT (`games/sandline/LICENSE`)
+- Renderer: [Three.js](https://github.com/mrdoob/three.js) 0.180.0 (MIT)
+- Note: this hall port keeps the rules, bots, weapon numbers, and the procedural desert and snow arenas. Soldiers, view models, interface, and audio are procedural and original to the hall. Counter-Strike / Valve maps, characters, gun models, and audio are not included. Upstream copyright stays in `games/sandline/LICENSE`.
 
 ## Street Duty (`games/street-duty/`)
 

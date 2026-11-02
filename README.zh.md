@@ -3,7 +3,7 @@
 
 # 游戏馆
 
-中文网页游戏集合：棋类、巫师棋、大富翁、两款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
+中文网页游戏集合：棋类、巫师棋、大富翁、三款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
 
 **在线地址：** https://kwanwaipang.github.io/GameAgent/
 
@@ -24,8 +24,10 @@
 | [`games/wizard-chess-3d/`](./games/wizard-chess-3d/) | 巫师棋 · 3D | 3D 棋类（哥特圣殿） |
 | [`games/wizard-chess-sanctum/`](./games/wizard-chess-sanctum/) | 巫师棋 2 | 3D 棋类（圣殿） |
 | [`games/monopoly/`](./games/monopoly/) | 大富翁 · 世界之旅 | 桌游 |
+| [`games/richera/`](./games/richera/) | 金城纪 | 桌游（3D 街市沙盘） |
 | [`games/fps/`](./games/fps/) | 战术突击 · 3D | 3D FPS（红蓝对抗） |
 | [`games/street-duty/`](./games/street-duty/) | 街战突击 | 3D FPS（全程序化街战） |
+| [`games/sandline/`](./games/sandline/) | 沙线行动 | 3D FPS（战术回合） |
 | [`games/pocket/`](./games/pocket/) | 口袋冒险 | 第一人称 3D 卡通粉丝向开局 |
 | [`games/redcap/`](./games/redcap/) | 红帽奇遇 | 网页平台跳跃（马里奥式致敬） |
 
@@ -33,8 +35,10 @@
 - **巫师棋 2**（`wizard-chess-sanctum`）：另一座圣殿式巫师棋，同样使用国际象棋规则。
 - **中国象棋 · 3D**（`3D_xiangqi`）：楚河汉界立体沙盘，可接管红方或观看 AI 对弈。
 - **战术突击**（`fps`）：红蓝各约 5 人、据点 / 大逃杀、可拾取武器。
-- **街战突击**（`street-duty`）：Claude-of-Duty 本地完整落地；玩家 + 2 队友 + 动态敌方波次。两款射击互不替换。
+- **街战突击**（`street-duty`）：Claude-of-Duty 本地完整落地；玩家 + 2 队友 + 动态敌方波次。三款射击互不替换。
+- **沙线行动**（`sandline`）：改写自 sandline-threejs-fps 的单机战术射击。沙漠旧城与雪地竞技场，八种模式。人物和枪是程序化的，不含 Counter-Strike 地图或模型。
 - **口袋冒险**（`pocket`）：第一人称 3D 卡通真新镇开局；选御三家、高草遇敌。
+- **金城纪**（`richera`）：三维街市沙盘。单骰买地盖楼、道具和神仙。原创地名，致敬富翁类棋，不是商业作品复刻。
 - **红帽奇遇**（`redcap`）：八关原创程序像素。玩法向超级马里奥致敬，不是任天堂产品，未使用官方素材或关卡。
 
 ---
@@ -57,7 +61,7 @@ games/<name>/              # 各游戏独立目录
 
 1. 大厅是 Three.js 圆形展厅，并保留卡片列表；每个游戏自包含入口 `games/<name>/index.html`。
 2. 多数游戏是纯静态页面，无需构建。
-3. **街战突击 / 口袋冒险例外**：Vite 构建产物提交为 `index.html` + `assets/`（Pages 从仓库根目录部署）。
+3. **街战突击 / 沙线行动 / 口袋冒险例外**：Vite 构建产物提交为 `index.html` + `assets/`（Pages 从仓库根目录部署）。
 
 ---
 
@@ -70,10 +74,11 @@ python -m http.server 8080
 # 打开 http://localhost:8080
 ```
 
-### 街战突击 / 口袋冒险开发
+### 街战突击 / 沙线行动 / 口袋冒险开发
 
 ```bash
 cd games/street-duty && npm ci && npm run dev   # :5173
+cd games/sandline && npm ci && npm run dev      # :5191
 cd games/pocket && npm ci && npm run dev        # :5174
 ```
 
@@ -81,10 +86,11 @@ cd games/pocket && npm ci && npm run dev        # :5174
 
 ```bash
 cd games/street-duty && npm run build
+cd games/sandline && npm run build
 cd games/pocket && npm run build
 ```
 
-详情：[街战突击](./games/street-duty/README.zh.md) · [口袋冒险](./games/pocket/README.zh.md)
+详情：[街战突击](./games/street-duty/README.zh.md) · [沙线行动](./games/sandline/README.zh.md) · [口袋冒险](./games/pocket/README.zh.md)
 
 ---
 
@@ -92,7 +98,7 @@ cd games/pocket && npm run build
 
 工作流 [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) 在推送 `main` 时：
 
-1. `npm ci && npm run build`（`games/street-duty` 与 `games/pocket`）
+1. `npm ci && npm run build`（`games/street-duty`、`games/sandline` 与 `games/pocket`）
 2. 打包静态站（去掉各游戏的 `src/` / `tools/` 等开发文件）
 3. 发布到 GitHub Pages
 
@@ -106,11 +112,12 @@ cd games/pocket && npm run build
 
 | 文档 | 内容 |
 |---|---|
-| [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 馆级架构、数据流、两款 FPS 边界 |
+| [ARCHITECTURE.zh.md](./ARCHITECTURE.zh.md) | 馆级架构、数据流、射击游戏边界 |
 | [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md) | 第三方来源与许可 |
 | [games/street-duty/ARCHITECTURE.md](./games/street-duty/ARCHITECTURE.md) | 街战引擎合同 |
 | [games/street-duty/README.zh.md](./games/street-duty/README.zh.md) | 街战说明 |
 | [games/fps/README.md](./games/fps/README.md) | 战术突击说明 |
+| [games/sandline/README.zh.md](./games/sandline/README.zh.md) | 沙线行动说明 |
 | [games/pocket/README.md](./games/pocket/README.md) | 口袋冒险说明 |
 | [games/redcap/README.md](./games/redcap/README.md) | 红帽奇遇说明 |
 | [games/wizard-chess-3d/README.md](./games/wizard-chess-3d/README.md) | 巫师棋说明 |
@@ -127,7 +134,7 @@ cd games/pocket && npm run build
 
 这包括大厅页面、样式、展厅脚本，以及围棋、五子棋、军棋、战术突击、红帽奇遇等原创部分。
 
-别人写的代码，版权仍归原作者。中国象棋、大富翁、街战突击、口袋冒险、国际象棋 3D 继续使用原作者选择的许可证。来源见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
+别人写的代码，版权仍归原作者。中国象棋、大富翁、街战突击、沙线行动、口袋冒险、国际象棋 3D 继续使用原作者选择的许可证。来源见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
 
 [FAST_LIO](https://github.com/hku-mars/FAST_LIO/blob/main/LICENSE) 是 GNU GPL 第 2 版，本仓库不采用。只限 GPL-2.0 不能和 `games/chess3d` 的 GPL-3.0 合在一起再发布，照抄那份文件也会把版权人写成别人。
 

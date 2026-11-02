@@ -3,7 +3,7 @@
 
 # 项目架构
 
-本文说明「游戏馆」如何组织、部署，以及两款 3D 射击如何并存。
+本文说明「游戏馆」如何组织、部署，以及几款 3D 射击如何并存。
 
 街战引擎合同见 [`games/street-duty/ARCHITECTURE.zh.md`](./games/street-duty/ARCHITECTURE.zh.md)。
 
@@ -30,8 +30,8 @@
                                │
         ┌──────────┬───────────┴──────┬────────────┬──────────┐
         ▼          ▼                  ▼            ▼          ▼
-   games/go/…  games/fps/   games/street-duty/  games/pocket/  games/redcap/
-   静态棋类       静态 FPS      Vite 构建 FPS      静态 3D 冒险   静态平台跳跃
+   games/go/…  games/fps/   games/street-duty/  games/sandline/  games/pocket/  games/redcap/
+   静态棋类       静态 FPS      Vite 街战           Vite 沙线      静态 3D 冒险   静态平台跳跃
 ```
 
 | 层 | 职责 |
@@ -39,7 +39,7 @@
 | **大厅**（`index.html`、`css/`、`js/hub-lobby.js`） | 品牌、Three.js 圆形展厅、卡片列表备用 |
 | **游戏壳** | 各游戏自有 `index.html` / CSS / JS；可选「← 游戏馆」返回 |
 | **共用资源**（`assets/`） | 少数跨游戏静态资源 |
-| **CI / Pages**（`.github/workflows/`） | 构建街战与口袋冒险、打包 `_site`、部署 |
+| **CI / Pages**（`.github/workflows/`） | 构建街战、沙线与口袋冒险、打包 `_site`、部署 |
 
 大厅只用 Three.js 搭导航展厅，不加载各游戏运行时。点开展台或列表卡片即整页跳转。没有 WebGL 时退回卡片列表。
 
@@ -49,14 +49,14 @@
 
 ### 3.1 纯静态
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap`
 
 - 打开即玩，无需 `npm`。
 - 可用任意静态服务器托管。
 
 ### 3.2 需要构建
 
-目前只有 `street-duty` 与 `pocket` 走 Vite。街战的数据流：
+`street-duty`、`sandline` 与 `pocket` 走 Vite。街战和沙线都把构建结果同步成游戏目录里的 `index.html` + `assets/`。街战的数据流：
 
 ```
 src/  +  index.source.html   →  vite build  →  dist/
@@ -89,6 +89,8 @@ src/  +  index.source.html   →  vite build  →  dist/
 | 部署 | 纯静态 | 需要构建产物 |
 
 二者目录互不引用、互不替换。改一款时不要动另一款。
+
+沙线行动 `games/sandline/` 是第三款射击，单独目录。规则改写自 sandline-threejs-fps（MIT）。沙漠旧城和雪地竞技场留在源码里；人物、枪和音效改为程序化，不携带 Counter-Strike 地图或模型。部署方式和街战一样，需要构建产物。
 
 ---
 
@@ -132,7 +134,7 @@ push main
 
 1. **新游戏**：在 `games/<slug>/` 自包含实现，并在根 `index.html` 加展台数据（卡片）。
 2. **改街战**：改 `src/` → `npm run build` → 提交同步后的 `index.html` 和 `assets/`。
-3. **不要**把 `games/fps/` 与 `games/street-duty/` 混改或互相覆盖。
+3. **不要**把 `games/fps/`、`games/street-duty/` 与 `games/sandline/` 混改或互相覆盖。
 4. 第三方来源与许可变更时，同步 [中文说明](./THIRD_PARTY_NOTICES.zh.md) 与 [英文说明](./THIRD_PARTY_NOTICES.md)。
 5. 馆级说明放根目录，中英各一份；街战引擎合同放在 `games/street-duty/`。
 
