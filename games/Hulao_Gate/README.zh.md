@@ -76,3 +76,16 @@ node --test camera-physics.test.mjs
 下一步建议引入**具有明确再分发授权**的三国题材 GLB/glTF 角色、独立动画剪辑，以及按角色类型配置的骨骼动画状态机。现有程序化模型继续作为资源加载失败时的后备方案，避免破坏静态站点的可玩性。
 
 > 本阶段未引入第三方角色资产；尚需真实浏览器 FPS、GPU draw calls 和多设备操作测试。
+
+
+## 第二阶段：骨骼角色与动作系统
+
+新增 `character-assets.js` 和 `assets/characters/manifest.json`，按 `hero / boss / soldier / elite` 分别加载经授权的 GLB 人物，并通过 AnimationMixer 将待机、步行、奔跑、轻击、重击、无双、闪避、受击、死亡状态映射到骨骼动画。异步加载失败或模型缺少 Idle、Walk、Attack 动画时，自动使用现有程序化人物。GLB 克隆共享网格与材质，移除敌人只释放单个骨骼实例。
+
+战斗新增短暂命中停顿（hit-stop）与攻击向前压进，以增强打击重量感。相关单元测试已加入 GitHub Actions 的 test job；可单独运行：
+
+```bash
+node --experimental-default-type=module --test games/Hulao_Gate/character-assets.test.mjs games/Hulao_Gate/camera-physics.test.mjs
+```
+
+**注意**：本次只交付角色模型接入与动画运行框架，当前清单为空，尚未提供写实关羽、吕布、士兵 GLB。素材目录的 `README.md` 说明资产命名、动画、模型朝向和版权要求；在素材齐备前，不应将游戏称为已完成写实人物升级。

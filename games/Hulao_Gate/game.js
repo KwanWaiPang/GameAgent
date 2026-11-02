@@ -4,6 +4,7 @@ import { enhanceBattlefield, rockyPeak } from './battlefield-detail.js';
 import { detailTextures, lcg, makeCanvasTexture } from './procedural-maps.js';
 import { createCombatEffects } from './combat-effects.js';
 import { resolveCameraTarget } from './camera-physics.js';
+import { createCharacterAssets } from './character-assets.js';
 
 // 乱世无双 · 虎牢关 — an original, self-contained WebGL battle built for GitHub Pages.
 const $ = (id) => document.getElementById(id);
@@ -15,9 +16,9 @@ const MAX_ENEMIES = low ? 13 : 20;
 const TAU = Math.PI * 2;
 const params = new URLSearchParams(location.search);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let renderer, scene, camera, player, groundTexture, clock, combatEffects;
+let renderer, scene, camera, player, groundTexture, clock, combatEffects, characterAssets;
 let phase = 'boot', elapsed = 0, wave = 0, waveStarted = 0, pending = 0, spawnClock = 0, bossSpawned = false;
-let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0;
+let kills = 0, combo = 0, comboClock = 0, toastTimer = 0, flashTimer = 0, shake = 0, hitStop = 0;
 let cameraYaw = 0, cameraPitch = 0.22, cameraDistance = mobile ? 7.1 : 7.3;
 let cameraX = 0, cameraZ = 0, cameraY = 5;
 let enemies = [], fires = [], banners = [], blocked = [];
@@ -396,7 +397,7 @@ function makeFire(x,z){
 
 function makeWarrior(kind='soldier'){return makeDetailedWarrior(THREE,kind,low);}
 function createPlayer(){
-  const model=makeWarrior('hero');model.scale.setScalar(1.05);model.position.set(0,0,42);scene.add(model);
+  const model=makeWarrior('hero');model.scale.setScalar(1.05);model.position.set(0,0,42);scene.add(model);characterAssets.attach(model,'hero');
   player={id:0,model,hp:100,maxHp:100,energy:80,attack:null,attackQueue:null,skillCD:0,invuln:0,dodge:0,dodgeDir:V(),facing:Math.PI,walk:0,velocity:V(),hitStun:0};
   model.rotation.y=0;return player;
 }
@@ -406,7 +407,7 @@ function spawnEnemy(kind='soldier'){
   const dist=pick(19,32),angle=pick(-1.14,1.14),x=clamp(player.model.position.x+Math.sin(angle)*dist,-31,31);
   let z=clamp(player.model.position.z-Math.cos(angle)*dist,-52,48);
   if(kind==='boss'){z=-37;}
-  const st=enemyStats(kind);const model=makeWarrior(kind);model.scale.setScalar(st.scale);model.position.set(kind==='boss'?0:x,0,z);scene.add(model);
+  const st=enemyStats(kind);const model=makeWarrior(kind);model.scale.setScalar(st.scale);model.position.set(kind==='boss'?0:x,0,z);scene.add(model);characterAssets.attach(model,kind);
   const enemy={id:nextId++,kind,model,hp:st.hp,maxHp:st.hp,speed:st.speed,reach:st.reach,damage:st.damage,windup:0,attackCD:pick(.2,1.0),stun:0,walk:rand()*TAU,dead:false,death:0,hitFlash:0,knock:V(),facing:0};
   enemies.push(enemy);if(kind==='boss'){$('boss-hud').hidden=false;$('boss-fill').style.width='100%';toast('飞将吕布，亲临战阵！',2.5);}
   return enemy;
@@ -415,9 +416,9 @@ function waveData(n){return n===1?{count:11,elite:0,name:'第一阵 · 西凉先
 function beginWave(n){wave=n;waveStarted=elapsed;const cfg=waveData(n);pending=cfg.count;spawnClock=0;bossSpawned=false;
   $('objective').textContent=cfg.goal;$('stage').textContent=cfg.name;toast(['','西凉军前锋，杀！','敌军增援！破阵而出！','虎牢关决战！'][n],2.4);
 }
-function resetGame(){for(const e of enemies){scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
+function resetGame(){for(const e of enemies){characterAssets.detach(e.model);scene.remove(e.model);disposeDetailedWarrior(e.model);}enemies=[];
   combatEffects.clear();
-  if(player){scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;
+  if(player){characterAssets.detach(player.model);scene.remove(player.model);disposeDetailedWarrior(player.model);}createPlayer();phase='playing';wave=0;kills=0;combo=0;comboClock=0;elapsed=0;shake=0;hitStop=0;
   cameraYaw=0;cameraPitch=.20;cameraX=0;cameraY=6;cameraZ=54;
   $('ko-count').textContent='0';$('boss-hud').hidden=true;$('end-screen').hidden=true;$('pause-screen').hidden=true;$('start-screen').hidden=true;$('hud').hidden=false;
   $('mobile-controls').hidden=!mobile;keys.clear();joystick.x=joystick.y=0;
@@ -439,6 +440,7 @@ function launchAttack(kind){if(!player)return;let tier=0;
   if(kind==='light'){tier=combo<3?combo:0;combo=(tier+1)%3;comboClock=1.3;}
   else{combo=0;comboClock=0;}
   const skill=kind==='skill',heavy=kind==='heavy';if(skill){player.energy-=50;player.skillCD=10.5;}
+  player.motionToken=(player.motionToken||0)+1;
   player.attack={kind,t:0,duration:skill?1.05:heavy?.82:.43+tier*.05,activeStart:skill?.23:heavy?.27:.13,activeEnd:skill?.61:heavy?.55:.30,
     damage:skill?150:heavy?82:32+tier*9,range:skill?8.7:heavy?5.2:4.2+tier*.25,arc:skill?TAU:heavy?2.45:2.35,hit:new Set(),tier};
   player.attackQueue=null;sound(skill?170:heavy?100:145,skill?.48:.15,skill?'saw':'hit');
@@ -450,17 +452,17 @@ function doAttackDamage(atk){const p=player.model.position;let hits=0;
     if(dist>atk.range)continue;
     const yaw=facingTo(v.x,v.z);if(atk.arc<TAU && Math.abs(normalizeAngle(yaw-player.model.rotation.y))>atk.arc*.5)continue;
     atk.hit.add(enemy.id);hits++;
-    enemy.hp-=atk.damage;enemy.stun=atk.kind==='skill'?.8:atk.kind==='heavy'?.5:.22;enemy.hitFlash=.16;
+    enemy.hp-=atk.damage;enemy.motionToken=(enemy.motionToken||0)+1;enemy.stun=atk.kind==='skill'?.8:atk.kind==='heavy'?.5:.22;enemy.hitFlash=.16;
     enemy.knock.add(v.setY(0).normalize().multiplyScalar(atk.kind==='skill'?13:atk.kind==='heavy'?8:4.5));
     emitSparks(enemy.model.position.clone().add(V(0,1.5,0)),atk.kind==='skill'?0xffd079:0xffb67d,atk.kind==='skill'?16:8);
     if(enemy.kind==='boss')$('boss-fill').style.width=`${Math.max(0,enemy.hp/enemy.maxHp*100)}%`;
     if(enemy.hp<=0)killEnemy(enemy);
     else sound(95,.07,'hit');
   }
-  if(hits){player.energy=clamp(player.energy+hits*(atk.kind==='skill'?0:5),0,100);shake=Math.max(shake,Math.min(.32,.1+hits*.03));
+  if(hits){hitStop=Math.max(hitStop,atk.kind==='skill'?.09:atk.kind==='heavy'?.07:.038);player.energy=clamp(player.energy+hits*(atk.kind==='skill'?0:5),0,100);shake=Math.max(shake,Math.min(.32,.1+hits*.03));
     showCombo(hits);sound(atk.kind==='skill'?70:65,.09,'hit');}
 }
-function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.model.userData.weapon.rotation.z=.32;
+function killEnemy(e){if(e.dead)return;e.dead=true;e.death=0;e.motionToken=(e.motionToken||0)+1;e.model.userData.weapon.rotation.z=.32;
   kills++;$('ko-count').textContent=kills;sound(e.kind==='boss'?55:85,.20,'fall');
   emitSparks(e.model.position.clone().add(V(0,1.1,0)),0xe9a66e,9);
   if(e.kind==='boss')toast('飞将已败！',2);
@@ -470,6 +472,12 @@ function showCombo(hits){const c=$('combo');c.hidden=false;$('combo-num').textCo
 function emitSparks(center,color,count){combatEffects.emitSparks(center,color,count);}
 function slash(radius,arc=2.2,skill=false){combatEffects.slash(player.model.position,player.model.rotation.y,radius,arc,skill);}
 function updateAttacks(dt){const a=player.attack;if(!a)return;a.t+=dt;
+  // Short forward commitment adds weight without camera-space teleportation.
+  if(a.t>a.activeStart*.65&&a.t<a.activeEnd){
+    const thrust=a.kind==='skill'?1.25:a.kind==='heavy'?2.15:3.1;
+    const yaw=player.model.rotation.y;
+    moveSafe(player.model,-Math.sin(yaw)*thrust*dt,-Math.cos(yaw)*thrust*dt,.56);
+  }
   if(a.kind==='skill' && a.t>=.12 && !a.slash){slash(4.8,TAU,true);slash(7,TAU,true);a.slash=true;}
   if(a.kind!=='skill' && a.t>=a.activeStart && !a.slash){slash(a.range*.78,a.arc,false);a.slash=true;}
   if(a.t>=a.activeStart && a.t<=a.activeEnd)doAttackDamage(a);
@@ -487,7 +495,7 @@ function doDodge(){if(phase!=='playing'||player.dodge>0||player.hitStun>0)return
   const input=moveInput();const dx=Math.cos(cameraYaw)*input.x-Math.sin(cameraYaw)*input.y;
   const dz=-Math.sin(cameraYaw)*input.x-Math.cos(cameraYaw)*input.y;
   player.dodgeDir.set(dx,0,dz);if(player.dodgeDir.lengthSq()<.01)player.dodgeDir.set(-Math.sin(player.model.rotation.y),0,-Math.cos(player.model.rotation.y));
-  player.dodgeDir.normalize();player.dodge=.47;player.invuln=.52;emitSparks(player.model.position.clone().add(V(0,.22,0)),0xc8ac84,9);sound(200,.11,'air');
+  player.motionToken=(player.motionToken||0)+1;player.dodgeDir.normalize();player.dodge=.47;player.invuln=.52;emitSparks(player.model.position.clone().add(V(0,.22,0)),0xc8ac84,9);sound(200,.11,'air');
 }
 function moveInput(){let x=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
   let y=(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0);
@@ -513,7 +521,7 @@ function updatePlayer(dt){const p=player;p.invuln=Math.max(0,p.invuln-dt);p.skil
   p.energy=clamp(p.energy+dt*1.8,0,100);
 }
 function damagePlayer(amount,attacker){if(player.invuln>0||phase!=='playing')return;
-  player.hp=Math.max(0,player.hp-amount);player.invuln=.85;player.hitStun=.24;shake=.4;flashTimer=.18;
+  player.hp=Math.max(0,player.hp-amount);player.motionToken=(player.motionToken||0)+1;player.invuln=.85;player.hitStun=.24;shake=.4;flashTimer=.18;
   $('hit-flash').classList.add('active');sound(55,.24,'fall');
   const away=player.model.position.clone().sub(attacker.model.position).setY(0).normalize();moveSafe(player.model,away.x*1.4,away.z*1.4);
   emitSparks(player.model.position.clone().add(V(0,1.3,0)),0xf2c28b,8);
@@ -521,22 +529,23 @@ function damagePlayer(amount,attacker){if(player.invuln>0||phase!=='playing')ret
 }
 function updateEnemies(dt){const target=player.model.position;
   for(const e of enemies){const ud=e.model.userData;
-    if(e.dead){e.death+=dt;ud.rig.rotation.z=lerp(ud.rig.rotation.z,1.48,Math.min(1,dt*4));ud.rig.position.y=lerp(ud.rig.position.y,-.45,Math.min(1,dt*4));if(e.death>2.2){scene.remove(e.model);disposeDetailedWarrior(e.model);e.remove=true;}continue;}
+    if(e.dead){e.death+=dt;ud.rig.rotation.z=lerp(ud.rig.rotation.z,1.48,Math.min(1,dt*4));ud.rig.position.y=lerp(ud.rig.position.y,-.45,Math.min(1,dt*4));if(e.death>2.2){characterAssets.detach(e.model);scene.remove(e.model);disposeDetailedWarrior(e.model);e.remove=true;}continue;}
     e.stun=Math.max(0,e.stun-dt);e.hitFlash=Math.max(0,e.hitFlash-dt);e.attackCD=Math.max(0,e.attackCD-dt);
     // Each enemy has a simple stagger / telegraph / strike / recovery state machine.
     const delta=target.clone().sub(e.model.position),dist=Math.max(.01,Math.hypot(delta.x,delta.z));
     rotateTo(e.model,facingTo(delta.x,delta.z),dt,e.kind==='boss'?5.4:7.5);
+    e.walking=false;
     if(e.stun>0){moveSafe(e.model,e.knock.x*dt,e.knock.z*dt,e.kind==='boss'?.85:.5);e.knock.multiplyScalar(Math.exp(-dt*9));}
     else if(e.windup>0){e.windup-=dt;ud.weapon.rotation.z=-.8+Math.sin((.7-e.windup)*7)*.5;
       if(e.windup<=0){ud.weapon.rotation.z=0;e.attackCD=e.kind==='boss'?2:pick(1.15,1.9);
         if(dist<e.reach+1 && Math.abs(normalizeAngle(facingTo(delta.x,delta.z)-e.model.rotation.y))<1.3){damagePlayer(e.damage,e);}
         if(e.kind==='boss'){slashEnemy(e);}}
-    }else if(dist<e.reach+pick(.1,.25) && e.attackCD<=0){e.windup=e.kind==='boss'?.78:.54;}
+    }else if(dist<e.reach+pick(.1,.25) && e.attackCD<=0){e.windup=e.kind==='boss'?.78:.54;e.motionToken=(e.motionToken||0)+1;}
     else if(dist>e.reach*.78){let vx=delta.x/dist,vz=delta.z/dist;
       // Gentle separation avoids complete overlap without costly physics simulation.
       for(const other of enemies){if(other===e||other.dead)continue;const ox=e.model.position.x-other.model.position.x,oz=e.model.position.z-other.model.position.z,d2=ox*ox+oz*oz;
         if(d2<3.2&&d2>.01){const f=(3.2-d2)*.33;vx+=ox*f;vz+=oz*f;}}
-      const l=Math.hypot(vx,vz)||1;moveSafe(e.model,vx/l*e.speed*dt,vz/l*e.speed*dt,e.kind==='boss'?.85:.5);e.walk+=dt*8;
+      const l=Math.hypot(vx,vz)||1;e.walking=true;moveSafe(e.model,vx/l*e.speed*dt,vz/l*e.speed*dt,e.kind==='boss'?.85:.5);e.walk+=dt*8;
     }
     if(e.stun<=0){ud.rig.userData.rightArm.rotation.x=-Math.sin(e.walk)*.19;ud.rig.userData.leftArm.rotation.x=Math.sin(e.walk)*.19;const stride=Math.min(1,(dist-e.reach*.75)/3);ud.legs[0].rotation.x=Math.sin(e.walk)*.36*stride;ud.legs[1].rotation.x=-Math.sin(e.walk)*.36*stride;}
     ud.rig.position.y=Math.sin(e.walk*2)*.035;
@@ -545,6 +554,22 @@ function updateEnemies(dt){const target=player.model.position;
   enemies=enemies.filter(e=>!e.remove);
 }
 function slashEnemy(e){const pos=e.model.position.clone();emitSparks(pos.add(V(0,1,0)),0xff5140,13);shake=Math.max(shake,.24);}
+function updateCharacterMotion(dt) {
+  if(!characterAssets || !player)return;
+  const p=player;
+  const moving=Math.hypot(moveInput().x,moveInput().y)>.08;
+  const playerState=p.hitStun>0?'hit':p.dodge>0?'dodge':p.attack
+    ?p.attack.kind==='skill'?'skill':p.attack.kind==='heavy'?'heavy':'attack'
+    :moving?(keys.has('shift')?'run':'walk'):'idle';
+  characterAssets.setState(p.model,playerState,p.motionToken||0,p.attack?.duration||0);
+  for(const e of enemies){
+    const motion=e.dead?'death':e.stun>0?'hit':e.windup>0?'attack'
+      :e.walking?'walk':'idle';
+    characterAssets.setState(e.model,motion,e.motionToken||e.id,
+      motion==='attack'?(e.kind==='boss'?.78:.54):0);
+  }
+  characterAssets.update(dt);
+}
 function updateWave(dt){if(pending>0){spawnClock-=dt;const active=enemies.filter(e=>!e.dead).length;
     if(spawnClock<=0 && active<MAX_ENEMIES){const idx=waveData(wave).count-pending;spawnEnemy(wave>1&&idx%4===0?'elite':'soldier');pending--;spawnClock=pick(.55,1.35);}}
   if(wave===3&&!bossSpawned&&elapsed-waveStarted>7){spawnEnemy('boss');bossSpawned=true;}
@@ -636,16 +661,21 @@ function attachInputs(){
   $('resume-btn').addEventListener('click',pause);$('pause-btn').addEventListener('click',pause);
   $('sound-btn').addEventListener('click',()=>{muted=!muted;$('sound-btn').textContent=muted?'♪̸':'♪';});
 }
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.048);elapsed+=phase==='playing'?dt:0;
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.048);
+  // Impact hit-stop only freezes simulation, not the browser rendering loop.
+  const simulationDt=phase==='playing'&&hitStop>0?0:dt;
+  hitStop=Math.max(0,hitStop-dt);
+  elapsed+=phase==='playing'?simulationDt:0;
   if(phase==='playing'){
-    updatePlayer(dt);updateEnemies(dt);updateWave(dt);updateEffects(dt);updateCamera(dt);
+    updatePlayer(simulationDt);updateEnemies(simulationDt);updateWave(simulationDt);updateCharacterMotion(simulationDt);updateEffects(simulationDt);updateCamera(dt);
     if((Math.floor(elapsed*10)%2)===0)refreshHud();
   }else if(player){if(phase==='boot'){player.model.userData.rig.position.y=Math.sin(performance.now()*.001)*.04;}
     updateCamera(dt);for(const f of fires){f.flame.rotation.y+=dt*.4;}}
   if(renderer){renderer.render(scene,camera);}
 }
 try{
-  setupRenderer();combatEffects=createCombatEffects(THREE,scene,{low,random:rand});makeGround();makeWall();makeCamp();enhanceBattlefield(THREE,scene,materials,low,rand);createPlayer();attachInputs();
+  setupRenderer();combatEffects=createCombatEffects(THREE,scene,{low,random:rand});characterAssets=createCharacterAssets(THREE,{low});makeGround();makeWall();makeCamp();enhanceBattlefield(THREE,scene,materials,low,rand);createPlayer();attachInputs();
+  characterAssets.prepare().then(({loaded})=>{if(loaded)console.info('Hulao: loaded licensed GLB character types:',loaded);});
   phase='boot';updateCamera(1);$('boot-status').textContent='战场已集结 · 点击出阵';
   // Lightweight smoke motes near the gate; avoid large postprocessing dependencies.
   animate();
