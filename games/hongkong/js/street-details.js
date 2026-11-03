@@ -302,6 +302,9 @@ function createTrafficSignalLensMaterial(isAvenueHead, clock) {
     const isTopRed = step(5.60, wy);
     const isBottomGreen = float(1.0).sub(step(5.24, wy));
     const isMidAmber = float(1.0).sub(isTopRed).mul(float(1.0).sub(isBottomGreen));
+
+    // Avenue phase: Green, then Amber from avenueAmber, Red from avenueRed
+    // Street phase: Red until avenueRed, then Green, Amber from streetAmber
     const greenActive = isAvenueHead
       ? float(1.0).sub(step(avenueAmber, t))
       : step(avenueRed, t).mul(float(1.0).sub(step(streetAmber, t)));
@@ -311,13 +314,23 @@ function createTrafficSignalLensMaterial(isAvenueHead, clock) {
     const redActive = isAvenueHead
       ? step(avenueRed, t)
       : float(1.0).sub(step(avenueRed, t));
-    const activeMask = isTopRed.mul(redActive).add(isMidAmber.mul(amberActive)).add(isBottomGreen.mul(greenActive));
-    const lensHue = mix(mix(color(0x18ff68), color(0xffaa10), isMidAmber), color(0xff2424), isTopRed);
+
+    const activeMask = isTopRed.mul(redActive)
+      .add(isMidAmber.mul(amberActive))
+      .add(isBottomGreen.mul(greenActive));
+
+    const lensHue = mix(
+      mix(color(0x18ff68), color(0xffaa10), isMidAmber),
+      color(0xff2424),
+      isTopRed
+    );
     return mix(color(0x14181e), lensHue.mul(1.35), activeMask);
   })();
   return mat;
 }
 
+// Pedestrian signal for crossing alongside the avenue: WALK, then a flashing hand until the avenue's amber, then a
+// steady hand
 function createWalkSignalMaterial(clock) {
   const { cycle, avenueAmber, walk } = SIGNAL_TIMING;
   const mat = new THREE.MeshBasicNodeMaterial();

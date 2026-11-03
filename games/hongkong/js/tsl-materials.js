@@ -66,7 +66,7 @@ import {
 import { HK_SHOP_BAY, HK_SHOP_BAYS, shopfrontImage } from './hk-shopfront.js';
 
 // js/tsl-materials.js
-// Photorealistic TSL (Three.js Shading Language) procedural shaders for Three.js r186 WebGPURenderer
+// Photorealistic TSL (Three.js Shading Language) procedural shaders for Three.js r187 WebGPURenderer
 // Incorporating techniques from three.js webgpu_generator_city.html:
 // - Mikkelsen Surface-Gradient Hardware Derivative Bump Mapping (bumpNormal)
 // - Filter-Width Anti-Aliased Procedural Markings & Mortar (lineAA & gridLine via fwidth)
@@ -783,7 +783,7 @@ class TreeNodeMaterial extends THREE.MeshStandardNodeMaterial {
   }
 }
 
-// Prevailing wind (xz, from the west-north-west)
+// Prevailing wind (xz, blowing from the west-north-west across Manhattan)
 const TREE_WIND = vec2(0.86, 0.51);
 
 /**
@@ -1025,17 +1025,23 @@ function createIronFenceMaterial() {
   const mat = new THREE.MeshStandardNodeMaterial({
     metalness: 0.55,
     roughness: 0.5,
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    alphaToCoverage: true
   });
-  mat.alphaTest = 0.5;
 
   mat.colorNode = Fn(() => {
     const u = uv().x;
     const v = uv().y;
-    const picket = lineAA(fract(u.div(0.13)).sub(0.5), 0.1).mul(step(v, 0.985));
-    const post = lineAA(fract(u.div(2.6).add(0.5)).sub(0.5), 0.017);
-    const rails = max(lineAA(v.sub(0.9), 0.028), lineAA(v.sub(0.12), 0.022));
-    const alpha = clamp(max(max(picket, post), rails), 0.0, 1.0);
+    const fw = fwidth(uv()).max(0.0001).toVar();
+    const picketCoord = u.div(0.13);
+    const postCoord = u.div(2.6).add(0.5);
+    const picket = filteredPulse(fract(picketCoord), 0.4, 0.6, fw.x.div(0.13))
+      .mul(clamp(float(0.985).sub(v).div(fw.y).add(0.5), 0.0, 1.0));
+    const post = filteredPulse(fract(postCoord), 0.483, 0.517, fw.x.div(2.6));
+    const rails = filteredPulse(v, 0.872, 0.928, fw.y).add(filteredPulse(v, 0.098, 0.142, fw.y));
+    const vertical = clamp(picket.add(post), 0.0, 1.0);
+    // Keep fractional coverage for the multisampled scene pass; alpha testing would erase distant pickets.
+    const alpha = float(1.0).sub(float(1.0).sub(vertical).mul(float(1.0).sub(rails)));
     return vec4(color(0x171a17), alpha);
   })();
 

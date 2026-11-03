@@ -7,15 +7,14 @@
   <link rel="icon" href="data:," />
   <meta name="description" content="Slop Hong Kong — 以 Three.js WebGPURenderer 與 TSL 著色器建造的香港城市模擬。可步行、駕駛、踏單車或乘坐直升機，並切換電影鏡頭。開啟頁面即載入香港，原點在中環。" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <!-- three.js dev branch pinned to a commit (builds committed to mrdoob/three.js@dev, served by jsDelivr) -->
+  <!-- three.js r187 release (npm package, served by jsDelivr), same build as slop-newyork -->
   <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/gh/mrdoob/three.js@b3396270682287470d161658ac01084d25e8dba6/build/three.webgpu.js",
-        "three/webgpu": "https://cdn.jsdelivr.net/gh/mrdoob/three.js@b3396270682287470d161658ac01084d25e8dba6/build/three.webgpu.js",
-        "three/tsl": "https://cdn.jsdelivr.net/gh/mrdoob/three.js@b3396270682287470d161658ac01084d25e8dba6/build/three.tsl.js",
-        "three/addons/": "https://cdn.jsdelivr.net/gh/mrdoob/three.js@b3396270682287470d161658ac01084d25e8dba6/examples/jsm/",
-        "three/addons/loaders/GLTFLoader.js": "https://cdn.jsdelivr.net/gh/mrdoob/three.js@5e6eee6ce8757abde7105aba35a358feac986e91/examples/jsm/loaders/GLTFLoader.js"
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js",
+        "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js",
+        "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
       }
     }
   </script>
@@ -71,13 +70,13 @@
   <link rel="modulepreload" href="./js/digit1-probe.js" />
   <link rel="modulepreload" href="./js/hk-pland-frame.js" />
   <link rel="modulepreload" href="./js/hk-pland.js" />
-  <link rel="modulepreload" href="./js/main.js" />
-  <script type="module" src="./js/main.js?v=roam3"></script>
+  <link rel="modulepreload" href="./js/main.js?v=sync187" />
+  <script type="module" src="./js/main.js?v=sync187"></script>
   <!-- Inter (UI), Noto Sans TC (繁體 shop signs and chrome), Overpass (map street labels) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&amp;family=Noto+Sans+TC:wght@400;600;700&amp;family=Overpass:wght@600;700&amp;display=swap" />
-  <link rel="stylesheet" href="./css/style.css?v=roam1" />
+  <link rel="stylesheet" href="./css/style.css?v=sync187" />
 </head>
 <body>
   <!-- Icon sprite (24 × 24 stroke icons, drawn in currentColor) -->
@@ -115,8 +114,8 @@
     <div class="loader">
       <span class="mta-bullet loader-bullet" aria-hidden="true">HK</span>
       <div class="loader-title">香港</div>
-      <div class="loader-track is-indeterminate" aria-hidden="true"><span id="loading-progress" class="loader-fill"></span></div>
-      <div id="loading-status">正在啟動 WebGPU 渲染器與 TSL 著色器…</div>
+      <div class="loader-track" aria-hidden="true"><span id="loading-progress" class="loader-fill"></span></div>
+      <div id="loading-status">正在載入城市程式與資料…</div>
     </div>
   </div>
 

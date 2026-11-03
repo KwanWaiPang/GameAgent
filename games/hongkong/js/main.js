@@ -34,18 +34,52 @@ async function initApp() {
   const container = document.getElementById('canvas-container');
   const loadingOverlay = document.getElementById('loading-overlay');
   const loadingStatus = document.getElementById('loading-status');
-  const loadingTrack = loadingOverlay ? loadingOverlay.querySelector('.loader-track') : null;
   const loadingFill = document.getElementById('loading-progress');
-  // The loading bar sweeps while the city is being built (the main thread is busy) and fills as the shaders compile
-  const setLoadingProgress = (p) => {
+
+  // Same staged loader as slop-newyork. The extra stages are the Hong Kong building meshes.
+  const STAGE_MS = {
+    data: 1800, renderer: 50, lighting: 60, cityGrid: 1800, boroughs: 560, landmarks: 200, blocks: 2100,
+    roam: 900, skyline: 200, gltf: 1400, pland: 900,
+    streetDetails: 2200, traffic: 860, roadPaint: 170, controllers: 50, culling: 730, ui: 50, postFX: 60,
+    compile: 3900, warmup: 1950, gpu: 300
+  };
+  const stageNames = Object.keys(STAGE_MS);
+  const totalStageMs = stageNames.reduce((sum, name) => sum + STAGE_MS[name], 0);
+  const loadingStartedAt = performance.now();
+  let loadingStage = { from: 0, to: STAGE_MS.data / totalStageMs };
+
+  const setLoadingProgress = (p, seconds = 0.3) => {
     if (!loadingFill) return;
-    if (loadingTrack) loadingTrack.classList.remove('is-indeterminate');
+    loadingFill.style.animation = 'none';
+    loadingFill.style.transition = `transform ${seconds}s ${seconds > 0.3 ? 'linear' : 'ease'}`;
     loadingFill.style.transform = `scaleX(${Math.min(1, Math.max(0, p))})`;
   };
+  const setStageProgress = (f) => setLoadingProgress(loadingStage.from + (loadingStage.to - loadingStage.from) * f);
 
-  if (loadingStatus) {
-    loadingStatus.textContent = `正在啟動 Three.js r${THREE.REVISION} WebGPU 渲染器與 TSL 著色器…`;
+  function beginLoadingStage(message, name, glide = true) {
+    if (loadingStatus) loadingStatus.textContent = message;
+    const index = stageNames.indexOf(name);
+    const before = stageNames.slice(0, index).reduce((sum, n) => sum + STAGE_MS[n], 0);
+    loadingStage = { from: before / totalStageMs, to: (before + STAGE_MS[name]) / totalStageMs };
+    if (!glide) return setLoadingProgress(loadingStage.from);
+    const ranMs = before - STAGE_MS.data;
+    const pace = ranMs >= 1000 ? Math.min(4, Math.max(0.5, (performance.now() - loadingStartedAt) / ranMs)) : 1;
+    setLoadingProgress(loadingStage.to, (STAGE_MS[name] * pace) / 1000);
   }
+
+  async function showLoadingStage(message, name, glide) {
+    beginLoadingStage(message, name, glide);
+    if (document.hidden) return;
+    await new Promise((resolve) => {
+      const timeout = setTimeout(resolve, 100);
+      requestAnimationFrame(() => {
+        clearTimeout(timeout);
+        setTimeout(resolve, 0);
+      });
+    });
+  }
+
+  await showLoadingStage(`正在啟動 Three.js r${THREE.REVISION} WebGPU 渲染器與 TSL 著色器…`, 'renderer');
 
   // 1. Initialize Three.js WebGPURenderer with 32-bit float reversedDepthBuffer
   const renderer = new THREE.WebGPURenderer({
@@ -87,14 +121,13 @@ async function initApp() {
     });
   }
 
-  // 2. Build Scene & Physical Atmospheric Sky / PMREM IBL / 4096x4096 Shadow Lighting
+  // 2. Scene, atmosphere and lighting
+  await showLoadingStage('正在建立天空與環境光…', 'lighting');
   const scene = new THREE.Scene();
   const lightingSystem = new LightingSystem(scene, renderer);
   markInit('lighting');
 
-  if (loadingStatus) {
-    loadingStatus.textContent = '正在建構香港街道、海岸與樓宇…';
-  }
+  await showLoadingStage('正在建構香港街道、海岸與地面…', 'cityGrid');
 
   // 3. Hong Kong coast, footprint blocks, empty landmark slots, street details, and traffic.
   // PlanD donor is the Digit1 default. LandsD stays in front. ?pland=off leaves the
@@ -108,29 +141,30 @@ async function initApp() {
     gltfPlan = hidePlandCorridorExtrudes(gltfPlan);
     gltfPlan.plandMode = plandPlan.mode;
   }
-  if (loadingStatus && gltfPlan?.selected?.length && plandPlan?.mode !== 'compare') {
-    loadingStatus.textContent = '正在載入地政總署單體建築模型…';
-  }
   const cityGrid = buildCityGrid(scene, gltfPlan);
   markInit('cityGrid');
+  await showLoadingStage('正在建構海岸…', 'boroughs');
   const boroughs = buildBoroughs(scene, { sidewalks: cityGrid.sidewalks });
   markInit('boroughs');
+  await showLoadingStage('正在放置地標…', 'landmarks');
   const { colliders: landmarkColliders } = buildLandmarks(scene, gltfPlan);
   markInit('landmarks');
+  await showLoadingStage('正在擠出樓宇平面…', 'blocks');
   const cityBlocks = buildCityBlocks(scene, gltfPlan);
   markInit('blocks');
-  if (loadingStatus) loadingStatus.textContent = '正在按地政平面擠出全港樓宇…';
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await showLoadingStage('正在按地政平面擠出全港樓宇…', 'roam');
   const roamCity = buildHkRoamCity(scene);
   markInit('roam');
+  await showLoadingStage('正在放置山脊與天際線…', 'skyline');
   const skyline = buildHkSkyline(scene);
   markInit('skyline');
+  await showLoadingStage('正在載入地政總署單體建築模型…', 'gltf');
   const gltfBuildings = plandPlan?.mode === 'compare'
     ? { colliders: [], loaded: 0, failed: 0, group: null }
     : await mountHkGltfBuildings(scene, gltfPlan);
   if (plandPlan?.mode === 'compare') console.info('[pland] compare: LandsD individualised meshes stay off');
   markInit('gltf');
-  if (loadingStatus && plandPlan) loadingStatus.textContent = '正在載入規劃署三維實景（中環街廊）…';
+  await showLoadingStage('正在載入規劃署三維實景…', 'pland');
   const plandMount = await mountPlandCorridor(scene, plandPlan, gltfPlan?.selected || []);
   const plandCredit = document.getElementById('hud-pland-credit');
   if (plandCredit && plandPlan && plandMount.loaded > 0) {
@@ -149,9 +183,10 @@ async function initApp() {
     ...(cityGrid.colliders || [])
   ];
 
+  await showLoadingStage('正在放置路牌、路燈與行人設施…', 'streetDetails');
   const streetDetails = buildStreetDetails(scene, gltfPlan, allColliders);
   markInit('streetDetails');
-  if (loadingStatus) loadingStatus.textContent = '正在鋪設車道與行人…';
+  await showLoadingStage('正在建立車流與行人路線…', 'traffic');
   // Same obstacle pass as slop-newyork: a lane or sidewalk that meets a building outline is not used.
   // cityGrid.sidewalks here is every lot box, not a curb island, and those boxes cross the carriageway.
   const trafficObstacles = [
@@ -163,10 +198,12 @@ async function initApp() {
   if (streetDetails.mountSignals) streetDetails.mountSignals(trafficSystem.network);
   markInit('traffic');
   const highwayTraffic = createHighwayTraffic(scene, cityGrid.highwayLanes);
+  await showLoadingStage('正在繪製路面標線…', 'roadPaint');
   buildRoadPaint(scene, trafficSystem.network);
   markInit('roadPaint');
 
   // 4. Initialize Third-Person Controllers (Person, Car, Cyclist, Helicopter) & Multi-Camera System
+  await showLoadingStage('正在準備人物、車輛與操作…', 'controllers');
   const controllerManager = new ThirdPersonControllerManager(scene, allColliders);
   // Reuse teleport placement so saved players return at rest, close to their last positions.
   try {
@@ -232,6 +269,7 @@ async function initApp() {
 
   // Island-wide static geometry: chunk & distance-cull the small props, shadow stand-ins for the big casters
   // (scene-culling.js)
+  await showLoadingStage('正在準備可見性與陰影…', 'culling');
   const cullingRoots = ['HongKongCityGrid', 'HongKongCityBlocks', 'HongKongStreetDetails', 'HongKongLandmarks', 'Boroughs', 'RoadMarkings']
     .map((name) => scene.getObjectByName(name))
     .filter(Boolean);
@@ -249,19 +287,9 @@ async function initApp() {
   scene.matrixWorldAutoUpdate = false;
   markInit('culling');
 
-  // On WebGPU, small InstancedMeshes (<= 1000 instances) keep their matrices in uniform buffers that three.js
-  // re-uploads on every draw of every pass (~2.5 MB/frame with the shadow cascades, stalling the GPU queue).
-  // Storage attributes only upload when needed; WebGL2 needs ordinary instanced attributes for correct transforms.
-  if (renderer.backend.isWebGPUBackend) {
-    scene.traverse((object) => {
-      if (object.isInstancedMesh) {
-        object.instanceMatrix = new THREE.StorageInstancedBufferAttribute(object.instanceMatrix.array, 16);
-      }
-    });
-  }
-
   // 5. TSL RenderPipeline with Half-Res Screen Space Reflections (SSRNode), Bloom & Filmic Toning
   //    Fade out distant and matte surfaces so SSR spends its rays on visible glossy reflections.
+  await showLoadingStage('正在設定畫面、地圖與介面…', 'ui');
   const scenePass = pass(scene, cameraSystem.camera);
   // The multisampled colour attachments (output, normal, metalRough) only need resolving, never storing: discarding
   // them spares the GPU writing 3 x 4 samples per pixel to memory every frame (transient, memoryless attachments where
@@ -660,23 +688,13 @@ async function initApp() {
   if (document.fonts) document.fonts.ready.then(placeModeIndicator);
   markInit('ui');
 
-  // The loading screen stays up while the shaders compile (precompileShaders() & the warm-up frame, see the loop) and
-  // until the first frame is on screen
-  if (loadingStatus) {
-    loadingStatus.textContent = '正在編譯著色器與渲染管線…';
-  }
-
-  // 6b. Shader pre-compilation behind the loading screen. compileAsync() builds the node graphs in slices and has the GPU
-  //     process compile the pipelines in parallel, but after every 8 ms slice it waits for a rendered frame, which
-  //     leaves the main thread idle about half the time while nothing else animates; several calls side by side keep
-  //     it busy (warm cache: 2.1 s instead of 4.0 s). (Rendering straight away compiled ~500 pipelines one after
-  //     another: ~25 s with a cold shader cache.)
-  // Sixteen overlapping compileAsync calls drop the SwiftShader device on the
-  // Digit1 probe (instance lost, then every createBuffer fails). One at a time
-  // still compiles the same pipelines.
+  // Compile shaders behind the loading screen. Overlapping compileAsync() jobs keep compilation moving
+  // while individual jobs yield to the browser. Sixteen overlapping calls drop the SwiftShader device on the
+  // Digit1 probe (instance lost, then every createBuffer fails), so that run compiles one batch at a time.
   const COMPILE_POOL = digit1ProbeRequest.enabled ? 1 : 16;
   const nextTask = () => (globalThis.scheduler?.yield ? globalThis.scheduler.yield() : new Promise((resolve) => setTimeout(resolve, 0)));
   async function precompileShaders() {
+    await showLoadingStage('正在準備反射與泛光…', 'postFX');
     // An empty frame first: it sets up the post-processing chain, which configures the scene pass's render target
     // (MSAA samples, depth format), so the pipelines compiled below are the very ones the scene pass asks for
     scene.visible = false;
@@ -716,6 +734,7 @@ async function initApp() {
       job.push(o);
     });
 
+    await showLoadingStage(`正在編譯場景著色器… 0 / ${jobs.length}`, 'compile', false);
     renderer.setRenderTarget(scenePass.renderTarget);
     renderer.setMRT(sceneMRT);
     const compile = async (object) => {
@@ -735,10 +754,8 @@ async function initApp() {
         const job = jobs[next++];
         for (const object of job) await compile(object);
         done++;
-        if (loadingStatus) {
-          loadingStatus.textContent = `正在編譯著色器與渲染管線… ${Math.round((done / jobs.length) * 100)}%`;
-        }
-        setLoadingProgress(done / jobs.length);
+        if (loadingStatus) loadingStatus.textContent = `正在編譯場景著色器… ${done} / ${jobs.length}`;
+        setStageProgress(done / jobs.length);
       }
     };
     await Promise.all(Array.from({ length: COMPILE_POOL }, worker));
@@ -749,6 +766,7 @@ async function initApp() {
 
   await precompileShaders();
   markInit('compile');
+  await showLoadingStage('正在準備陰影與第一幀…', 'warmup');
 
   // 6. Animation Loop
   let lastTime = performance.now();
@@ -825,13 +843,14 @@ async function initApp() {
       // The loading screen stays up until the GPU has got through the first frame (and the pipelines its warm-up
       // compiled), i.e. until the city is actually on screen
       const device = renderer.backend.device;
+      beginLoadingStage('正在等待顯示卡完成第一幀…', 'gpu');
       Promise.resolve(device && device.queue.onSubmittedWorkDone()).catch(() => {}).then(() => {
         markInit('gpu');
         console.log(`[init] ${initTimings.join(', ')}`);
         initTimings = null;
+        setLoadingProgress(1);
         if (loadingOverlay) loadingOverlay.classList.add('hidden');
         audioSystem.ready = true;
-        setLoadingProgress(1);
       });
     }
 
@@ -936,29 +955,7 @@ async function initApp() {
       }
     }
   };
-  let reportedFrameError = false;
-  const safeFrame = (now) => {
-    try {
-      onFrame(now);
-    } catch (err) {
-      if (!reportedFrameError) {
-        reportedFrameError = true;
-        console.error(err);
-      }
-    }
-  };
-  renderer.setAnimationLoop(safeFrame);
-  // A hidden document never receives animation frames, so the first frame never runs and
-  // the streets stay empty. Keep the same loop going until the page is visible.
-  const pumpHidden = () => {
-    if (!document.hidden) return;
-    safeFrame(performance.now());
-    setTimeout(pumpHidden, 100);
-  };
-  if (document.hidden) pumpHidden();
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pumpHidden();
-  });
+  renderer.setAnimationLoop(onFrame);
 }
 
 initApp().catch((err) => {
