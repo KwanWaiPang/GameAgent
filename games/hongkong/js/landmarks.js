@@ -447,4 +447,7 @@ function buildLandmarks(scene, gltfPlan = null) {
   return buildHkLandmarks(scene, gltfPlan);
 }
 
-export { buildLandmarks };
+// The source camera and walker sample this lawn. Hong Kong has no Bryant Park.
+const bryantParkLawn = null;
+
+export { buildLandmarks, bryantParkLawn };

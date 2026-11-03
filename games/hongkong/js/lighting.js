@@ -21,18 +21,12 @@ import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import { SunLight } from 'three/addons/lights/SunLight.js';
 import { SunLightNode } from 'three/addons/lights/SunLightNode.js';
 import { cityUniforms } from './tsl-materials.js';
-import { PLAY_BOUNDS } from './city-config.js';
 
-// js/lighting.js
-// Physically-Based Atmospheric Sky (Preetham SkyMesh + Beer-Powder Clouds),
-// Live PMREMGenerator IBL Cubemap, Three.js r186 SunLight (2-Cascade CSM),
-// and Occlusion-Aware Urban Canyon Global Illumination for Three.js r186 WebGPURenderer
+// Atmospheric sky, environment lighting, sunlight and time-of-day presets.
 
 const TIME_PRESETS = {
   golden: {
     id: 'golden',
-    name: 'Golden Hour · 17:45',
-    // Crisp canyon sun slicing across streets and intersections so buildings, cars, trees and pedestrians cast sharp shadows
     sunDir: new THREE.Vector3(-0.44, 0.58, -0.68).normalize(),
     sunColor: 0xffca92,
     sunIntensity: 5.8,
@@ -58,7 +52,6 @@ const TIME_PRESETS = {
   },
   midday: {
     id: 'midday',
-    name: 'Sunny Midday · 13:30',
     sunDir: new THREE.Vector3(-0.34, 0.82, -0.46).normalize(),
     sunColor: 0xfff5e8,
     sunIntensity: 6.6,
@@ -84,7 +77,6 @@ const TIME_PRESETS = {
   },
   twilight: {
     id: 'twilight',
-    name: 'Blue Hour · 19:15',
     sunDir: new THREE.Vector3(-0.52, 0.36, -0.77).normalize(),
     sunColor: 0xff9466,
     sunIntensity: 3.1,
@@ -110,7 +102,6 @@ const TIME_PRESETS = {
   },
   midnight: {
     id: 'midnight',
-    name: '維港夜色 · 23:00',
     sunDir: new THREE.Vector3(0.42, 0.68, -0.60).normalize(),
     sunColor: 0x8cb0e8,
     sunIntensity: 1.45,
@@ -139,27 +130,23 @@ const TIME_PRESETS = {
 class LightingSystem {
   constructor(scene, renderer = null) {
     this.scene = scene;
-    this.renderer = renderer;
     this.activePresetId = 'golden';
 
-    // Assign SunLight its node implementation for WebGPURenderer (Light.registerNode since r187; r186 used the library)
+    // Register SunLight with either supported Three.js light-node API.
     if (SunLight.registerNode) {
       SunLight.registerNode(SunLightNode);
     } else if (renderer && renderer.library) {
       renderer.library.addLight(SunLightNode, SunLight);
     }
 
-    // Fade across Island + Kowloon + Victoria Harbour.
-    const playSpan = Math.hypot(PLAY_BOUNDS.maxX - PLAY_BOUNDS.minX, PLAY_BOUNDS.maxZ - PLAY_BOUNDS.minZ);
-    this.harbourFogScale = (2 / Math.max(playSpan, 1)) / TIME_PRESETS.golden.fogDensity;
-    this.scene.fog = new THREE.FogExp2(0xdcc5ae, TIME_PRESETS.golden.fogDensity * this.harbourFogScale);
+    this.scene.fog = new THREE.FogExp2(0xdcc5ae, 0.00024);
     // Leave scene.background = null because SkyMesh renders the 360° sky dome, and setting
     // a THREE.Color on scene.background sets forceClear=true in WebGPURenderer's Background.update,
     // which would otherwise clear Cascade 0 when rendering Cascade 1 in SunShadowNode!
     this.scene.background = null;
 
     // Physical Preetham SkyMesh + Beer-Powder Clouds (from three/addons/objects/SkyMesh.js). Its unit box must contain
-    // the camera wherever it flies over the 1:1 harbour (it renders at the far plane
+    // the camera wherever it flies over the 1:1 harbour (Manhattan alone is 13.6 km long; it renders at the far plane
     // whatever its size)
     this.sky = new SkyMesh();
     this.sky.scale.setScalar(200000);
@@ -197,18 +184,16 @@ class LightingSystem {
 
     this.scene.add(this.sky);
 
-    // Reusable PMREMGenerator & offscreen envScene (mirrors webgpu_generator_city.html)
+    // Reuse the environment scene and PMREM generator when the lighting preset changes.
     this.pmremGenerator = renderer ? new THREE.PMREMGenerator(renderer) : null;
     this.envScene = new THREE.Scene();
     this.envRenderTarget = null;
 
-    // Three.js r186 SunLight with automatic 2-Cascade Shadow Map (SunLightShadow + SunShadowNode)
-    // Shines from its position vector toward the origin (no .target needed)
+    // Two-cascade sunlight points from its position toward the origin; no target object is needed.
     this.sunLight = new SunLight(0xffca92, 5.8);
     this.sunLight.position.copy(TIME_PRESETS.golden.sunDir);
     this.sunLight.castShadow = true;
-    // 3072x3072 per cascade = 6144x3072 2-cascade shadow atlas (an 8192x4096 one cost ~20% fps and caused hitches),
-    // 2048 where the device allows less. The near cascade spans ~0.35-80 m of the view at street level (see update)
+    // Two cascades share an atlas: use 3072px tiles when a 6144px texture fits, otherwise 2048px tiles.
     const maxTex = (renderer && renderer.backend && renderer.backend.device && renderer.backend.device.limits.maxTextureDimension2D) || 4096;
     const tile = maxTex >= 6144 ? 3072 : 2048;
     this.sunLight.shadow.mapSize.set(tile, tile);
@@ -230,7 +215,7 @@ class LightingSystem {
     // Sky-matched aerial perspective (replaces the flat FogExp2 colour): distant surfaces fade into the baked sky
     // radiance just above the horizon in their view direction (sun glow included), through an exponential haze layer
     // so helicopter / observatory views stay clearer than the horizon.
-    this.uFogDensity = uniform(TIME_PRESETS.golden.fogDensity * this.harbourFogScale);
+    this.uFogDensity = uniform(TIME_PRESETS.golden.fogDensity);
     this.uFogHeight = uniform(900.0);
     if (this.envRenderTarget) this.scene.fogNode = this.createAerialFogNode();
   }
@@ -240,7 +225,7 @@ class LightingSystem {
     const dist = length(toFrag);
     const dir = toFrag.div(max(dist, 0.001));
     const horizonDir = normalize(vec3(dir.x, max(dir.y, 0.015), dir.z));
-    const skyColor = pmremTexture(this.envRenderTarget.texture, horizonDir, float(0.3)).rgb;
+    const skyColor = pmremTexture(this.envRenderTarget.texture, horizonDir, float(0.0)).rgb;
     // Mean haze density exp(-y / H) along the ray between the fragment and the camera
     const H = this.uFogHeight;
     const ya = max(positionWorld.y, 0.0);
@@ -284,9 +269,8 @@ class LightingSystem {
     this.hemiLight.intensity = p.hemiIntensity;
 
     this.scene.fog.color.setHex(p.fogColor);
-    const fogDensity = p.fogDensity * (this.harbourFogScale || 1);
-    this.scene.fog.density = fogDensity;
-    if (this.uFogDensity) this.uFogDensity.value = fogDensity;
+    this.scene.fog.density = p.fogDensity;
+    if (this.uFogDensity) this.uFogDensity.value = p.fogDensity;
 
     // Update physical Preetham SkyMesh uniforms
     this.sky.turbidity.value = p.turbidity;
@@ -305,9 +289,7 @@ class LightingSystem {
     cityUniforms.uSkySunDir.value.copy(p.sunDir);
     cityUniforms.uInteriorGlow.value = p.interiorGlow;
     cityUniforms.uRoadWetness.value = p.roadWetness;
-    if (cityUniforms.uCanyonBounce) {
-      cityUniforms.uCanyonBounce.value = p.canyonBounce;
-    }
+    cityUniforms.uCanyonBounce.value = p.canyonBounce;
 
     this.scene.environmentIntensity = p.envIntensity;
     this.bakeEnvironmentMap();

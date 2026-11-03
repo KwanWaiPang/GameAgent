@@ -1,81 +1,112 @@
 import * as THREE from 'three/webgpu';
 import { buildRoadNetwork } from './road-network.js';
 import { createPedestrianSystem } from './pedestrian-system.js';
+import { vehicleContact, resolveVehicleContact, sweptVehicleContact } from './vehicle-physics.js';
 import { signalPhase, walkSignal } from './city-config.js';
 import { cityUniforms, createContactShadowMaterial, createCarFlareMaterial } from './tsl-materials.js';
 import { HEADLIGHTS, createVehicleHeadlight, placeVehicleHeadlight } from './vehicle-lights.js';
 import {
   BODY_SPECS,
-  BUS_SPEC,
   buildCarGeometry,
   buildCarProxyGeometry,
   buildSteerableWheelGeo,
+  createCarWheelMaterial,
   createLoftedCarMaterial,
+  carStyleCode,
   buildLightbarGeometry,
-  createLightbarMaterial,
+  createLightbarMaterial
+} from './cars.js';
+import {
+  BUS_SPEC,
   buildLoftedBusBodyGeometry,
   buildBusSignGeometry,
   buildBusWheelGeo,
   createBusWheelMaterial,
   createLoftedBusMaterial
-} from './actor-models.js';
+} from './bus.js';
 
-// js/traffic.js
-// Hong Kong traffic and pedestrians on the road graph road-network.js derives from GEO.roadGraph:
-// - 200 cars (taxis, sedans, SUVs, police cruisers) and 12 buses keep to their lanes and follow the vehicle
-//   ahead (Intelligent Driver Model), change lanes to overtake or to reach a turn lane, turn into other streets,
-//   stop for signals, give way to oncoming traffic when turning left and to pedestrians on crosswalks,
-//   and never enter an intersection they can't clear.
-// - 340 pedestrians follow connected sidewalks, meet to talk, and cross signalized crosswalks on WALK.
-// - Fixed-size local populations replenish distant roads and sidewalks in every direction, protecting the near view.
-// - The player's vehicle or character pushes and is pushed by the traffic (SAT contact, impulses, sparks).
+// Cars and buses follow the road graph, obey signals, yield at crossings and react to collisions.
+// Vehicles replenish around the player; pedestrian-system.js manages the nearby walking population.
 
 const NUM_CARS = 200;
 const NUM_BUSES = 12;
-const NUM_PEDS = 340;
 
-// Intelligent Driver Model: max acceleration, comfortable braking, time headway, standstill gap; and the sideways
-// acceleration drivers accept in bends, which sets how fast they take each turn or lane shift
+// Intelligent Driver Model: max acceleration, comfortable braking, time headway, standstill gap; the sideways
+// acceleration drivers accept in bends, which sets how fast they take each turn or lane shift; and how hard they brake
+// in an emergency. At the wheel (see steer): the sideways acceleration the tyres grip up to, how far the front wheels
+// turn (radians), and how fast the driver turns them at speed (rad/s, ~250°/s at the steering wheel; up to three times
+// as fast at walking pace, 2.5 times as fast in a panic).
 const CAR_DRIVER = { a: 2.0, b: 3.0, T: 1.2, s0: 2.0, aLat: 3.5, bMax: 8, grip: 8, lock: 0.6, steerRate: 0.3 };
 const BUS_DRIVER = { a: 1.1, b: 2.5, T: 1.5, s0: 2.5, aLat: 2.0, bMax: 6, grip: 5, lock: 0.9, steerRate: 0.3 };
 const LOOKAHEAD = 70; // metres a driver looks ahead for vehicles, stop lines and signals
+// Dodging the player (see react): seconds before the player would hit it that a driver notices, and the least it keeps
+// up its manoeuvre once it reacts
+const AVOID_NOTICE = 1.8;
+const AVOID_HOLD = 1.2;
+
+// Car body kinds (BODY_SPECS keys) in street & highway traffic: half-length for spacing, half-width & axle for the
+// path, collision half-length & mass, and the engine voice (audio-sources.js)
+const CAR_KINDS = {
+  taxi: { half: 2.25, halfWidth: 0.86, axle: 1.38, halfL: 2.18, mass: 1600, engine: 'sedan' },
+  sedan: { half: 2.25, halfWidth: 0.86, axle: 1.38, halfL: 2.18, mass: 1600, engine: 'sedan' },
+  suv: { half: 2.3, halfWidth: 0.92, axle: 1.4, halfL: 2.22, mass: 2100, engine: 'suv' },
+  minivan: { half: 2.6, halfWidth: 0.92, axle: 1.52, halfL: 2.52, mass: 2000, engine: 'sedan' },
+  pickup: { half: 2.86, halfWidth: 0.96, axle: 1.92, halfL: 2.78, mass: 2400, engine: 'suv' },
+  van: { half: 2.96, halfWidth: 0.95, axle: 1.8, halfL: 2.88, mass: 2700, engine: 'suv' }
+};
 
 // Retire distant actors even when looking their way: keeping them indefinitely starves upcoming streets.
 // Replacements may enter the far view, but nearby visible roads and sidewalks are protected from pop-in.
 const VEHICLE_RADIUS = 380;
-const PED_RADIUS = 320;
 const NEAR_RADIUS = 350;
 const VEHICLE_SPAWN_DISTANCE = 250;
-const PED_SPAWN_DISTANCE = 150;
 
+// 8-row LED destination sign atlas (route badge + destination) aligned with the 4-slot bus livery cycle
+// (slots 0/2 = Current MTA Blue/Gold, slot 1 = Select Bus Service, slot 3 = Classic White/Blue)
 function createBusDestinationTexture() {
   const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 64;
+  c.width = 512;
+  c.height = 512;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#0c0f14';
-  ctx.fillRect(0, 0, 256, 64);
-  ctx.fillStyle = '#0058b8';
-  ctx.fillRect(6, 8, 62, 48);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '900 26px Inter, Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('1', 37, 33);
-  ctx.fillStyle = '#ff9d1c';
-  ctx.font = '800 22px "Noto Sans TC", "PingFang HK", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('中環', 78, 33);
+  ctx.fillStyle = '#090b10';
+  ctx.fillRect(0, 0, 512, 512);
+  const routes = [
+    ['M101', '3 AV / HARLEM', '#0058b8', '#ff9d1c'],
+    ['M15', '+SELECT BUS / SOUTH FERRY', '#009ad6', '#46d8ff'],
+    ['M42', '42 ST PIER / UN', '#0058b8', '#ff9d1c'],
+    ['M1', '5 AV / HARLEM', '#0058b8', '#ff9d1c'],
+    ['M7', 'COLUMBUS AV / 14 ST', '#0058b8', '#ff9d1c'],
+    ['M60', '+SBS / LAGUARDIA', '#009ad6', '#46d8ff'],
+    ['M4', 'MADISON AV / CLOISTERS', '#0058b8', '#ff9d1c'],
+    ['M104', 'BROADWAY / TIMES SQ', '#0058b8', '#ff9d1c']
+  ];
+  routes.forEach(([route, dest, badgeBg, textCol], idx) => {
+    const y0 = idx * 64;
+    ctx.fillStyle = '#0b0e14';
+    ctx.fillRect(6, y0 + 8, 500, 48);
+    ctx.fillStyle = badgeBg;
+    ctx.fillRect(12, y0 + 11, 126, 42);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 32px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(route, 75, y0 + 33);
+    ctx.fillStyle = textCol;
+    ctx.font = '800 25px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(dest, 152, y0 + 33);
+  });
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 16;
   return tex;
 }
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
-function createTrafficSystem(scene, sidewalks, obstacles) {
+function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   const group = new THREE.Group();
-  group.name = 'HongKongTrafficAndPedestrians';
+  group.name = 'ManhattanTrafficAndPedestrians';
   let collisionListener = null;
   const collisionEvent = { a: null, b: null, kind: 'vehicle', x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 0, speed: 0 };
 
@@ -101,7 +132,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   // =========================================================================
   // 0. ROAD NETWORK
   // =========================================================================
-  const network = buildRoadNetwork(sidewalks, obstacles);
+  const network = buildRoadNetwork(sidewalks, obstacles, signalIntersections);
   const { nodes, edges, connector, curvePoint } = network;
 
   // Sides of an intersection (road-network.js step 9): a grid intersection's are 0 east, 1 west, 2 south, 3 north;
@@ -114,8 +145,6 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     n.crossing = new Array(n.sideCount).fill(0); // vehicles crossing (or about to cross) the crosswalk on each side
     n.approach = new Array(n.sideCount).fill(null); // the edge arriving over each side's crosswalk
     n.road = new Array(n.sideCount).fill(null); // an edge arriving or leaving over each side's crosswalk: the road it spans
-    n.walkers = []; // pedestrians on its crosswalks
-    n.curb = []; // pedestrians at the curbs of its crosswalks, standing or about to (who to queue behind)
   }
   for (const e of edges) {
     e.occ = e.lanes.map(() => []); // vehicles in each lane, sorted by position
@@ -149,88 +178,155 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     };
   }
 
-  // Build 3 distinct 3D LoftGeometry vehicle classes (Taxi, Sedan/NYPD, SUV) with separate spinning 3D wheels
-  const taxiGeo = buildCarGeometry(BODY_SPECS.taxi, false);
-  const sedanGeo = buildCarGeometry(BODY_SPECS.sedan, false);
-  const suvGeo = buildCarGeometry(BODY_SPECS.suv, false);
+  // Every body kind shares one 3D wheel model, instanced separately and scaled to the kind's wheel radius
   const carWheelLeftGeo = buildSteerableWheelGeo(BODY_SPECS.sedan, -1);
   const carWheelRightGeo = buildSteerableWheelGeo(BODY_SPECS.sedan, 1);
-
-  const taxiMat = createLoftedCarMaterial(BODY_SPECS.taxi);
-  const sedanMat = createLoftedCarMaterial(BODY_SPECS.sedan);
-  const suvMat = createLoftedCarMaterial(BODY_SPECS.suv);
-  const carWheelMat = createLoftedCarMaterial(BODY_SPECS.sedan, 0xffbe14);
+  const carWheelStyles = new THREE.InstancedBufferAttribute(new Float32Array(NUM_CARS * 2), 1);
+  carWheelLeftGeo.setAttribute('wheelStyle', carWheelStyles);
+  carWheelRightGeo.setAttribute('wheelStyle', carWheelStyles);
+  const carWheelMat = createCarWheelMaterial({ instanced: true });
 
   const taxiYellow = new THREE.Color(0xffbe14);
-  const nypdWhite = new THREE.Color(0xf6f9fc);
-  const sedanPalette = [
-    new THREE.Color(0x1c2026), // Black Town Car / Uber
-    new THREE.Color(0xcfd6de), // Metallic Silver Sedan
-    new THREE.Color(0x1d3b6c), // Deep Navy Sedan
-    new THREE.Color(0x52575e), // Graphite Grey Sedan
-    new THREE.Color(0x6e1f24)  // Burgundy Sedan
-  ];
-  const suvPalette = [
-    new THREE.Color(0x16191e), // Executive Black Escalade/Suburban
-    new THREE.Color(0xf0f3f7), // Pearl White SUV
-    new THREE.Color(0x3a434d), // Slate Metallic SUV
-    new THREE.Color(0x28382e), // Forest Green SUV
-    new THREE.Color(0xbec6cf)  // Silver SUV
-  ];
+  const boroGreen = new THREE.Color(0x5cae3e);
+  const policeWhite = new THREE.Color(0xf6f9fc);
+  // NYC street fleet palettes: white/black/grey/silver dominate with TLC black cars, blue/red/green accents,
+  // metallic vs solid clearcoat, chrome/blackout trim & multi-spoke wheel styles encoded in carState.w.
+  const fleetStyles = {
+    sedan: [
+      { col: new THREE.Color(0x12151a), style: carStyleCode({ livery: 3, metallic: 0, trim: 1, wheel: 1 }) }, // TLC / Uber Black Car
+      { col: new THREE.Color(0x161a20), style: carStyleCode({ livery: 3, metallic: 1, trim: 2, wheel: 2 }) }, // TLC Obsidian Blackout
+      { col: new THREE.Color(0xf2f4f7), style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 0 }) }, // Alpine White Sedan
+      { col: new THREE.Color(0xe6eaef), style: carStyleCode({ livery: 4, metallic: 1, trim: 2, wheel: 2 }) }, // Pearl White Sport (black roof)
+      { col: new THREE.Color(0xc8d0d8), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }, // Liquid Silver Metallic
+      { col: new THREE.Color(0x9aa2ac), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 1 }) }, // Tungsten Silver Metallic
+      { col: new THREE.Color(0x52575e), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) }, // Graphite Grey Metallic
+      { col: new THREE.Color(0x363b42), style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 3 }) }, // Charcoal Dark Grey
+      { col: new THREE.Color(0x1c2026), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }, // Jet Black Metallic
+      { col: new THREE.Color(0x1d3b6c), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) }, // Deep Navy Metallic
+      { col: new THREE.Color(0x285086), style: carStyleCode({ livery: 4, metallic: 1, trim: 2, wheel: 2 }) }, // Atlantic Blue Sport (black roof)
+      { col: new THREE.Color(0x741d22), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }  // Crimson Red Metallic
+    ],
+    suv: [
+      { col: new THREE.Color(0x101318), style: carStyleCode({ livery: 3, metallic: 0, trim: 1, wheel: 1 }) }, // Executive Black Escalade / Suburban TLC
+      { col: new THREE.Color(0x171b22), style: carStyleCode({ livery: 3, metallic: 1, trim: 2, wheel: 3 }) }, // Uber Black SUV (blackout)
+      { col: new THREE.Color(0xf0f3f7), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }, // Pearl White Luxury SUV
+      { col: new THREE.Color(0xe4e8ed), style: carStyleCode({ livery: 4, metallic: 0, trim: 2, wheel: 2 }) }, // Glacier White SUV (black roof)
+      { col: new THREE.Color(0x3a434d), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) }, // Slate Grey Metallic SUV
+      { col: new THREE.Color(0x5c636b), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) }, // Gunmetal Grey SUV
+      { col: new THREE.Color(0xbec6cf), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }, // Silver Metallic Crossover
+      { col: new THREE.Color(0x181c22), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 3 }) }, // Onyx Black SUV
+      { col: new THREE.Color(0x20385c), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) }, // Midnight Blue SUV
+      { col: new THREE.Color(0x28382e), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 0 }) }, // Forest Green Metallic SUV
+      { col: new THREE.Color(0x682024), style: carStyleCode({ livery: 4, metallic: 1, trim: 2, wheel: 2 }) }, // Burgundy Crossover (black roof)
+      { col: new THREE.Color(0x787670), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }  // Urban Putty Grey Crossover
+    ],
+    // Minivans: family colours plus TLC / Uber XL black
+    minivan: [
+      { col: new THREE.Color(0x111419), style: carStyleCode({ livery: 3, metallic: 1, trim: 1, wheel: 1 }) }, // TLC / Uber XL Black
+      { col: new THREE.Color(0xf0f2f5), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }, // Blizzard Pearl
+      { col: new THREE.Color(0xaab2bb), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 1 }) }, // Celestial Silver
+      { col: new THREE.Color(0x4a5058), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) }, // Modern Steel Grey
+      { col: new THREE.Color(0x1a1d22), style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 3 }) }, // Midnight Black
+      { col: new THREE.Color(0x26354f), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }, // Obsidian Blue
+      { col: new THREE.Color(0xe9ecef), style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 1 }) }, // Super White
+      { col: new THREE.Color(0x5a1f24), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }  // Velvet Red
+    ],
+    // Pickups: black, white & silver with chrome or blackout grilles
+    pickup: [
+      { col: new THREE.Color(0x14171b), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) }, // Agate Black (chrome)
+      { col: new THREE.Color(0xf2f3f5), style: carStyleCode({ livery: 0, metallic: 0, trim: 1, wheel: 0 }) }, // Oxford White (chrome)
+      { col: new THREE.Color(0x9da4ab), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) }, // Iconic Silver
+      { col: new THREE.Color(0x3d434a), style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 3 }) }, // Carbonized Grey (blackout)
+      { col: new THREE.Color(0x1e2f4f), style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) }, // Antimatter Blue
+      { col: new THREE.Color(0x8f1a1d), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }, // Race Red (blackout)
+      { col: new THREE.Color(0xf2f3f5), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }, // Oxford White (blackout)
+      { col: new THREE.Color(0x2c3a30), style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 0 }) }  // Forest Green
+    ],
+    // Delivery vans: mostly fleet white, black plastic trim; never two-tone, whose black roof would cover the van's
+    // cargo box (part of its glasshouse loft)
+    van: [
+      { col: new THREE.Color(0xf4f5f6), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 0 }) }, // Fleet White
+      { col: new THREE.Color(0xeef0f2), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }, // Arctic White (dark wheels)
+      { col: new THREE.Color(0xb9c0c7), style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 0 }) }, // Brilliant Silver
+      { col: new THREE.Color(0xf4f5f6), style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 1 }) }, // Fleet White
+      { col: new THREE.Color(0x8e959c), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }, // Pebble Grey
+      { col: new THREE.Color(0xf0f1f2), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }, // Fleet White (dark wheels)
+      { col: new THREE.Color(0x15181c), style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 3 }) }, // Obsidian Black
+      { col: new THREE.Color(0xf4f5f6), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 0 }) }, // Fleet White
+      { col: new THREE.Color(0x1f3354), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 0 }) }, // Navy Blue
+      { col: new THREE.Color(0xf4f5f6), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 1 }) }, // Fleet White
+      { col: new THREE.Color(0x9b1c1f), style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 0 }) }  // Flame Red
+    ]
+  };
+  // Of every 20 cars: 4 yellow cabs, 5 sedans, 6 SUVs, 2 delivery vans, 2 minivans & a pickup. NYPD cruisers are sedans
+  // or Interceptor SUVs, green Boro cabs sedans or SUVs.
+  const FLEET_MIX = ['taxi', 'sedan', 'van', 'sedan', 'suv', 'taxi', 'suv', 'minivan', 'suv', 'pickup',
+    'taxi', 'sedan', 'suv', 'van', 'suv', 'taxi', 'minivan', 'sedan', 'suv', 'sedan'];
 
   const cars = [];
-  let taxiCount = 0;
-  let sedanCount = 0;
-  let suvCount = 0;
-  let nypdCount = 0;
+  const counts = Object.fromEntries(Object.keys(CAR_KINDS).map((kind) => [kind, 0]));
+  const policeCounts = { sedan: 0, suv: 0 };
 
   for (let i = 0; i < NUM_CARS; i++) {
-    const isNYPD = (i % 40) === 6;
-    const isTaxi = !isNYPD && (i % 5) === 0;
-    const isSUV = !isNYPD && !isTaxi && (i % 2 === 0);
+    const isPolice = (i % 50) === 6 || (i % 100) === 56;
+    const isBoroTaxi = !isPolice && (i % 25) === 3;
+    let bodyType = FLEET_MIX[i % FLEET_MIX.length];
+    if (isPolice) bodyType = (i % 100) === 56 ? 'suv' : 'sedan';
+    else if (isBoroTaxi) bodyType = i % 2 === 0 ? 'suv' : 'sedan';
 
-    let bodyType = 'sedan';
     let col;
-
-    if (isTaxi) {
-      bodyType = 'taxi';
-      taxiCount++;
+    let style;
+    if (bodyType === 'taxi') {
       col = taxiYellow;
-    } else if (isSUV) {
-      bodyType = 'suv';
-      suvCount++;
-      col = suvPalette[i % suvPalette.length];
+      style = carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: i % 2 });
+    } else if (isPolice) {
+      col = policeWhite;
+      style = carStyleCode({ livery: 1, metallic: 0, trim: 2, wheel: 3 });
+      policeCounts[bodyType]++;
+    } else if (isBoroTaxi) {
+      col = boroGreen;
+      style = carStyleCode({ livery: 2, metallic: 0, trim: 0, wheel: 0 });
     } else {
-      sedanCount++;
-      col = isNYPD ? nypdWhite : sedanPalette[i % sedanPalette.length];
-      if (isNYPD) nypdCount++;
+      const palette = fleetStyles[bodyType];
+      ({ col, style } = palette[counts[bodyType] % palette.length]);
     }
+    counts[bodyType]++;
 
-    const car = createVehicle(false, isSUV ? 2.3 : 2.25, isSUV ? 0.92 : 0.86, isSUV ? 1.4 : 1.38, CAR_DRIVER, 10 + (i % 5) * 0.9);
+    const kind = CAR_KINDS[bodyType];
+    const car = createVehicle(false, kind.half, kind.halfWidth, kind.axle, CAR_DRIVER, 10 + (i % 5) * 0.9);
     // paint as float32 values, so renderCar() can tell whether an instance slot's paint changes by comparing
     const paint = [Math.fround(col.r), Math.fround(col.g), Math.fround(col.b)];
-    Object.assign(car, { isTaxi, isNYPD, isSUV, bodyType, paint });
+    Object.assign(car, { isPolice, bodyType, paint, style, halfL: kind.halfL, mass: kind.mass, engine: kind.engine });
     cars.push(car);
   }
 
-  // Per body type: the full model (with separately instanced spinning wheels near the camera) and, beyond
-  // CAR_PROXY_DISTANCE, the ~250-triangle stand-in. Instance slots are handed out every frame to the cars the camera
-  // can see (or whose shadow it may see), see renderCar(). Per-instance paint & lamp / livery state the car material
-  // reads: brake lights, left (+x) & right (-x) turn signals, livery (1 = NYPD).
+  // Per body kind: the full model (with separately instanced spinning wheels near the camera) and, beyond
+  // CAR_PROXY_DISTANCE, the ~250-triangle stand-in, plus the contact shadow's footprint (width, length, centre z).
+  // Instance slots are handed out every frame to the cars the camera can see (or whose shadow it may see), see
+  // renderCar(). Per-instance paint & lamp / livery state the car material reads: brake lights, left (+x) & right (-x)
+  // turn signals, livery (1 = NYPD).
   const bodies = {};
-  for (const [kind, geo, count, mat] of [['taxi', taxiGeo, taxiCount, taxiMat], ['sedan', sedanGeo, sedanCount, sedanMat], ['suv', suvGeo, suvCount, suvMat]]) {
-    const n = Math.max(1, count);
+  for (const kind of Object.keys(CAR_KINDS)) {
+    const spec = BODY_SPECS[kind];
+    const n = Math.max(1, counts[kind]);
+    const mat = createLoftedCarMaterial(spec);
     const lodMesh = (g) => {
       g.setAttribute('paintColor', new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3));
       g.setAttribute('carState', new THREE.InstancedBufferAttribute(new Float32Array(n * 4), 4));
       return new THREE.InstancedMesh(g, mat, n);
     };
-    bodies[kind] = { near: lodMesh(geo), far: lodMesh(buildCarProxyGeometry(BODY_SPECS[kind])) };
+    const halfWidth = Math.max(...spec.halfWidth.map((p) => p[1])) + spec.archFlare;
+    bodies[kind] = {
+      near: lodMesh(buildCarGeometry(spec, false)),
+      far: lodMesh(buildCarProxyGeometry(spec)),
+      shadow: [2 * halfWidth + 0.33, spec.zFront - spec.zRear + 0.55, (spec.zFront + spec.zRear) / 2]
+    };
   }
   const bodyMeshes = Object.values(bodies).flatMap((b) => [b.near, b.far]);
 
   const carWheelLeftInst = new THREE.InstancedMesh(carWheelLeftGeo, carWheelMat, NUM_CARS * 2);
   const carWheelRightInst = new THREE.InstancedMesh(carWheelRightGeo, carWheelMat, NUM_CARS * 2);
+  carWheelRightInst.userData.sharesPipelineWith = carWheelLeftInst;
 
   // 3D Collision Spark & Debris Particle Pool
   const MAX_SPARKS = 120;
@@ -263,13 +359,18 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     }
   }
 
-  // NYPD roof light bars (the blue & white livery is painted by the sedan material from the instance's carState)
-  const nypdBarInst = new THREE.InstancedMesh(buildLightbarGeometry(BODY_SPECS.sedan), createLightbarMaterial(), Math.max(1, nypdCount));
+  // NYPD roof light bars per police-capable body kind (sedan & Interceptor SUV have different roof heights)
+  const lightbarMat = createLightbarMaterial();
+  const policeLightbars = {
+    sedan: new THREE.InstancedMesh(buildLightbarGeometry(BODY_SPECS.sedan), lightbarMat, Math.max(1, policeCounts.sedan)),
+    suv: new THREE.InstancedMesh(buildLightbarGeometry(BODY_SPECS.suv), lightbarMat, Math.max(1, policeCounts.suv))
+  };
+  const policeLightbarMeshes = [policeLightbars.sedan, policeLightbars.suv];
   const carShadowInst = new THREE.InstancedMesh(unitPlane, contactShadowMat, NUM_CARS);
   carShadowInst.renderOrder = 998;
 
   for (const m of bodyMeshes) m.castShadow = m.receiveShadow = true;
-  nypdBarInst.castShadow = true;
+  for (const m of policeLightbarMeshes) m.castShadow = true;
   carWheelLeftInst.castShadow = carWheelLeftInst.receiveShadow = true;
   carWheelRightInst.castShadow = carWheelRightInst.receiveShadow = true;
 
@@ -278,23 +379,30 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     carWheelLeftInst,
     carWheelRightInst,
     sparkInst,
-    nypdBarInst
+    ...policeLightbarMeshes
   );
 
   // =========================================================================
-  // 2. LOFTED MTA SELECT BUS SERVICE BLUE & WHITE CITY BUSES (32 BUSES)
+  // 2. CITY BUSES
   // =========================================================================
   const busBodyGeo = buildLoftedBusBodyGeometry();
-  // Per-instance lamp state the bus material reads: brake lights, left (+x) & right (-x) turn signals (renderBus)
+  // Per-instance lamp & variant state the bus material and sign atlas read: brake, left (+x) & right (-x) turn, variant+1
   const busStates = new THREE.InstancedBufferAttribute(new Float32Array(NUM_BUSES * 4), 4);
   busBodyGeo.setAttribute('busState', busStates);
-  // Destination signs above the windshield, by the front door & above the rear window
+  // Destination signs above the windshield, by the front door & on the upper-right rear cap
   const busHeaderGeo = buildBusSignGeometry();
+  busHeaderGeo.setAttribute('busState', busStates);
 
   const busBodyMat = createLoftedBusMaterial();
-  const busDestMat = new THREE.MeshBasicNodeMaterial({
-    map: createBusDestinationTexture()
-  });
+  const busDestTex = createBusDestinationTexture();
+  const busDestMat = new THREE.MeshBasicNodeMaterial();
+  {
+    const { attribute, float, floor, max, mod, texture, uv, varying, vec2, vertexStage } = THREE.TSL;
+    const state = attribute('busState', 'vec4');
+    const vRow = varying(vertexStage(mod(floor(max(float(0.0), state.w.sub(1.0)).add(0.5)), 8.0)));
+    const signUV = vec2(uv().x, uv().y.mul(0.095).add(0.015).add(float(7.0).sub(vRow).mul(0.125)));
+    busDestMat.colorNode = texture(busDestTex, signUV).rgb.mul(1.25);
+  }
 
   const busWheelMat = createBusWheelMaterial();
   const busBodyInst = new THREE.InstancedMesh(busBodyGeo, busBodyMat, NUM_BUSES);
@@ -309,19 +417,33 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   busWheelRightInst.castShadow = busWheelRightInst.receiveShadow = true;
 
   const buses = [];
-  for (let i = 0; i < NUM_BUSES; i++) buses.push(createVehicle(true, 6.0, 1.3, 3.6, BUS_DRIVER, 8 + (i % 3)));
+  for (let i = 0; i < NUM_BUSES; i++) {
+    const b = createVehicle(true, 6.1, 1.3, 3.6, BUS_DRIVER, 8 + (i % 3));
+    Object.assign(b, { variant: i, halfL: 5.72, mass: 12000 });
+    buses.push(b);
+  }
   const vehicles = [...cars, ...buses];
   group.add(busBodyInst, busHeaderInst, busWheelLeftInst, busWheelRightInst);
+
+  // =========================================================================
+  // 3. PEDESTRIAN SYSTEM
+  // =========================================================================
+  const player = { active: false, entity: null, x: 0, z: 0, vx: 0, vz: 0, fx: 0, fz: 1,
+    halfW: 0.86, halfL: 2.18 };
+  const nearEdges = [];
+  const nearSignals = [];
+  const pedestrianSystem = createPedestrianSystem(network, {
+    player, nearEdges, nearSignals, mayCross, walkOn, visible, nearView
+  });
+  group.add(...pedestrianSystem.meshes);
 
   // Add vehicle contact shadows last + pre-allocated Clustered SpotLight / PointLight pools
   group.add(carShadowInst, busShadowInst);
 
   const HEADLIGHT_POOL_SIZE = 96;
-  const NYPD_LIGHT_POOL_SIZE = 6;
+  const POLICE_LIGHT_POOL_SIZE = 6;
   const MAX_LIGHT_DIST = 115;
   const MAX_LIGHT_DIST_SQ = MAX_LIGHT_DIST * MAX_LIGHT_DIST;
-  const DUAL_BEAM_DIST_SQ = 96 * 96;
-  const DUAL_BEAM_MAX_VEHICLES = 44;
 
   const trafficLightsGroup = new THREE.Group();
   trafficLightsGroup.name = 'TrafficClusteredLights';
@@ -336,16 +458,16 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     headlightPool.push(spot);
   }
 
-  const nypdLightPool = [];
-  for (let i = 0; i < NYPD_LIGHT_POOL_SIZE; i++) {
+  const policeLightPool = [];
+  for (let i = 0; i < POLICE_LIGHT_POOL_SIZE; i++) {
     const pt = new THREE.PointLight(0xff1828, 0, 12.0, 1.25);
     pt.position.set(0, -1000, 0);
     trafficLightsGroup.add(pt);
-    nypdLightPool.push(pt);
+    policeLightPool.push(pt);
   }
 
   // Nothing shows until it has been placed
-  const carInstances = [...bodyMeshes, carWheelLeftInst, carWheelRightInst, nypdBarInst, carShadowInst];
+  const carInstances = [...bodyMeshes, carWheelLeftInst, carWheelRightInst, ...policeLightbarMeshes, carShadowInst];
   const busInstances = [busBodyInst, busHeaderInst, busWheelLeftInst, busWheelRightInst, busShadowInst];
   for (const inst of [...carInstances, ...busInstances, sparkInst]) {
     inst.frustumCulled = false;
@@ -365,7 +487,6 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   const phaseOf = (e) => (e.axisIndex === 0 ? avePhase : stPhase);
   let focusX = 0;
   let focusZ = 140;
-  const player = { active: false, entity: null, x: 0, z: 0, vx: 0, vz: 0, fx: 0, fz: 1, halfW: 0.86, halfL: 2.18, push: 0.5 };
 
   // Lane lists hold pooled { v, s } entries sorted by position s along the lane, rebuilt every frame
   const pool = [];
@@ -501,8 +622,6 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   }
 
   // Edges and signalized intersections around the focus, to place vehicles and pedestrians on
-  const nearEdges = [];
-  const nearSignals = [];
   let nearX = Infinity;
   let nearZ = Infinity;
   function refreshNear() {
@@ -597,7 +716,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
 
   // Braking for a red (or an amber with room to stop) at the end of edge f, `d` metres ahead
   function signalAhead(v, f, d) {
-    if (v.isNYPD || !f.to.signal || d > LOOKAHEAD) return 0;
+    if (v.isPolice || !f.to.signal || d > LOOKAHEAD) return 0;
     const phase = phaseOf(f);
     if (phase === 'green' || (phase === 'amber' && !canStopBefore(v, d))) return 0;
     return stopAt(v, d);
@@ -653,7 +772,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     for (const list of o.occ) {
       const lead = leadOf(list);
       if (!lead || (lead.v.edge === o && lead.v.move.turn === 'L')) continue;
-      if (red && !lead.v.isNYPD) continue;
+      if (red && !lead.v.isPolice) continue;
       if (!canStop(lead, o, impatient)) return true;
       const u = lead.v;
       const j = u.edge === o ? u.move.out[u.lane] : -1;
@@ -692,6 +811,26 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   // Seconds v takes to cover dist metres from now, speeding up from rest if it has to
   const timeTo = (v, dist) => dist / Math.max(v.speed, Math.sqrt((v.driver.a * dist) / 2), 0.1);
 
+  // Do people on crosswalk `side` have the WALK? Across the avenue with the cross street's traffic, across the street
+  // with the avenue's.
+  function walkOn(side) {
+    return side >= 2 ? stWalk : aveWalk;
+  }
+
+  // May p step off the curb onto its crosswalk? On the WALK (early in the parallel traffic's green, so red for the
+  // traffic arriving over it), once no vehicle is crossing it or committed to, and none is too close to stop
+  function mayCross(p) {
+    const n = p.node;
+    if (!walkOn(p.side) || n.crossing[p.side] > 0) return false;
+    const e = n.approach[p.side];
+    if (!e) return true;
+    for (const list of e.occ) {
+      const lead = leadOf(list);
+      if (lead && !canStop(lead, e, true)) return false;
+    }
+    return true;
+  }
+
   // Will anyone on crosswalk `side` of n be within reach of the lane meeting it at `coord` between t0 and t1
   // seconds from now? Unless `onIt`, so is anyone waiting at the curb to step off, however far away: on the WALK, they
   // only wait for the vehicles already holding the crosswalk.
@@ -700,6 +839,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
       if (p.side !== side || (onIt && p.waiting)) continue;
       const toGo = (coord - p.coord) * p.dir; // metres p still has to walk to get there
       const avoiding = clock < p.avoidUntil;
+      // Runners may enter a lane sooner, then slow or stop before clearing it.
       const fast = Math.max(p.speed, p.v, avoiding ? p.avoidSpeed : 0);
       const slow = Math.max(0.1, avoiding ? Math.min(p.speed, p.v, p.avoidSpeed) : p.speed);
       if (p.waiting || ((toGo + 2.6) / slow > t0 && (toGo - 2.6) / fast < t1)) return true;
@@ -815,7 +955,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
       }
       return false;
     }
-    if (!v.isNYPD && (phase === 'red' || (phase === 'amber' && stoppable))) return false;
+    if (!v.isPolice && (phase === 'red' || (phase === 'amber' && stoppable))) return false;
     if (boxBusy(n, e.axisIndex)) return false; // crossing traffic inside
     const lead = ahead(e.occ[v.lane], v.s, v);
     if (lead && lead.v.yielding) return false; // the vehicle ahead waits inside to turn: wait behind the line
@@ -824,11 +964,11 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     // road it turns into (they walk on the same green): short of their crosswalk or, turning left across oncoming
     // traffic, short of the oncoming lanes until there is a gap. The light changing stops both for it at the latest.
     const c = connector(e, v.lane, f, j);
-    const first = n.signal && (!v.isNYPD || phase === 'green') && m.turn !== 'S' && !lead;
+    const first = n.signal && (!v.isPolice || phase === 'green') && m.turn !== 'S' && !lead;
     const across = m.turn === 'L' && !!e.opposite;
     const wait = first ? (across ? yieldPoint(v, c, e) : c.len - 3 - v.half) : -1; // < 0: no room inside to wait
     if (m.turn === 'L' ? across && wait < 0 && yieldOncoming(e.opposite, v.wait > 8, v) : e.opposite && e.opposite.lefts > 0) return false;
-    if ((n.signal ? v.isNYPD && phase !== 'green' : e.axisIndex !== 0) && yieldToCrossTraffic(v, n)) return false;
+    if ((n.signal ? v.isPolice && phase !== 'green' : e.axisIndex !== 0) && yieldToCrossTraffic(v, n)) return false;
     // nobody on the crosswalks while it passes over them, on the way in and on the way out, and a free place to
     // clear the intersection to, taking turns with lanes merging into it
     if (pedestrianOn(n, e.inSide, laneCoord(e, v.lane), 0, timeTo(v, d + 2.5 + 2 * v.half))) return false;
@@ -847,10 +987,11 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
 
   // Overtake into an adjacent lane when it is clearly quicker (MOBIL), or work towards a lane the planned turn
   // can be made from; either only if neither v nor its new follower has to brake hard for it. Not while still
-  // pulling out of an intersection, nor in the last 12 m before the next.
+  // pulling out of an intersection or dodging the player, nor in the last 12 m before the next.
   function changeLanes(v) {
     const e = v.edge;
-    if (v.conn || v.commit || Math.abs(v.dl) > 0.5 || v.s < v.half || e.len - v.s - v.half < 12) return;
+    if (v.conn || v.commit || clock < v.panicUntil) return;
+    if (Math.abs(v.dl) > 0.5 || v.s < v.half || e.len - v.s - v.half < 12) return;
     let target = -1;
     if (v.move.out[v.lane] < 0) {
       const t = v.lane + Math.sign(nearestLane(v.move, v.lane) - v.lane);
@@ -940,7 +1081,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
         const o = c && !v.claimed && mergingAhead(v, f, j);
         if (o) worst = Math.min(worst, Math.max(-v.driver.b, brake(v, o.s - o.v.half - vs - v.half, o.v.speed)));
         let vt = c ? bendSpeed(v, c) : Infinity;
-        const cautious = e.to.signal ? v.isNYPD && phaseOf(e) !== 'green' : e.axisIndex !== 0;
+        const cautious = e.to.signal ? v.isPolice && phaseOf(e) !== 'green' : e.axisIndex !== 0;
         if (cautious) vt = Math.min(vt, 5);
         cap = Math.sqrt(vt * vt + 5 * Math.max(0, d));
       }
@@ -960,7 +1101,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
       cap = bendSpeed(v, v.conn);
     }
     const pg = playerGap(v, 0);
-    if (pg < LOOKAHEAD) {
+    if (pg > 0 && pg < LOOKAHEAD) { // (a player alongside, not yet clear ahead, isn't one to follow)
       worst = Math.min(worst, brake(v, pg, v.pSpeed));
       if (pg < v.gap) {
         v.gap = pg;
@@ -969,6 +1110,104 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     }
     const acc = Math.min(freeAcc(v) + worst, (cap - v.speed) * 2);
     v.acc = clamp(acc, -9, v.driver.a);
+    // dodging the player: braking (as hard as it can, unless that would stop it before it has swerved out of the way),
+    // or flooring it (unless it must brake for something ahead)
+    if (clock < v.panicUntil) {
+      if (v.panicAcc < 0) v.acc = Math.min(v.acc, v.evade ? -v.driver.b : -v.driver.bMax);
+      else if (v.acc > -v.driver.b && v.speed < 1.5 * v.v0) v.acc = Math.max(v.acc, 1.5 * v.driver.a);
+    }
+  }
+
+  // Dodging the player, as people do: late, and without second thoughts. A driver who sees the player about to hit it
+  // (within AVOID_NOTICE seconds, both keeping on as they go) reacts only once that has lasted its reaction time, by
+  // when it is almost too late. Then it commits to one manoeuvre: braking if the player would hit its front half (hard,
+  // unless it swerves too: a car that stops can't get out of the way), flooring it if its rear half (braking would only
+  // make that worse), and swerving to one side if the road is clear
+  // there: away from the player (behind a player crossing its way, to the right if the player comes straight at it),
+  // unless there is more room the other way.
+  // It keeps that up for AVOID_HOLD seconds at least, and for as long as the player is still about to hit it.
+  function react(v, dt) {
+    const t = player.active && v.impactTime === 0 ? threatTime(v) : Infinity;
+    if (v.impactTime > 0 || (v.panicUntil && clock >= v.panicUntil)) {
+      v.evade = v.panicUntil = v.panicAcc = v.alarm = 0; // hit after all, or over
+    }
+    if (v.panicUntil) {
+      if (t < AVOID_NOTICE) v.panicUntil = Math.max(v.panicUntil, clock + 0.5);
+      return;
+    }
+    if (t >= AVOID_NOTICE) {
+      v.alarm = 0;
+      return;
+    }
+    v.alarm += dt;
+    if (v.alarm < v.reaction) return;
+    v.panicUntil = clock + AVOID_HOLD;
+    v.panicAcc = threat.ahead < 0 ? 1 : -1;
+    if (v.speed < 2) return;
+    // where the player will be across v's way a moment after it would hit: v swerves away from there, or the other way
+    // if there is more room on that side
+    const later = threat.aside + threat.across * 0.5;
+    const side = Math.abs(later) < 0.3 ? 1 : -Math.sign(later);
+    const room = swerveRoom(v, side);
+    const other = swerveRoom(v, -side);
+    v.evade = other > room ? -side * other : side * room;
+  }
+
+  // Seconds until the player would hit v (with a little margin), both keeping on straight as they go; Infinity if not
+  // within AVOID_NOTICE. Where it would hit goes in `threat`: the player's position ahead of v and to its right then,
+  // and its speed across v's heading.
+  const threat = { ahead: 0, aside: 0, across: 0 };
+  function threatTime(v) {
+    const dx = player.x - v.x;
+    const dz = player.z - v.z;
+    if (Math.abs(dx) > 90 || Math.abs(dz) > 90) return Infinity;
+    const hx = Math.sin(v.yaw);
+    const hz = Math.cos(v.yaw);
+    const ahead = dx * hx + dz * hz;
+    const aside = dz * hx - dx * hz;
+    const along = player.vx * hx + player.vz * hz - v.speed;
+    const across = player.vz * hx - player.vx * hz;
+    // the player's half extents along and across v's heading, as it is turned
+    const c = Math.abs(player.fx * hx + player.fz * hz);
+    const s = Math.abs(player.fz * hx - player.fx * hz);
+    const reachAhead = v.halfL + player.halfL * c + player.halfW * s + 0.3;
+    const reachAside = v.halfWidth + player.halfL * s + player.halfW * c + 0.3;
+    let enter = 0;
+    let exit = AVOID_NOTICE;
+    for (let k = 0; k < 2; k++) {
+      const p = k ? aside : ahead;
+      const m = k ? across : along;
+      const r = k ? reachAside : reachAhead;
+      if (Math.abs(m) < 1e-6) {
+        if (Math.abs(p) >= r) return Infinity;
+        continue;
+      }
+      const t0 = (-r - p) / m;
+      const t1 = (r - p) / m;
+      enter = Math.max(enter, Math.min(t0, t1));
+      exit = Math.min(exit, Math.max(t0, t1));
+    }
+    if (enter >= exit) return Infinity;
+    threat.ahead = ahead + along * enter;
+    threat.aside = aside + across * enter;
+    threat.across = across;
+    return enter;
+  }
+
+  // How far right (side 1) or left (-1) of its lane centre v can swerve: well over, a little, or not at all, as far as
+  // the road is clear beside it there and a little way ahead
+  function swerveRoom(v, side) {
+    const rx = -v.tz;
+    const rz = v.tx;
+    for (const r of [2.2, 1.2]) {
+      const off = side * (r + v.halfWidth) - v.dl;
+      let clear = true;
+      for (const a of [0, v.half + v.speed * 0.6]) {
+        if (!network.isRoadClear(v.x + rx * off + v.tx * a, v.z + rz * off + v.tz * a, 0.2)) clear = false;
+      }
+      if (clear) return r;
+    }
+    return 0;
   }
 
   // Front bumper at the stop line: cross if allowed, or if going too fast to stop; otherwise wait there
@@ -1000,28 +1239,24 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   }
 
   function drive(v, dt) {
-    // A street with no way on (a dead end the graph still draws): stop, instead of reading a missing move.
-    if (!v.move) {
-      v.acc = -9;
-      v.speed = Math.max(0, v.speed + v.acc * dt);
-      return;
-    }
     v.laneTimer -= dt;
     if (v.laneTimer <= 0) {
       v.laneTimer = 0.4 + Math.random() * 0.3;
       changeLanes(v);
     }
     accelerate(v);
+    // Give the driver a moment to recover after an impact before accelerating again.
     v.impactTime = Math.max(0, v.impactTime - dt);
     if (v.impactTime > 0) v.acc = Math.min(0, v.acc);
     const speed = v.speed;
     v.speed = Math.max(0, v.speed + v.acc * dt);
-    let ds = v.speed * Math.cos(v.nose) * dt;
+    let ds = v.speed * Math.cos(v.nose) * dt; // (along its path, heading off it as it may be)
     if (v.impactTime === 0 && ds > v.gap - 0.3) {
+      // never into the vehicle ahead
       ds = Math.max(0, v.gap - 0.3);
       v.speed = Math.min(v.speed, v.leaderSpeed);
     }
-    v.acc = Math.max(-9, (v.speed - speed) / dt);
+    v.acc = Math.max(-9, (v.speed - speed) / dt); // as driven, for the body to pitch with: none standing still
     v.wait = v.speed < 0.5 ? v.wait + dt : 0;
     if (!v.conn) {
       v.s += ds;
@@ -1033,20 +1268,28 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     steer(v, dt);
   }
 
+  // The driver at the wheel. It steers for the bend in its path a moment ahead (on through the intersection ahead the
+  // way it plans to cross it), to head along its path, and back onto it: onto its lane centre after lane changes and
+  // knocks, or right of it by however far it swerves out of the player's way (Stanley steering). It turns the front
+  // wheels no faster than a person does and no further than it is comfortable with (or, in a panic, than the tyres
+  // grip). The car turns only as fast as its front wheels turn it, the tyres sliding at their grip; a knock's spin
+  // turns it too, the tyres scrubbing that off. Heading off its path, it drifts across it.
   const bendA = { x: 0, z: 0, dx: 0, dz: 1 };
   const bendB = { x: 0, z: 0, dx: 0, dz: 1 };
   function steer(v, dt) {
     const panic = !!v.evade;
     const wheelbase = 2 * v.axle;
     const c = v.conn ? v.cs : v.s;
+    // the bend a moment ahead, as the wheel takes a while to turn: its curvature (to the left) over 2 m
     const ahead = v.axle + 0.5 * v.speed;
     previewPoint(v, c + ahead, bendA);
     previewPoint(v, c + ahead + 2, bendB);
     let bend = Math.atan2(bendB.dx, bendB.dz) - Math.atan2(bendA.dx, bendA.dz);
     bend -= Math.round(bend / (Math.PI * 2)) * Math.PI * 2;
+    // ...plus how far right of its path it heads, and how far right of where it should be it is (nose and dl - evade)
     const off = v.dl - (v.evade || 0);
     const want = Math.atan((wheelbase * bend) / 2) + v.nose + Math.atan(((panic ? 3 : 1.2) * off) / (1 + v.speed));
-    const lateral = panic ? v.driver.grip : 1.3 * v.driver.aLat;
+    const lateral = panic ? v.driver.grip : 1.3 * v.driver.aLat; // the sideways acceleration it steers up to
     const most = Math.min(v.driver.lock, Math.atan((lateral * wheelbase) / Math.max(v.speed * v.speed, 1e-3)));
     const rate = v.driver.steerRate * (panic ? 2.5 : clamp(8 / Math.max(v.speed, 1), 1, 3)) * dt;
     v.delta += clamp(clamp(want, -most, most) - v.delta, -rate, rate);
@@ -1056,14 +1299,15 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     v.yaw -= Math.round(v.yaw / (Math.PI * 2)) * Math.PI * 2;
     v.yawVel *= Math.exp(-4 * dt);
     if (Math.abs(v.yawVel) < 1e-3) v.yawVel = 0;
+    // across its path, heading off it (nose: how far right of its path it heads)
     let nose = Math.atan2(v.tx, v.tz) - v.yaw;
     nose -= Math.round(nose / (Math.PI * 2)) * Math.PI * 2;
-    v.nose = nose;
     v.dlv = v.speed * Math.sin(nose);
     v.dl += v.dlv * dt;
-    v.steer = v.delta;
   }
 
+  // Point and direction c metres along v's path, as pathPoint, but on through the intersection ahead the way v plans
+  // to cross it
   function previewPoint(v, c, out) {
     const e = v.edge;
     const j = v.conn || c <= e.len ? -1 : v.move.out[v.lane];
@@ -1093,8 +1337,8 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     return lanePoint(e, v.lane, c, out);
   }
 
-  // World position and heading from where v's axles are along its path: the rear axle dl to the right of it, and the
-  // body turned `nose` to the right about the rear axle, into a lane change (so the rear axle never slides sideways)
+  // World position from where v is along its path (dl to the right of it), the path's direction there, and how far
+  // right of it v heads (nose)
   const at = { x: 0, z: 0, dx: 0, dz: 0 };
   function locate(v) {
     pathPoint(v, v.conn ? v.cs : v.s, at);
@@ -1115,11 +1359,14 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     locate(v);
   }
 
-  // Heading, steering, turn signals, and body pitch & roll from acceleration & turning
+  // Steering shown on the front wheels, turn signals, and body pitch & roll from acceleration & turning (the heading
+  // itself is the driver's doing, see steer)
   function pose(v, dt) {
     v.steer = v.delta;
-    const turn = v.move ? v.move.turn : 'S';
-    if (Math.abs(v.dl) > 0.3 && Math.abs(v.dlv) > 0.05) v.blink = v.dl > 0 ? -1 : 1;
+
+    const turn = v.move.turn;
+    if (v.evade) v.blink = 0; // no time to signal a swerve
+    else if (Math.abs(v.dl) > 0.3 && Math.abs(v.dlv) > 0.05) v.blink = v.dl > 0 ? -1 : 1;
     else if (turn !== 'S' && (v.conn || v.edge.len - v.s < 35)) v.blink = turn === 'R' ? 1 : -1;
     else v.blink = 0;
 
@@ -1127,183 +1374,146 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     v.pitch = clamp(v.pitch + v.pitchVel * dt, -0.22, 0.22);
     v.rollVel += ((0.01 * v.speed * v.yawRate - v.roll) * 68.0 - v.rollVel * 10.8) * dt;
     v.roll = clamp(v.roll + v.rollVel * dt, -0.26, 0.26);
-    v.yawOffset += v.yawVel * dt;
-    v.yawVel += (-v.yawOffset * 18.0 - v.yawVel * 6.8) * dt;
-    v.yawOffset = clamp(v.yawOffset * Math.exp(-4.5 * dt), -0.85, 0.85);
   }
 
   // Knock velocity from collisions carries v along and across its path, and dies down
   function knock(v, dt) {
     if (v.vx === 0 && v.vz === 0) return;
     shove(v, v.vx * dt, v.vz * dt);
-    const damp = Math.exp(-5.5 * dt);
+    const damp = Math.exp(-3.5 * dt);
     v.vx *= damp;
     v.vz *= damp;
     if (v.vx * v.vx + v.vz * v.vz < 1e-4) v.vx = v.vz = 0;
   }
 
-  // A knocked vehicle shunts the vehicles it runs into
-  function knockOn(v) {
-    for (const o of vehicles) {
-      if (o === v || !o.edge) continue;
-      const dx = o.x - v.x;
-      const dz = o.z - v.z;
-      const dist = Math.hypot(dx, dz);
-      if (dist > v.half + o.half || dist < 0.001) continue;
-      if (Math.abs(dz * v.tx - dx * v.tz) > v.halfWidth + o.halfWidth) continue; // side by side
-      const nx = dx / dist;
-      const nz = dz / dist;
-      const relVn = (v.vx - o.vx) * nx + (v.vz - o.vz) * nz;
-      if (relVn <= 0.5) continue;
-      const approachSpeed = (v.tx * v.speed + v.vx - o.tx * o.speed - o.vx) * nx
-        + (v.tz * v.speed + v.vz - o.tz * o.speed - o.vz) * nz;
-      reportCollision(o, v, (v.x + o.x) * 0.5, 0.56, (v.z + o.z) * 0.5, nx, nz, approachSpeed);
-      const transfer = relVn * 0.68;
-      o.vx += nx * transfer;
-      o.vz += nz * transfer;
-      v.vx -= nx * transfer * 0.45;
-      v.vz -= nz * transfer * 0.45;
-      const across = nz * o.tx - nx * o.tz; // hit from the side spins it
-      const along = nx * o.tx + nz * o.tz;
-      o.yawVel += across * Math.min(2.8, relVn * 0.22);
-      o.rollVel += across * Math.min(8.0, relVn) * 0.18;
-      o.pitchVel -= along * Math.min(8.0, relVn) * 0.14;
-      if (relVn > 2.2) spawnCollisionSparks((v.x + o.x) * 0.5, 0.56, (v.z + o.z) * 0.5, nx, nz, relVn);
-    }
+  const contactA = {}, contactB = {}, vehicleHit = {};
+  const impacted = [];
+  let collisionStep = 0;
+
+  function readTrafficBody(v, body) {
+    const heading = v.yaw + v.yawOffset;
+    body.x = v.x; body.z = v.z;
+    body.prevX = v.prevX; body.prevZ = v.prevZ;
+    body.sin = Math.sin(heading); body.cos = Math.cos(heading);
+    body.halfW = v.halfWidth;
+    // Vehicles without their own collision size & mass count as sedans
+    body.halfL = v.halfL ?? 2.18;
+    body.mass = v.mass ?? 1600;
+    body.vx = body.sin * v.speed + v.vx;
+    body.vz = body.cos * v.speed + v.vz;
+    body.angularVel = v.yawRate + v.yawVel;
   }
 
-  // Physical 4-axis 2D SAT OBB test between a vehicle (half extents halfW x halfL, heading rotY) and the player.
-  // Returns the minimum translation axis (pointing from the vehicle towards the player), or null if they don't overlap.
-  const satHit = { nx: 0, nz: 0, pen: 0, localX: 0, localZ: 0, pSin: 0, pCos: 1 };
-  function overlapWithPlayer(relX, relZ, rotY, halfW, halfL, pH, pHalfW, pHalfL) {
-    const sinY = Math.sin(rotY);
-    const cosY = Math.cos(rotY);
-    const localX = relX * cosY - relZ * sinY;
-    const localZ = relX * sinY + relZ * cosY;
-    const pSin = Math.sin(pH);
-    const pCos = Math.cos(pH);
-    const pLocalX = relX * pCos - relZ * pSin;
-    const pLocalZ = relX * pSin + relZ * pCos;
-    const alignCos = Math.abs(Math.cos(pH - rotY));
-    const alignSin = Math.abs(Math.sin(pH - rotY));
-
-    const extX = halfW + pHalfW * alignCos + pHalfL * alignSin;
-    const extZ = halfL + pHalfW * alignSin + pHalfL * alignCos;
-    const pExtX = pHalfW + halfW * alignCos + halfL * alignSin;
-    const pExtZ = pHalfL + halfW * alignSin + halfL * alignCos;
-
-    const penX = extX - Math.abs(localX);
-    const penZ = extZ - Math.abs(localZ);
-    const pPenX = pExtX - Math.abs(pLocalX);
-    const pPenZ = pExtZ - Math.abs(pLocalZ);
-    if (!(penX > 0 && penZ > 0 && pPenX > 0 && pPenZ > 0)) return null;
-
-    let nx, nz, pen;
-    if (penX < penZ) {
-      const signX = localX >= 0 ? 1 : -1;
-      nx = cosY * signX;
-      nz = -sinY * signX;
-      pen = penX;
-    } else {
-      const signZ = localZ >= 0 ? 1 : -1;
-      nx = sinY * signZ;
-      nz = cosY * signZ;
-      pen = penZ;
-    }
-    if (pPenX < pen) {
-      const signPX = pLocalX >= 0 ? 1 : -1;
-      nx = pCos * signPX;
-      nz = -pSin * signPX;
-      pen = pPenX;
-    }
-    if (pPenZ < pen) {
-      const signPZ = pLocalZ >= 0 ? 1 : -1;
-      nx = pSin * signPZ;
-      nz = pCos * signPZ;
-      pen = pPenZ;
-    }
-
-    satHit.nx = nx;
-    satHit.nz = nz;
-    satHit.pen = pen;
-    satHit.localX = localX;
-    satHit.localZ = localZ;
-    satHit.pSin = pSin;
-    satHit.pCos = pCos;
-    return satHit;
+  function writeTrafficVelocity(v, body) {
+    // Keep longitudinal momentum in the driving speed, so it does not disappear
+    // with the short-lived tire slip. Traffic can be knocked backwards too.
+    const hx = Math.sin(v.yaw + v.yawOffset);
+    const hz = Math.cos(v.yaw + v.yawOffset);
+    v.speed = Math.max(0, body.vx * hx + body.vz * hz);
+    v.vx = body.vx - hx * v.speed;
+    v.vz = body.vz - hz * v.speed;
+    // the spin turns its heading (see steer)
+    v.yawVel = body.angularVel - v.yawRate;
   }
 
-  // Player contact: push the player and the vehicle apart (a bus hardly moves) and trade momentum, with spin,
-  // suspension kicks and sparks
-  function collideWithPlayer(v, rotY, halfW, halfL) {
+  function impactSuspension(v, nx, nz, speed) {
+    const along = nx * v.tx + nz * v.tz;
+    const across = nx * v.tz - nz * v.tx;
+    const kick = Math.min(10, speed);
+    v.pitchVel += along * kick * 0.12;
+    v.rollVel -= across * kick * 0.16;
+    v.impactTime = Math.max(v.impactTime, 0.8);
+  }
+
+  function collideWithPlayer(v) {
     const pe = player.entity;
-    const relX = pe.position.x - v.x;
-    const relZ = pe.position.z - v.z;
-    if (Math.abs(relX) > halfL + 3 || Math.abs(relZ) > halfL + 3) return;
-    const hit = overlapWithPlayer(relX, relZ, rotY, halfW, halfL, pe.heading || 0, player.halfW, player.halfL);
-    if (!hit) return;
-    const { nx, nz, pen, localX, localZ, pSin, pCos } = hit;
-    const massRatio = v.bus ? 0.15 : v.isSUV ? 0.58 : 1.0 - player.push;
-    const pPush = 1.0 - massRatio;
-    pe.position.x += nx * pen * pPush;
-    pe.position.z += nz * pen * pPush;
+    const reach = v.half + player.halfL + player.halfW;
+    const prevX = pe.prevX ?? pe.position.x, prevZ = pe.prevZ ?? pe.position.z;
+    const dx = pe.position.x - prevX - v.x + v.prevX;
+    const dz = pe.position.z - prevZ - v.z + v.prevZ;
+    if (Math.abs(pe.position.x - v.x) > reach + Math.abs(dx)
+      || Math.abs(pe.position.z - v.z) > reach + Math.abs(dz)) return;
+    const a = contactA, b = contactB, hit = vehicleHit;
+    const heading = pe.heading || 0;
+    a.x = pe.position.x; a.z = pe.position.z;
+    a.prevX = prevX; a.prevZ = prevZ;
+    a.sin = Math.sin(heading); a.cos = Math.cos(heading);
+    a.halfW = player.halfW; a.halfL = player.halfL;
+    a.mass = pe.type === 'car' ? 1700 : pe.type === 'cyclist' ? 95 : 80;
+    a.vx = a.sin * (pe.speed || 0) + (pe.vx || 0);
+    a.vz = a.cos * (pe.speed || 0) + (pe.vz || 0);
+    a.angularVel = pe.type === 'car' ? pe.angularVel || 0 : 0;
+    readTrafficBody(v, b);
+    if (!sweptVehicleContact(a, b, hit) && !vehicleContact(a, b, hit)) return;
+    const speed = resolveVehicleContact(a, b, hit);
+    const pShare = b.mass / (a.mass + b.mass);
+    pe.position.x = hit.ax + hit.nx * hit.depth * pShare;
+    pe.position.z = hit.az + hit.nz * hit.depth * pShare;
+    shove(v, hit.bx - v.x - hit.nx * hit.depth * (1 - pShare), hit.bz - v.z - hit.nz * hit.depth * (1 - pShare));
+    // A route boundary can prevent traffic taking its full share of the correction.
+    const remainder = Math.max(0, hit.depth * (1 - pShare) + (v.x - hit.bx) * hit.nx + (v.z - hit.bz) * hit.nz);
+    pe.position.x += hit.nx * remainder;
+    pe.position.z += hit.nz * remainder;
     if (pe.mesh) pe.mesh.position.copy(pe.position);
-    shove(v, -nx * pen * massRatio, -nz * pen * massRatio);
+    if (speed <= 0) return;
 
-    const sinY = Math.sin(rotY);
-    const cosY = Math.cos(rotY);
-    const pSpeed = pe.speed || 0;
-    const pvx = pSin * pSpeed + (pe.vx || 0);
-    const pvz = pCos * pSpeed + (pe.vz || 0);
-    const cvx = v.tx * v.speed + v.vx;
-    const cvz = v.tz * v.speed + v.vz;
-    const approachSpeed = (pvx - cvx) * (-nx) + (pvz - cvz) * (-nz);
-    if (approachSpeed <= 0) return;
-
-    const jImpulse = (1.0 + 0.28) * approachSpeed;
-    const cImpulse = v.bus ? approachSpeed * 0.22 : jImpulse * massRatio * 0.92;
-    v.vx -= nx * cImpulse;
-    v.vz -= nz * cImpulse;
-    v.speed *= v.bus ? 0.55 : 0.35;
-
-    const localNx = nx * cosY - nz * sinY;
-    const localNz = nx * sinY + nz * cosY;
-    if (!v.bus) {
-      const torque = localZ * localNx - localX * localNz;
-      v.yawVel -= torque * Math.min(4.2, approachSpeed * 0.26);
-      v.yawOffset = clamp(v.yawOffset - torque * Math.min(0.35, approachSpeed * 0.025), -0.65, 0.65);
-      v.pitchVel -= localNz * Math.min(12.0, approachSpeed) * 0.18;
-      v.rollVel += localNx * Math.min(12.0, approachSpeed) * 0.24;
+    writeTrafficVelocity(v, b);
+    pe.speed = a.vx * a.sin + a.vz * a.cos;
+    if (pe.type === 'car') {
+      pe.vx = a.vx - a.sin * pe.speed;
+      pe.vz = a.vz - a.cos * pe.speed;
+      pe.angularVel = a.angularVel;
+      const kick = Math.min(12, hit.impulse / a.mass);
+      pe.pitchVel += (hit.nx * a.sin + hit.nz * a.cos) * kick * 0.16;
+      pe.rollVel -= (hit.nx * a.cos - hit.nz * a.sin) * kick * 0.2;
+      pe.heaveVel += Math.min(0.7, kick * 0.06);
     }
+    impactSuspension(v, -hit.nx, -hit.nz, hit.impulse / b.mass);
+    if (pe.type !== 'person') reportCollision(pe, v, hit.x, 0.58, hit.z, hit.nx, hit.nz, speed);
+    if (speed > 2.2) spawnCollisionSparks(hit.x, 0.58, hit.z, hit.nx, hit.nz, speed);
+  }
 
-    const contactLocalX = clamp(localX, -halfW, halfW);
-    const contactLocalZ = clamp(localZ, -halfL, halfL);
-    const contactX = v.x + contactLocalX * cosY + contactLocalZ * sinY;
-    const contactZ = v.z - contactLocalX * sinY + contactLocalZ * cosY;
-    if (pe.type !== 'person') reportCollision(pe, v, contactX, v.bus ? 0.65 : 0.58, contactZ, nx, nz, approachSpeed);
-
-    if (typeof pe.speed === 'number') {
-      const headOnDot = Math.abs(pSin * nx + pCos * nz);
-      pe.speed *= 1.0 - (v.bus ? 0.68 : 0.50) * headOnDot;
-      if (pe.type === 'car') {
-        const pImpulse = v.bus ? approachSpeed * 0.65 : jImpulse * pPush * 0.48;
-        pe.vx = (pe.vx || 0) + nx * pImpulse;
-        pe.vz = (pe.vz || 0) + nz * pImpulse;
-        const pLocalNx = nx * pCos - nz * pSin;
-        const pLocalNz = nx * pSin + nz * pCos;
-        if (!v.bus) {
-          const pRelX = (contactX - pe.position.x) * pCos - (contactZ - pe.position.z) * pSin;
-          const pRelZ = (contactX - pe.position.x) * pSin + (contactZ - pe.position.z) * pCos;
-          const pTorque = pRelZ * pLocalNx - pRelX * pLocalNz;
-          pe.angularVel = (pe.angularVel || 0) + pTorque * Math.min(3.0, approachSpeed * 0.18) * pPush;
-        }
-        const kick = Math.min(v.bus ? 16.0 : 14.0, approachSpeed);
-        pe.pitchVel = (pe.pitchVel || 0) + pLocalNz * kick * (v.bus ? 0.22 : 0.18);
-        pe.rollVel = (pe.rollVel || 0) - pLocalNx * kick * (v.bus ? 0.28 : 0.24);
-        pe.heaveVel = (pe.heaveVel || 0) + Math.min(v.bus ? 1.6 : 1.4, approachSpeed * (v.bus ? 0.14 : 0.11));
+  // Only disturbed traffic needs pair contacts. Newly struck cars join the same
+  // queue, and each pair is visited once before any instance matrices are written.
+  function collideTraffic() {
+    collisionStep++;
+    impacted.length = 0;
+    for (const v of vehicles) {
+      if (v.edge && (v.impactTime > 0 || Math.abs(v.yawVel) > 0.05 || v.vx * v.vx + v.vz * v.vz > 0.04)) {
+        v.contactStep = collisionStep;
+        impacted.push(v);
       }
     }
-    if (approachSpeed > 1.8) spawnCollisionSparks(contactX, v.bus ? 0.65 : 0.58, contactZ, nx, nz, approachSpeed);
+    for (let i = 0; i < impacted.length; i++) {
+      const v = impacted[i];
+      for (const o of vehicles) {
+        if (o === v || !o.edge || o.contactDone === collisionStep) continue;
+        const reach = v.half + o.half + 0.5;
+        const dx = v.x - o.x, dz = v.z - o.z;
+        if (Math.abs(dx) > reach + Math.abs(dx - v.prevX + o.prevX)
+          || Math.abs(dz) > reach + Math.abs(dz - v.prevZ + o.prevZ)) continue;
+        readTrafficBody(v, contactA);
+        readTrafficBody(o, contactB);
+        const hit = vehicleHit;
+        if (!sweptVehicleContact(contactA, contactB, hit) && !vehicleContact(contactA, contactB, hit)) continue;
+        const speed = resolveVehicleContact(contactA, contactB, hit);
+        const share = contactB.mass / (contactA.mass + contactB.mass);
+        shove(v, hit.ax - v.x + hit.nx * hit.depth * share, hit.az - v.z + hit.nz * hit.depth * share);
+        shove(o, hit.bx - o.x - hit.nx * hit.depth * (1 - share), hit.bz - o.z - hit.nz * hit.depth * (1 - share));
+        if (speed <= 0) continue;
+        writeTrafficVelocity(v, contactA);
+        writeTrafficVelocity(o, contactB);
+        impactSuspension(v, hit.nx, hit.nz, hit.impulse / contactA.mass);
+        impactSuspension(o, -hit.nx, -hit.nz, hit.impulse / contactB.mass);
+        reportCollision(v, o, hit.x, 0.56, hit.z, hit.nx, hit.nz, speed);
+        if (speed > 2.2) spawnCollisionSparks(hit.x, 0.56, hit.z, hit.nx, hit.nz, speed);
+        if (o.contactStep !== collisionStep) {
+          o.contactStep = collisionStep;
+          impacted.push(o);
+        }
+      }
+      v.contactDone = collisionStep;
+    }
   }
 
   // =========================================================================
@@ -1333,7 +1543,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     locate(v);
     v.prevX = v.x;
     v.prevZ = v.z;
-    v.yaw = Math.atan2(v.tx, v.tz);
+    v.yaw = Math.atan2(v.tx, v.tz); // (placed heading down its lane)
     v.nose = v.yawRate = v.steer = v.delta = 0;
     v.move = chooseMove(v, false);
     occupy(e.occ[lane], v, s);
@@ -1343,7 +1553,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   function spawnVehicle(v, rMin, rMax, protectView) {
     for (let attempt = 0; attempt < 12; attempt++) {
       const e = nearEdges[Math.floor(Math.random() * nearEdges.length)];
-      if (!e || !e.moves.length || (v.bus && e.axis !== 'ave') || e.len < 2 * v.half + 10) continue;
+      if (!e || (v.bus && e.axis !== 'ave') || e.len < 2 * v.half + 10) continue;
       const lane = Math.floor(Math.random() * e.lanes.length);
       const along = (focusX - e.sx) * e.dx + (focusZ - e.sz) * e.dz;
       const minS = Math.max(v.half + 5, along - rMax);
@@ -1363,32 +1573,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   }
 
   // =========================================================================
-  // 7. PEDESTRIANS — the New York walker (pedestrian-system.js)
-  // =========================================================================
-  function walkOn(side) {
-    return side >= 2 ? stWalk : aveWalk;
-  }
-
-  function mayCross(p) {
-    const n = p.node;
-    if (!walkOn(p.side) || n.crossing[p.side] > 0) return false;
-    const e = n.approach[p.side];
-    if (!e) return true;
-    for (const list of e.occ) {
-      const lead = leadOf(list);
-      if (lead && !canStop(lead, e, true)) return false;
-    }
-    return true;
-  }
-
-  const pedestrianSystem = createPedestrianSystem(network, {
-    player, nearEdges, nearSignals, mayCross, walkOn, visible, nearView
-  });
-  group.add(...pedestrianSystem.meshes);
-  const peds = pedestrianSystem.peds;
-
-  // =========================================================================
-  // 8. RENDERING
+  // 7. RENDERING
   // =========================================================================
   // Beyond CAR_PROXY_DISTANCE, cars use the ~250-triangle stand-in with built-in wheels instead of the full lofted
   // body + 4 separate wheel instances; vehicles outside the view frustum (with a margin for cast shadows and headlight
@@ -1396,11 +1581,12 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   const CAR_PROXY_DISTANCE = 90;
   const dirtyPaint = new Set();
   const dirtyState = new Set();
+  let dirtyWheelStyles = false;
   const litVehicles = [];
   let litVehicleCount = 0;
   let wheelCars = 0;
   let visibleCars = 0;
-  let nypdDrawn = 0;
+  const policeDrawn = { sedan: 0, suv: 0 };
   let visibleBuses = 0;
   let updates = 0;
 
@@ -1458,7 +1644,10 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     dummy.scale.set(1, 1, 1);
     dummy.updateMatrix();
     bodyInst.setMatrixAt(slot, dummy.matrix);
-    if (c.isNYPD) nypdBarInst.setMatrixAt(nypdDrawn++, dummy.matrix);
+    if (c.isPolice) {
+      const lb = policeLightbars[c.bodyType];
+      if (lb) lb.setMatrixAt(policeDrawn[c.bodyType]++, dummy.matrix);
+    }
 
     const attrs = bodyInst.geometry.attributes;
     const paint = attrs.paintColor.array;
@@ -1475,7 +1664,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     const b0 = c.acc < -0.8 || c.speed < 0.3 ? 1 : 0;
     const b1 = blinkOn && c.blink < 0 ? 1 : 0;
     const b2 = blinkOn && c.blink > 0 ? 1 : 0;
-    const b3 = c.isNYPD ? 1 : 0;
+    const b3 = c.style;
     if (state[o4] !== b0 || state[o4 + 1] !== b1 || state[o4 + 2] !== b2 || state[o4 + 3] !== b3) {
       state[o4] = b0;
       state[o4 + 1] = b1;
@@ -1484,11 +1673,12 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
       dirtyState.add(bodyInst);
     }
 
-    // Soft Under-Car Contact Shadow (AO) stays flat on the asphalt
+    // Soft Under-Car Contact Shadow (AO) stays flat on the asphalt, sized to the body kind
     const visIdx = visibleCars++;
+    const [shadowW, shadowL, shadowZ] = bodies[c.bodyType].shadow;
     dummy.rotation.set(0, rotY, 0, 'YXZ');
-    dummy.position.set(c.x, 0.018, c.z);
-    dummy.scale.set(2.22, 1.0, 5.05);
+    dummy.position.set(c.x + sinY * shadowZ, 0.018, c.z + cosY * shadowZ);
+    dummy.scale.set(shadowW, 1.0, shadowL);
     dummy.updateMatrix();
     carShadowInst.setMatrixAt(visIdx, dummy.matrix);
 
@@ -1510,6 +1700,12 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     }
 
     if (near) {
+      const wi = wheelCars * 2;
+      const ws = carWheelStyles.array;
+      if (ws[wi] !== c.style || ws[wi + 1] !== c.style) {
+        ws[wi] = ws[wi + 1] = c.style;
+        dirtyWheelStyles = true;
+      }
       placeWheels(c, wheelCars++, rotY, c.roll, spec.wheelRadius, spec.wheelX, spec.wheelZ, carWheelLeftInst, carWheelRightInst);
     }
   }
@@ -1526,11 +1722,11 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     const i = visibleBuses++;
     dummy.position.set(b.x, 0.018, b.z);
     dummy.rotation.set(0, rotY, 0, 'YXZ');
-    dummy.scale.set(2.92, 1.0, 12.1);
+    dummy.scale.set(2.92, 1.0, 12.4);
     dummy.updateMatrix();
     busShadowInst.setMatrixAt(i, dummy.matrix);
 
-    // Lofted Bus Body is defined in ground-relative Y (0.36m skirt to 3.0m roof crown)
+    // Lofted Bus Body is defined in ground-relative Y (0.35m skirt to 3.23m roof fairing crown)
     dummy.position.set(b.x, 0.0, b.z);
     dummy.rotation.set(b.pitch, rotY, b.roll, 'YXZ');
     dummy.scale.set(1, 1, 1);
@@ -1538,6 +1734,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     busBodyInst.setMatrixAt(i, dummy.matrix);
     busHeaderInst.setMatrixAt(i, dummy.matrix);
     writeLampState(b, busStates.array, i * 4);
+    busStates.array[i * 4 + 3] = (b.variant ?? i) + 1;
 
     const dxCam = b.x - camX;
     const dzCam = b.z - camZ;
@@ -1615,33 +1812,28 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     }
 
     // 1. NYPD emergency roof lightbar flashes (smoothly pulsing red/blue 360° PointLights on nearby patrol cruisers)
-    let nypdUsed = 0;
-    for (let i = 0; i < litVehicleCount && nypdUsed < NYPD_LIGHT_POOL_SIZE; i++) {
+    let policeLightsUsed = 0;
+    for (let i = 0; i < litVehicleCount && policeLightsUsed < POLICE_LIGHT_POOL_SIZE; i++) {
       const v = litVehicles[i];
-      if (!v.isNYPD || v._effDist >= 88) continue;
+      if (!v.isPolice || v._effDist >= 88) continue;
       const fade = smoothDistFade(v._effDist, 52, 88);
       if (fade <= 0.001) continue;
       const wave = Math.sin((clock + v.blinkPhase) * Math.PI * 6.0);
       const redPhase = wave >= 0;
       const pulse = 0.35 + 0.65 * Math.abs(wave);
       const side = redPhase ? -0.36 : 0.36;
-      const pt = nypdLightPool[nypdUsed++];
+      const pt = policeLightPool[policeLightsUsed++];
       pt.color.setHex(redPhase ? 0xff1828 : 0x1868ff);
-      pt.position.set(v.x + side * v._cosY - 0.25 * v._sinY, 1.85, v.z - side * v._sinY - 0.25 * v._cosY);
+      pt.position.set(v.x + side * v._cosY - 0.25 * v._sinY, v.bodyType === 'suv' ? 2.05 : 1.85, v.z - side * v._sinY - 0.25 * v._cosY);
       pt.distance = 12.0;
       pt.intensity = 42.0 * tailScale * fade * pulse;
     }
-    for (let i = nypdUsed; i < NYPD_LIGHT_POOL_SIZE; i++) {
-      const pt = nypdLightPool[i];
+    for (let i = policeLightsUsed; i < POLICE_LIGHT_POOL_SIZE; i++) {
+      const pt = policeLightPool[i];
       pt.intensity = 0;
       pt.position.set(0, -1000, 0);
     }
   }
-
-  // Walking surface around a pedestrian: sidewalks are 0.22 m above the road, and crosswalk tracks start and end
-  // with 2 m of sidewalk (the rig steps down and up the curbs)
-  const SIDEWALK_Y = 0.22;
-  const CROSSWALK_Y = 0.012;
 
   function updateSparks(dt) {
     let count = 0;
@@ -1678,7 +1870,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
   }
 
   // =========================================================================
-  // 9. UPDATE
+  // 8. UPDATE
   // =========================================================================
   let lastFocusX = Infinity;
   let lastFocusZ = Infinity;
@@ -1713,7 +1905,6 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     }
     player.halfW = activeMode === 'cyclist' ? 0.35 : activeMode === 'person' ? 0.32 : 0.86;
     player.halfL = activeMode === 'cyclist' ? 0.85 : activeMode === 'person' ? 0.32 : 2.18;
-    player.push = activeMode === 'cyclist' ? 0.82 : activeMode === 'person' ? 0.88 : 0.50;
 
     // 1. Cars & buses
     // Limit attempted placements, not just successes, and rotate through the pool so an awkward location
@@ -1729,10 +1920,12 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     }
     buildOccupancy();
     for (const m of bodyMeshes) m.count = 0;
+    dirtyWheelStyles = false;
     litVehicleCount = 0;
     wheelCars = 0;
     visibleCars = 0;
-    nypdDrawn = 0;
+    policeDrawn.sedan = 0;
+    policeDrawn.suv = 0;
     visibleBuses = 0;
     for (let i = 0; i < vehicles.length; i++) {
       const v = vehicles[i];
@@ -1741,13 +1934,18 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
       v.prevX = v.x;
       v.prevZ = v.z;
       relateToPlayer(v);
+      react(v, dt);
       drive(v, dt);
       locate(v);
       knock(v, dt);
       pose(v, dt);
-      if (player.active) collideWithPlayer(v, v.yaw + v.yawOffset, v.bus ? 1.30 : v.isSUV ? 0.92 : 0.86, v.bus ? 5.72 : v.isSUV ? 2.22 : 2.18);
-      if (v.vx * v.vx + v.vz * v.vz > 0.36) knockOn(v);
-
+    }
+    if (player.active) {
+      for (const v of vehicles) if (v.edge) collideWithPlayer(v);
+    }
+    collideTraffic();
+    for (const v of vehicles) {
+      if (!v.edge) continue;
       if (v.bus) renderBus(v);
       else renderCar(v);
     }
@@ -1786,7 +1984,9 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     };
     syncInst(carWheelLeftInst, wheelCars * 2);
     syncInst(carWheelRightInst, wheelCars * 2);
-    syncInst(nypdBarInst, nypdDrawn);
+    if (dirtyWheelStyles && wheelCars > 0) flagRange(carWheelStyles, wheelCars * 2);
+    syncInst(policeLightbars.sedan, policeDrawn.sedan);
+    syncInst(policeLightbars.suv, policeDrawn.suv);
     syncInst(carShadowInst, visibleCars);
     syncInst(busBodyInst, visibleBuses);
     syncInst(busHeaderInst, visibleBuses);
@@ -1796,7 +1996,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     if (visibleBuses > 0) flagRange(busStates, visibleBuses);
     updateTrafficLights();
 
-    // 2. Pedestrians — same update as slop-newyork: spawn, walk, and step the gait.
+    // 2. Pedestrians
     pedestrianSystem.update(dt, elapsed, focusX, focusZ, jump, hasView, activeMode);
 
     // 3. Collision sparks, including the player's own impacts against buildings
@@ -1814,7 +2014,7 @@ function createTrafficSystem(scene, sidewalks, obstacles) {
     setCollisionListener,
     cars,
     buses,
-    peds,
+    peds: pedestrianSystem.peds,
     network
   };
 }
@@ -1836,23 +2036,75 @@ const HWY_NEAR_LOD = 170;
 const HWY_MID_LOD = 450;
 const HWY_FAR_CULL = 1600;
 const HWY_RAMP = 32; // the dip at the lane ends: 2.4 m down over this many metres
+const HWY_BOX_RUN = 16; // lane segments per bounding box of the player test
 
 function createHighwayTraffic(scene, lanes) {
   const group = new THREE.Group();
   group.name = 'HighwayTraffic';
   scene.add(group);
-  const KINDS = ['taxi', 'sedan', 'suv'];
+  const KINDS = Object.keys(CAR_KINDS);
   const PALETTES = {
-    taxi: [0xffbe14],
-    sedan: [0x1c2026, 0xcfd6de, 0x1d3b6c, 0x52575e, 0x6e1f24, 0x8a8f96, 0xe9ecef],
-    suv: [0x16191e, 0xf0f3f7, 0x3a434d, 0x28382e, 0xbec6cf, 0x5b2a2a]
+    taxi: [
+      { hex: 0xffbe14, style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 0 }) },
+      { hex: 0xffbe14, style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 1 }) }
+    ],
+    sedan: [
+      { hex: 0x12151a, style: carStyleCode({ livery: 3, metallic: 0, trim: 1, wheel: 1 }) },
+      { hex: 0x161a20, style: carStyleCode({ livery: 3, metallic: 1, trim: 2, wheel: 2 }) },
+      { hex: 0xf2f4f7, style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 0 }) },
+      { hex: 0xe6eaef, style: carStyleCode({ livery: 4, metallic: 1, trim: 2, wheel: 2 }) },
+      { hex: 0xcfd6de, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) },
+      { hex: 0x8a8f96, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 1 }) },
+      { hex: 0x52575e, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) },
+      { hex: 0x1c2026, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 3 }) },
+      { hex: 0x1d3b6c, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) },
+      { hex: 0x6e1f24, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) },
+      { hex: 0x5cae3e, style: carStyleCode({ livery: 2, metallic: 0, trim: 0, wheel: 0 }) }
+    ],
+    suv: [
+      { hex: 0x101318, style: carStyleCode({ livery: 3, metallic: 0, trim: 1, wheel: 1 }) },
+      { hex: 0x16191e, style: carStyleCode({ livery: 3, metallic: 1, trim: 2, wheel: 3 }) },
+      { hex: 0xf0f3f7, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) },
+      { hex: 0xe4e8ed, style: carStyleCode({ livery: 4, metallic: 0, trim: 2, wheel: 2 }) },
+      { hex: 0x3a434d, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) },
+      { hex: 0xbec6cf, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) },
+      { hex: 0x28382e, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 1 }) },
+      { hex: 0x20385c, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) },
+      { hex: 0x5b2a2a, style: carStyleCode({ livery: 4, metallic: 1, trim: 2, wheel: 2 }) },
+      { hex: 0x5cae3e, style: carStyleCode({ livery: 2, metallic: 0, trim: 0, wheel: 0 }) }
+    ],
+    minivan: [
+      { hex: 0x111419, style: carStyleCode({ livery: 3, metallic: 1, trim: 1, wheel: 1 }) },
+      { hex: 0xf0f2f5, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) },
+      { hex: 0xaab2bb, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 1 }) },
+      { hex: 0x4a5058, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) },
+      { hex: 0x26354f, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) },
+      { hex: 0x5a1f24, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 0 }) }
+    ],
+    pickup: [
+      { hex: 0x14171b, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) },
+      { hex: 0xf2f3f5, style: carStyleCode({ livery: 0, metallic: 0, trim: 1, wheel: 0 }) },
+      { hex: 0x9da4ab, style: carStyleCode({ livery: 0, metallic: 1, trim: 0, wheel: 2 }) },
+      { hex: 0x3d434a, style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 3 }) },
+      { hex: 0x1e2f4f, style: carStyleCode({ livery: 0, metallic: 1, trim: 1, wheel: 1 }) },
+      { hex: 0x8f1a1d, style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) }
+    ],
+    // Vans: fleet white, silver, grey & black, black plastic trim; never two-tone (see the street palettes)
+    van: [
+      { hex: 0xf4f5f6, style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 0 }) },
+      { hex: 0xf0f1f2, style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) },
+      { hex: 0xf4f5f6, style: carStyleCode({ livery: 0, metallic: 0, trim: 0, wheel: 1 }) },
+      { hex: 0xb9c0c7, style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 0 }) },
+      { hex: 0x8e959c, style: carStyleCode({ livery: 0, metallic: 0, trim: 2, wheel: 3 }) },
+      { hex: 0x15181c, style: carStyleCode({ livery: 0, metallic: 1, trim: 2, wheel: 3 }) }
+    ]
   };
   let seed = 20240917;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
   // Lanes: arc length and heading at every centre-line vertex, bounds for the player test, cars every 24-74 m
   const cars = [];
-  const counts = { taxi: 0, sedan: 0, suv: 0 };
+  const counts = Object.fromEntries(KINDS.map((kind) => [kind, 0]));
   for (const lane of lanes) {
     const P = lane.pts;
     lane.cum = [0];
@@ -1863,18 +2115,28 @@ function createHighwayTraffic(scene, lanes) {
       const b = P[Math.min(P.length - 1, i + 1)];
       return Math.atan2(b.x - a.x, b.z - a.z);
     });
-    lane.box = [Infinity, -Infinity, Infinity, -Infinity];
-    for (const p of P) lane.box = [Math.min(lane.box[0], p.x), Math.max(lane.box[1], p.x), Math.min(lane.box[2], p.z), Math.max(lane.box[3], p.z)];
+    // Bounds of every run of HWY_BOX_RUN segments ([x0, x1, z0, z1] after one another): the shore lanes, joined
+    // through the Battery Park Underpass, span the whole island, so the player test visits just the runs nearby
+    lane.box = [];
+    for (let s = 0; s + 1 < P.length; s += HWY_BOX_RUN) {
+      const run = P.slice(s, Math.min(P.length, s + HWY_BOX_RUN + 1));
+      lane.box.push(Math.min(...run.map((p) => p.x)), Math.max(...run.map((p) => p.x)), Math.min(...run.map((p) => p.z)), Math.max(...run.map((p) => p.z)));
+    }
     lane.cars = [];
     for (let u = rand() * 30; u < lane.len - 12; u += 24 + rand() * 50) {
       const h = rand();
-      const kind = h < 0.20 ? 'taxi' : h < 0.65 ? 'sedan' : 'suv';
-      const col = new THREE.Color(PALETTES[kind][Math.floor(rand() * PALETTES[kind].length)]);
+      // Fewer vans than in town: commercial vehicles are barred from the parkways
+      const kind = h < 0.2 ? 'taxi' : h < 0.56 ? 'sedan' : h < 0.82 ? 'suv' : h < 0.89 ? 'minivan' : h < 0.95 ? 'pickup' : 'van';
+      const entry = PALETTES[kind][Math.floor(rand() * PALETTES[kind].length)];
+      const col = new THREE.Color(entry.hex);
+      const spec = BODY_SPECS[kind];
       // (float32 values, so update() can tell whether an instance slot's paint changes by comparing with the buffer)
       const car = {
         lane, kind, u, v: lane.speed, acc: 0, seg: 0,
         placed: false, x: 0, y: -1000, z: 0, yaw: 0,
-        col: [Math.fround(col.r), Math.fround(col.g), Math.fround(col.b)]
+        len: spec.zFront - spec.zRear, engine: CAR_KINDS[kind].engine,
+        col: [Math.fround(col.r), Math.fround(col.g), Math.fround(col.b)],
+        style: entry.style
       };
       lane.cars.push(car);
       cars.push(car);
@@ -1973,23 +2235,26 @@ function createHighwayTraffic(scene, lanes) {
   // The player's arc position and speed along `lane` if they are in it (within 2 m of the centre line and near
   // its road height, not on its underground stretches), else null
   function playerInLane(lane, pl) {
-    const [x0, x1, z0, z1] = lane.box;
-    if (pl.x < x0 - 3 || pl.x > x1 + 3 || pl.z < z0 - 3 || pl.z > z1 + 3) return null;
+    const B = lane.box;
     const P = lane.pts;
-    for (let i = 0; i + 1 < P.length; i++) {
-      if (P[i].y < -1 && P[i + 1].y < -1) continue;
-      const ax = P[i].x, az = P[i].z;
-      const sx = P[i + 1].x - ax, sz = P[i + 1].z - az;
-      const horizontalLengthSq = sx * sx + sz * sz;
-      if (horizontalLengthSq === 0) continue;
-      const L = lane.cum[i + 1] - lane.cum[i];
-      const t = ((pl.x - ax) * sx + (pl.z - az) * sz) / horizontalLengthSq;
-      if (t < 0 || t > 1) continue;
-      const y = P[i].y + (P[i + 1].y - P[i].y) * t;
-      if (Math.abs(pl.y - y) >= 2.6) continue;
-      if (Math.abs((pl.z - az) * sx - (pl.x - ax) * sz) / Math.sqrt(horizontalLengthSq) < 2.0) {
-        // Convert horizontal progress to distance along the sloped lane, as with u above.
-        return { u: lane.cum[i] + t * L, v: Math.max(0, ((pl.vx * sx + pl.vz * sz) / horizontalLengthSq) * L) };
+    for (let r = 0; r < B.length; r += 4) {
+      if (pl.x < B[r] - 3 || pl.x > B[r + 1] + 3 || pl.z < B[r + 2] - 3 || pl.z > B[r + 3] + 3) continue;
+      const end = Math.min(P.length - 1, (r / 4 + 1) * HWY_BOX_RUN);
+      for (let i = (r / 4) * HWY_BOX_RUN; i < end; i++) {
+        if (P[i].y < -1 && P[i + 1].y < -1) continue;
+        const ax = P[i].x, az = P[i].z;
+        const sx = P[i + 1].x - ax, sz = P[i + 1].z - az;
+        const horizontalLengthSq = sx * sx + sz * sz;
+        if (horizontalLengthSq === 0) continue;
+        const L = lane.cum[i + 1] - lane.cum[i];
+        const t = ((pl.x - ax) * sx + (pl.z - az) * sz) / horizontalLengthSq;
+        if (t < 0 || t > 1) continue;
+        const y = P[i].y + (P[i + 1].y - P[i].y) * t;
+        if (Math.abs(pl.y - y) >= 2.6) continue;
+        if (Math.abs((pl.z - az) * sx - (pl.x - ax) * sz) / Math.sqrt(horizontalLengthSq) < 2.0) {
+          // Convert horizontal progress to distance along the sloped lane, as with u above.
+          return { u: lane.cum[i] + t * L, v: Math.max(0, ((pl.vx * sx + pl.vz * sz) / horizontalLengthSq) * L) };
+        }
       }
     }
     return null;
@@ -2014,12 +2279,16 @@ function createHighwayTraffic(scene, lanes) {
           const lead = list[(k + 1) % n];
           gap = lead.u - c.u;
           if (gap < 0) gap += lane.len;
-          gap -= HWY_CAR_LEN;
+          gap -= (c.len + lead.len) / 2;
           dv = c.v - lead.v;
         }
-        if (pIn && pIn.u > c.u && pIn.u - c.u - HWY_CAR_LEN < gap) {
-          gap = pIn.u - c.u - HWY_CAR_LEN;
-          dv = c.v - pIn.v;
+        // The player's car counts as HWY_CAR_LEN long
+        if (pIn && pIn.u > c.u) {
+          const playerGap = pIn.u - c.u - (c.len + HWY_CAR_LEN) / 2;
+          if (playerGap < gap) {
+            gap = playerGap;
+            dv = c.v - pIn.v;
+          }
         }
         const sStar = D.s0 + Math.max(0, c.v * D.T + (c.v * dv) / brakeTerm);
         c.acc = Math.max(-9, D.a * (1 - (c.v / lane.speed) ** 4 - (sStar / Math.max(gap, 0.1)) ** 2));
@@ -2090,8 +2359,11 @@ function createHighwayTraffic(scene, lanes) {
         dirtyPaint.add(mesh);
       }
       const brake = c.acc < -1.2 ? 1 : 0; // brake lights
-      if (attrs.carState.array[slot * 4] !== brake) {
-        attrs.carState.array[slot * 4] = brake;
+      const state = attrs.carState.array;
+      const o4 = slot * 4;
+      if (state[o4] !== brake || state[o4 + 3] !== c.style) {
+        state[o4] = brake;
+        state[o4 + 3] = c.style;
         dirtyState.add(mesh);
       }
 

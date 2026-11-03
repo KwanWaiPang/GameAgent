@@ -36,8 +36,7 @@ import {
 import { filterDigit1ProbeBuildings, parseDigit1ProbeRequest } from './digit1-probe-frame.js';
 
 // LandsD individualised sheets for Central street faces. A missing manifest leaves the extrudes.
-// GLTFLoader is a static import. index.html pins that one addon file: the jsDelivr
-// `@dev` alias currently answers 403 for GLTFLoader.js ("package size exceeded").
+// GLTFLoader is pinned in index.html. The jsDelivr `@dev` alias answers 403 for this file.
 
 const position = new THREE.Vector3();
 const normal = new THREE.Vector3();

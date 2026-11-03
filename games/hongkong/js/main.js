@@ -132,13 +132,14 @@ async function initApp() {
   markInit('pland');
   const allColliders = [...landmarkColliders, ...cityBlocks.colliders, ...gltfBuildings.colliders, ...boroughs.colliders, ...(cityGrid.colliders || [])];
 
-  const streetDetails = buildStreetDetails(scene, gltfPlan);
+  const streetDetails = buildStreetDetails(scene, gltfPlan, allColliders);
   markInit('streetDetails');
   if (loadingStatus) loadingStatus.textContent = '正在鋪設車道與行人…';
   // Hong Kong has no Manhattan curb grid. cityGrid.sidewalks is every building lot, and those boxes
   // spill across the real carriageways, so the road graph would mark every lane blocked. Buildings stay
   // in the player colliders; cars and people follow the street centrelines, as in the New York simulation.
-  const trafficSystem = createTrafficSystem(scene, [], []);
+  const trafficSystem = createTrafficSystem(scene, [], [], streetDetails.signalIntersections);
+  if (streetDetails.mountSignals) streetDetails.mountSignals(trafficSystem.network);
   markInit('traffic');
   const highwayTraffic = createHighwayTraffic(scene, cityGrid.highwayLanes);
   buildRoadPaint(scene, trafficSystem.network);
@@ -210,20 +211,33 @@ async function initApp() {
 
   // Island-wide static geometry: chunk & distance-cull the small props, shadow stand-ins for the big casters
   // (scene-culling.js)
-  const cullingRoots = ['HongKongCityGrid', 'HongKongCityBlocks', 'HongKongStreetDetails', 'Boroughs']
+  const cullingRoots = ['HongKongCityGrid', 'HongKongCityBlocks', 'HongKongStreetDetails', 'HongKongLandmarks', 'Boroughs', 'RoadMarkings']
     .map((name) => scene.getObjectByName(name))
     .filter(Boolean);
   setupSceneCulling(scene, cullingRoots, lightingSystem.sunLight.shadow);
+
+  // Initialize static world matrices once, including the chunks and shadow proxies created above.
+  // Crowd, tree and building animation changes instance buffers, not Object3D transforms.
+  const dynamicRoots = [
+    trafficSystem.group,
+    highwayTraffic.group,
+    ...Object.values(controllerManager.entities).map((entity) => entity.mesh),
+    controllerManager.entities.cyclist.helmet
+  ];
+  scene.updateMatrixWorld(true);
+  scene.matrixWorldAutoUpdate = false;
   markInit('culling');
 
-  // Small InstancedMeshes (<= 1000 instances) keep their matrices in uniform buffers that three.js
+  // On WebGPU, small InstancedMeshes (<= 1000 instances) keep their matrices in uniform buffers that three.js
   // re-uploads on every draw of every pass (~2.5 MB/frame with the shadow cascades, stalling the GPU queue).
-  // Storage attributes are only uploaded when instanceMatrix.needsUpdate is set.
-  scene.traverse((object) => {
-    if (object.isInstancedMesh) {
-      object.instanceMatrix = new THREE.StorageInstancedBufferAttribute(object.instanceMatrix.array, 16);
-    }
-  });
+  // Storage attributes only upload when needed; WebGL2 needs ordinary instanced attributes for correct transforms.
+  if (renderer.backend.isWebGPUBackend) {
+    scene.traverse((object) => {
+      if (object.isInstancedMesh) {
+        object.instanceMatrix = new THREE.StorageInstancedBufferAttribute(object.instanceMatrix.array, 16);
+      }
+    });
+  }
 
   // 5. TSL RenderPipeline with Half-Res Screen Space Reflections (SSRNode), Bloom & Filmic Toning
   //    Fade out distant and matte surfaces so SSR spends its rays on visible glossy reflections.
@@ -298,13 +312,13 @@ async function initApp() {
 
   // Keyboard guide for each mode: [keys, action]
   const controlHints = {
-    person: [[['W', 'S'], '步行'], [['A', 'D'], '轉向'], [['Shift'], '衝刺'], [['Space'], '跳躍'], [['Drag'], '環視']],
-    car: [[['W', 'S'], '前進／倒車'], [['A', 'D'], '轉向'], [['Shift'], '加速'], [['B'], '響號'], [['Drag'], '環視']],
-    cyclist: [[['W', 'S'], '踩踏／煞車'], [['A', 'D'], '傾斜轉向'], [['Shift'], '衝刺'], [['Drag'], '環視']],
-    helicopter: [[['W', 'S'], '俯仰'], [['A', 'D'], '偏航'], [['Space', 'E'], '上升'], [['Q', 'C'], '下降'], [['Shift'], '加速']]
+    person: [[['W', 'S'], '步行／跑步'], [['A', 'D'], '轉向'], [['Space'], '跳躍'], [['Drag'], '環視']],
+    car: [[['W', 'S'], '前進／倒車'], [['A', 'D'], '轉向'], [['B'], '響號'], [['Drag'], '環視']],
+    cyclist: [[['W', 'S'], '踩踏／煞車'], [['A', 'D'], '傾斜轉向'], [['Drag'], '環視']],
+    helicopter: [[['W', 'S'], '俯仰'], [['A', 'D'], '偏航'], [['Space', 'E'], '上升'], [['Q', 'C'], '下降']]
   };
-  // Boosted top speeds in km/h (controllers.js caps them at 8.2, 36, 19 & 52 m/s): full scale of the speed meter
-  const topSpeedKmh = { person: 30, car: 130, cyclist: 68, helicopter: 187 };
+  // Top speeds in mph (controllers.js caps them at 8.2, 36, 19 & 52 m/s): full scale of the speed meter
+  const topSpeedMph = { person: 18, car: 81, cyclist: 43, helicopter: 116 };
 
   function renderControlHints(mode) {
     if (!elControlsHint) return;
@@ -719,7 +733,7 @@ async function initApp() {
 
     // Update 3rd-person controllers, camera, signals, traffic & vehicle collisions, building LODs, and dynamic shadow focus
     gamepadControls.update(dt);
-    controllerManager.update(dt, elapsed);
+    controllerManager.update(dt, elapsed, cameraSystem.initialized ? cameraSystem.currentPos : null);
     cameraSystem.update(dt, elapsed);
     streetDetails.signalClock.value = elapsed;
     trafficSystem.update(
@@ -743,6 +757,8 @@ async function initApp() {
     mapSystem.update();
     audioSystem.update(dt, elapsed, cameraSystem.camera, lightingSystem.activePresetId === 'midnight');
     if (warmedUp) updateSceneCulling(cameraSystem.camera.position); // the warm-up frame draws every chunk
+    // Traffic collisions can move the player after controller updates; finalize moving hierarchies here.
+    for (const root of dynamicRoots) root.updateMatrixWorld();
 
     // Render frame via TSL RenderPipeline (SSR + Bloom)
     if (!warmedUp) {
@@ -788,17 +804,16 @@ async function initApp() {
 
       const activeEnt = controllerManager.getActiveEntity();
       const mode = controllerManager.activeMode;
-      const kmh = Math.round(Math.abs(activeEnt.speed) * 3.6);
-      const altM = Math.max(0, Math.round(activeEnt.position.y));
+      const mph = Math.round(Math.abs(activeEnt.speed) * 2.237);
+      const altFt = Math.max(0, Math.round(activeEnt.position.y * 3.281));
 
       if (elFps) {
         elFps.textContent = String(currentFps);
         elFps.className = currentFps >= 50 ? 'fps-ok' : currentFps >= 30 ? 'fps-warn' : 'fps-bad';
       }
-      if (elSpeed) elSpeed.textContent = String(kmh);
-      if (elSpeedMeter) elSpeedMeter.style.transform = `scaleX(${Math.min(1, kmh / (topSpeedKmh[mode] || 130))})`;
-      document.body.classList.toggle('is-boosting', controllerManager.keys.boost && kmh > 0);
-      if (elAltitude) elAltitude.textContent = altM.toLocaleString('zh-Hant');
+      if (elSpeed) elSpeed.textContent = String(mph);
+      if (elSpeedMeter) elSpeedMeter.style.transform = `scaleX(${Math.min(1, mph / (topSpeedMph[mode] || 80))})`;
+      if (elAltitude) elAltitude.textContent = altFt.toLocaleString('en-US');
       // The street corner of the player on the follow cameras, of the camera itself on the scenic ones
       const where = cameraSystem.getActivePreset().category === 'follow' ? activeEnt.position : cameraSystem.currentPos;
       renderLocation(getLocationLabel(where.x, where.z));
