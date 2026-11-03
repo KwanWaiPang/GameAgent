@@ -17,14 +17,9 @@ Open it through a local HTTP server or GitHub Pages, not `file://`.
 
 ## What changed
 
-Lighting, traffic, pedestrians, cameras, and post-processing stay with the source. The city identity changed:
+This is the street-level Hong Kong port of [Slop New York](https://github.com/mrdoob/slop-newyork), using the city data from [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong) (MIT). Walking, driving, cycling, and flying stay, along with traffic, pedestrians, and buildings.
 
-- Chinese interface, with a link back to the hub
-- Streets, districts, water, and bridges use Hong Kong names
-- The taxi is a red urban taxi; green cabs stay as New Territories taxis
-- Speed is km/h and altitude is metres
-
-The street grid, shoreline, and building footprints are still the original simulation, not a Lands Department survey of Hong Kong.
+The detailed area is Hong Kong Island, Kowloon, and Victoria Harbour, with the origin at Central. Without the Lands Department mesh pack, buildings are extruded from the street data. The New Territories and outlying islands are not in this street map.
 
 ## Controls
 

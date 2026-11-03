@@ -120,11 +120,11 @@
 
 ## 香港漫游（`games/hongkong/`）
 
-- 来源：[mrdoob/slop-newyork](https://github.com/mrdoob/slop-newyork)
-- 许可证：MIT（`games/hongkong/LICENSE`，版权 Mr.doob）
+- 来源：[mrdoob/slop-newyork](https://github.com/mrdoob/slop-newyork)，香港街道数据来自 [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong)
+- 许可证：MIT（`games/hongkong/LICENSE`）
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) 开发分支（MIT），运行时经 jsDelivr 加载 WebGPU / TSL 构建
-- 地理数据：纽约市开放数据与 © OpenStreetMap 贡献者（ODbL）。馆内把界面、路名、地图标注和的士涂装改成香港；街道网格、楼宇轮廓和光照仍是原模拟
-- 说明：已接入大厅「城市」分类。返回游戏馆的链接是馆内适配
+- 地理数据：地政总署与 © OpenStreetMap 贡献者（ODbL）。详细范围是香港岛、九龙和维多利亚港
+- 说明：已接入大厅「城市」分类。返回游戏馆的链接是馆内适配。没有单体模型时楼宇由街道数据挤出
 
 ## 虎牢关（`games/Hulao_Gate/`）
 

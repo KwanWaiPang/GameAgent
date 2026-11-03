@@ -1,13 +1,15 @@
 import {
   ALL_AVENUES,
   ALL_STREETS,
+  AVENUES,
+  STREETS,
   ISLAND_BOUNDS,
-  getIslandBoundsAtZ,
+  isOnHongKongLand,
   BLOCKS
 } from './city-config.js';
-import { GEO } from './nyc-geodata.js';
-import { polygonBoxOverlaps } from './building-collision.js';
+import { GEO } from './geo-source.js';
 
+// js/road-network.js
 // Drivable road graph derived from the ground layout that city-grid.js actually builds: avenue corridors
 // between the raised curbs, cross-street gaps between curb rows, lanes that keep clear of medians, plazas
 // and steam stacks, intersections (signalized where street-details.js mounts signal heads) and the
@@ -21,9 +23,8 @@ const Z_MIN = Math.floor(ISLAND_BOUNDS.minZ) - 20; // the detailed island, ~129t
 const Z_MAX = Math.ceil(ISLAND_BOUNDS.maxZ) + 20;
 const LANE_CLEAR = 1.2; // half width each lane keeps free of obstacles
 const CROSSWALK = 2.5; // depth between an intersection box and its stop lines
-const SHORE_MARGIN = 6;
 
-function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
+function buildRoadNetwork(sidewalks, obstacles) {
   // 1. Spatial hash of ground footprints: curbs bound the roads, everything else also blocks pedestrians
   const hash = new Map();
   const cellKey = (ix, iz) => (ix + 512) * 1024 + iz + 512;
@@ -47,23 +48,20 @@ function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
         const list = hash.get(cellKey(ix, iz));
         if (!list) continue;
         for (const r of list) {
-          if (r.minX < maxX && r.maxX > minX && r.minZ < maxZ && r.maxZ > minZ && fn(r)
-            && (!r.polygon || polygonBoxOverlaps(r.polygon, (minX + maxX) / 2, (minZ + maxZ) / 2, (maxX - minX) / 2, (maxZ - minZ) / 2))) return true;
+          if (r.minX < maxX && r.maxX > minX && r.minZ < maxZ && r.maxZ > minZ && fn(r)) return true;
         }
       }
     }
     return false;
   }
 
+  // Sample the middle of the test box. A diagonal street's bounding box reaches into the harbour
+  // even when the carriageway is on land, and the island-only shore misses all of Kowloon.
   function onLand(minX, maxX, minZ, maxZ) {
-    for (const z of [minZ, maxZ]) {
-      const shore = getIslandBoundsAtZ(z);
-      if (minX < shore.westX + SHORE_MARGIN || maxX > shore.eastX - SHORE_MARGIN) return false;
-    }
-    return true;
+    return isOnHongKongLand((minX + maxX) * 0.5, (minZ + maxZ) * 0.5);
   }
 
-  const blocked = (minX, maxX, minZ, maxZ) => !onLand(minX, maxX, minZ, maxZ) || query(minX, maxX, minZ, maxZ, (r) => !r.pedestrianOnly);
+  const blocked = (minX, maxX, minZ, maxZ) => !onLand(minX, maxX, minZ, maxZ) || query(minX, maxX, minZ, maxZ, () => true);
   const walkable = (minX, maxX, minZ, maxZ) => onLand(minX, maxX, minZ, maxZ) && !query(minX, maxX, minZ, maxZ, (r) => !r.curb);
   const onSidewalk = (x, z) => query(x, x, z, z, (r) => r.curb);
   // The same test for the centreline streets (4b), which follow the real streets: the rectangles standing in for
@@ -103,7 +101,7 @@ function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
   const blockedOnStreet = (x, z, clear) => !onLand(x - clear, x + clear, z - clear, z + clear) ||
     query(x - 0.3, x + 0.3, z - 0.3, z + 0.3, (r) => r.curb) ||
     nearMedian(x, z, clear) ||
-    query(x - clear, x + clear, z - clear, z + clear, (r) => !r.curb && !r.pedestrianOnly && (r.maxX - r.minX < 50 || r.maxZ - r.minZ < 50) && !medianBox(r));
+    query(x - clear, x + clear, z - clear, z + clear, (r) => !r.curb && (r.maxX - r.minX < 50 || r.maxZ - r.minZ < 50) && !medianBox(r));
 
   // 2. Avenue corridors: the most common curb-to-curb gap around each avenue's nominal x along its own stretches
   //    (CSCL: an avenue only exists between its ends, e.g. Irving Pl 14th-20th St, so it never claims a neighbour's
@@ -248,8 +246,7 @@ function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
     for (const n of [p.from, p.to]) n.hz = Math.max(n.hz, Math.abs(p.z - n.z) + Math.min(p.half, 13));
   }
 
-  // 4b. Non-grid streets: Lower Manhattan, Broadway and the curved avenues farther north, from
-  //     the street centreline graph (GEO.roadGraph, tools/geo-roadgraph.mjs), minus the links the grid corridors above
+  // 4b. Centreline streets from the street graph (GEO.roadGraph, tools/geo-roadgraph.mjs), minus the links the grid corridors above
   //     already carry. Its junctions join the grid where they meet it (at a grid intersection, on an avenue corridor or a
   //     cross street); a street's bends get shape nodes, so every edge stays straight.
   const genRuns = centrelineStreets();
@@ -982,12 +979,62 @@ function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
   }
 
   // 7. Keep the largest strongly connected set of edges so no vehicle can ever reach a dead end
-  const kept = largestComponent(edges, (e) => e.moves.map((m) => m.to));
+  edges.forEach((e, i) => (e.id = i));
+  const visited = new Uint8Array(edges.length);
+  const order = [];
+  for (const root of edges) {
+    if (visited[root.id]) continue;
+    visited[root.id] = 1;
+    const stack = [[root, 0]];
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      const e = top[0];
+      if (top[1] < e.moves.length) {
+        const f = e.moves[top[1]++].to;
+        if (!visited[f.id]) {
+          visited[f.id] = 1;
+          stack.push([f, 0]);
+        }
+      } else {
+        order.push(e);
+        stack.pop();
+      }
+    }
+  }
+  const incoming = edges.map(() => []);
+  for (const e of edges) for (const m of e.moves) incoming[m.to.id].push(e);
+  const comp = new Int32Array(edges.length).fill(-1);
+  let bestComp = -1;
+  let bestSize = 0;
+  for (let k = order.length - 1, c = 0; k >= 0; k--) {
+    if (comp[order[k].id] >= 0) continue;
+    const stack = [order[k]];
+    comp[order[k].id] = c;
+    let size = 0;
+    while (stack.length) {
+      const e = stack.pop();
+      size++;
+      for (const p of incoming[e.id]) {
+        if (comp[p.id] < 0) {
+          comp[p.id] = c;
+          stack.push(p);
+        }
+      }
+    }
+    if (size > bestSize) {
+      bestSize = size;
+      bestComp = c;
+    }
+    c++;
+  }
   const genShortKept = edges.filter((e) => e.general).length;
-  const genLost = edges.filter((e) => e.general && !kept.has(e));
-  edges = edges.filter((e) => kept.has(e));
+  // Manhattan is one two-way grid, so the largest loop is the whole city. These one-way
+  // centreline streets do not form a single loop: that loop is on the south shore, and keeping
+  // only it erased Central, Admiralty and Tsim Sha Tsui. Every remaining street stays drivable.
+  console.info(`[roads] centreline edges: ${genCreated} with clear lanes, ${genShortKept} long enough, ${edges.length} kept (largest loop ${bestSize})`);
   // Roads kept clear of a road merging with them or forking off them that is gone now (too short, or no way on from it
   // after all) get their stop lines placed again without it
+  const kept = new Set(edges);
   const dropped = placed.filter((e) => e.live && !kept.has(e));
   if (dropped.length) {
     const redo = new Set();
@@ -999,9 +1046,7 @@ function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
     for (const n of redo) if (n.general && !n.shape && bends(n)) n.shape = true;
     for (const e of edges) if (redo.has(e.from) || redo.has(e.to)) place(e);
   }
-  console.info(`[roads] centreline edges: ${genCreated} with clear lanes, ${genShortKept} long enough, ${genShortKept - genLost.length} connected`);
   for (const e of edges) {
-    e.moves = e.moves.filter((m) => kept.has(m.to));
     serveEveryLane(e);
     // Lanes still leading nowhere (every curve out of them grazes a curb or obstacle): send them on to the nearest lane
     // of the straightest move anyway, so every lane always has a way on
@@ -1013,18 +1058,25 @@ function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
   }
   edges.forEach((e, i) => (e.id = i));
 
-  for (const n of nodes) n.in = n.out = null;
-  for (const e of edges) {
-    (e.from.out || (e.from.out = [])).push(e);
-    (e.to.in || (e.to.in = [])).push(e);
+  for (const n of nodes) {
+    n.in = [];
+    n.out = [];
   }
-  nodes = nodes.filter((n) => n.in && n.out);
+  for (const e of edges) {
+    e.from.out.push(e);
+    e.to.in.push(e);
+  }
+  // Dead ends stay, with an empty side instead of a missing list. Dropping the node left its
+  // street without an approach array, and a null side throws when a pedestrian reaches the corner.
+  nodes = nodes.filter((n) => n.in.length || n.out.length);
   nodes.forEach((n, i) => (n.id = i));
 
   // 8. Signalized intersections are exactly the ones with signal heads (street-details.js)
-  for (const s of signalIntersections) {
-    const n = nodes.find((m) => Math.abs(m.x - s.x) < 6 && Math.abs(m.z - s.z) < 6); // same tolerance as nodeAt
-    if (n) n.signal = true;
+  for (const a of AVENUES) {
+    for (const s of STREETS) {
+      const n = nodes.find((m) => Math.abs(m.x - a.x) < 4 && Math.abs(m.z - s.z) < 4);
+      if (n) n.signal = true;
+    }
   }
 
   // 9. Sides & right of way at each node, for traffic.js. Its arms are its sides (one crosswalk and approach each): a

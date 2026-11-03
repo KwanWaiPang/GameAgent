@@ -120,11 +120,11 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 
 ## Hong Kong Roam (`games/hongkong/`)
 
-- Source: [mrdoob/slop-newyork](https://github.com/mrdoob/slop-newyork)
-- License: MIT (`games/hongkong/LICENSE`, copyright Mr.doob)
+- Source: [mrdoob/slop-newyork](https://github.com/mrdoob/slop-newyork), with the Hong Kong street city from [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong)
+- License: MIT (`games/hongkong/LICENSE`)
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) dev build (MIT), loaded at runtime from jsDelivr (WebGPU / TSL)
-- Geographic data: NYC Open Data and © OpenStreetMap contributors (ODbL). The hub copy renames the interface, streets, map labels, and taxi livery as Hong Kong. The street grid, building footprints, and lighting remain the original simulation
-- Note: listed in the hub City section. The link back to the hub is a local adaptation
+- Geographic data: Lands Department and © OpenStreetMap contributors (ODbL). The detailed area is Hong Kong Island, Kowloon, and Victoria Harbour
+- Note: listed in the hub City section. The link back to the hub is a local adaptation. Without the individual building meshes, blocks are extruded from the street data
 
 ## Hulao Gate (`games/Hulao_Gate/`)
 
