@@ -172,10 +172,29 @@
 
   <!-- Teleport Destinations (native popover: light-dismiss & Esc) -->
   <div id="teleport-popover" class="popover" popover data-side="below" data-anchor="hud-toolbar" aria-label="傳送目前角色">
-    <div class="pop-title">傳送到</div>
+    <div class="pop-title">香港島</div>
+    <button id="tp-hollywood" class="pop-item tp-btn" data-teleport="hollywood" type="button"><span class="pop-name">上環</span><span class="pop-sub">荷李活道 · 文武廟</span></button>
+    <button id="tp-lkf" class="pop-item tp-btn" data-teleport="lkf" type="button"><span class="pop-name">蘭桂坊</span><span class="pop-sub">蘭桂坊</span></button>
     <button id="tp-central" class="pop-item tp-btn" data-teleport="central" type="button"><span class="pop-name">中環</span><span class="pop-sub">皇后像廣場 · 面向維港</span></button>
+    <button id="tp-garden" class="pop-item tp-btn" data-teleport="garden" type="button"><span class="pop-name">花園道</span><span class="pop-sub">山頂纜車總站</span></button>
+    <button id="tp-admiralty" class="pop-item tp-btn" data-teleport="admiralty" type="button"><span class="pop-name">金鐘</span><span class="pop-sub">金鐘道</span></button>
+    <button id="tp-wanchai" class="pop-item tp-btn" data-teleport="wanchai" type="button"><span class="pop-name">灣仔</span><span class="pop-sub">軒尼詩道</span></button>
+    <button id="tp-causeway" class="pop-item tp-btn" data-teleport="causeway" type="button"><span class="pop-name">銅鑼灣</span><span class="pop-sub">波斯富街 · 時代廣場</span></button>
+    <button id="tp-happy" class="pop-item tp-btn" data-teleport="happy" type="button"><span class="pop-name">跑馬地</span><span class="pop-sub">黃泥涌道 · 馬場</span></button>
+    <button id="tp-northpoint" class="pop-item tp-btn" data-teleport="northpoint" type="button"><span class="pop-name">北角</span><span class="pop-sub">英皇道</span></button>
+    <div class="pop-title">山頂與南區</div>
+    <button id="tp-peak" class="pop-item tp-btn" data-teleport="peak" type="button"><span class="pop-name">太平山</span><span class="pop-sub">盧吉道</span></button>
+    <button id="tp-aberdeen" class="pop-item tp-btn" data-teleport="aberdeen" type="button"><span class="pop-name">香港仔</span><span class="pop-sub">香港仔大街</span></button>
+    <button id="tp-repulse" class="pop-item tp-btn" data-teleport="repulse" type="button"><span class="pop-name">淺水灣</span><span class="pop-sub">海灘道</span></button>
+    <button id="tp-stanley" class="pop-item tp-btn" data-teleport="stanley" type="button"><span class="pop-name">赤柱</span><span class="pop-sub">赤柱市場</span></button>
+    <div class="pop-title">九龍</div>
     <button id="tp-tst" class="pop-item tp-btn" data-teleport="tst" type="button"><span class="pop-name">尖沙咀</span><span class="pop-sub">鐘樓 · 面向香港島</span></button>
-    <button id="tp-admiralty" class="pop-item tp-btn" data-teleport="admiralty" type="button"><span class="pop-name">金鐘</span><span class="pop-sub">金鐘站</span></button>
+    <button id="tp-nathan" class="pop-item tp-btn" data-teleport="nathan" type="button"><span class="pop-name">尖沙咀</span><span class="pop-sub">彌敦道</span></button>
+    <button id="tp-harbourcity" class="pop-item tp-btn" data-teleport="harbourcity" type="button"><span class="pop-name">海港城</span><span class="pop-sub">港威大道</span></button>
+    <button id="tp-jordan" class="pop-item tp-btn" data-teleport="jordan" type="button"><span class="pop-name">佐敦</span><span class="pop-sub">彌敦道</span></button>
+    <button id="tp-mongkok" class="pop-item tp-btn" data-teleport="mongkok" type="button"><span class="pop-name">旺角</span><span class="pop-sub">彌敦道 · 亞皆老街</span></button>
+    <button id="tp-prince" class="pop-item tp-btn" data-teleport="prince" type="button"><span class="pop-name">太子</span><span class="pop-sub">彌敦道</span></button>
+    <button id="tp-shamshuipo" class="pop-item tp-btn" data-teleport="shamshuipo" type="button"><span class="pop-name">深水埗</span><span class="pop-sub">福華街</span></button>
   </div>
 
   <!-- Bottom-Left: Street-Name Signs & Live GPS Radar Minimap -->
@@ -286,7 +305,7 @@
       </div>
       <label class="panel fullmap-search-wrap">
         <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-        <input id="fullmap-search" class="fullmap-search" type="text" placeholder="搜尋街道與地標 — 中環、金鐘、尖沙咀…" aria-label="搜尋街道或地標" autocomplete="off" spellcheck="false" />
+        <input id="fullmap-search" class="fullmap-search" type="text" placeholder="搜尋街道與地標 — 中環、旺角、銅鑼灣、赤柱…" aria-label="搜尋街道或地標" autocomplete="off" spellcheck="false" />
       </label>
       <button id="close-fullmap-btn" class="panel tool-btn fullmap-close" type="button" title="關閉地圖 [M / Esc]">
         <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><span class="tool-label">關閉</span><kbd>Esc</kbd>

@@ -894,15 +894,52 @@ for (const b of BLOCKS) b.district = districtAt(b.cx, b.cz);
 // ---------------------------------------------------------------------------------------------------------------------
 const LANDMARK_SITES = GEO.landmarks;
 // Street-level arrivals. Heading 0 faces south (+z), PI north.
+// Street-centre arrivals at busy roads and named sights. Each point is the road
+// centreline nearest that place, so a teleport does not drop inside a lot or the harbour.
+// Heading 0 faces south (+z), PI north.
 const TELEPORT_LOCATIONS = {
+  hollywood: { x: -979.0, z: -353.9, heading: -1.920 },
+  lkf: { x: -444.0, z: -21.5, heading: 0.686 },
   central: { x: GEO.points.central[0], z: GEO.points.central[1], heading: Math.PI },
+  garden: { x: -69.8, z: 336.2, heading: -1.135 },
+  admiralty: { x: GEO.points.admiralty[0], z: GEO.points.admiralty[1], heading: Math.PI },
+  wanchai: { x: 1339.9, z: 366.0, heading: 1.677 },
+  causeway: { x: 2357.0, z: 105.7, heading: 0.523 },
+  happy: { x: 2520.4, z: 1211.0, heading: 2.228 },
+  northpoint: { x: 4165.8, z: -1137.1, heading: 1.787 },
+  peak: { x: -1134.0, z: 561.7, heading: 2.607 },
+  aberdeen: { x: -727.8, z: 3570.0, heading: -1.124 },
+  repulse: { x: 3905.2, z: 4917.7, heading: -2.570 },
+  stanley: { x: 5381.7, z: 6858.7, heading: 1.504 },
   tst: { x: GEO.points.tst[0], z: GEO.points.tst[1], heading: 0 },
-  admiralty: { x: GEO.points.admiralty[0], z: GEO.points.admiralty[1], heading: Math.PI }
+  nathan: { x: 1271.0, z: -1895.2, heading: 0.070 },
+  harbourcity: { x: 939.3, z: -1616.6, heading: -1.371 },
+  jordan: { x: 1223.8, z: -2637.4, heading: 0.065 },
+  mongkok: { x: 1001.3, z: -4177.0, heading: 0.193 },
+  prince: { x: 874.5, z: -4838.9, heading: 0.187 },
+  shamshuipo: { x: 378.9, z: -5513.9, heading: -2.266 }
 };
 const PLACES = [
-  { id: 'central', name: '中環', short: '中環', x: GEO.points.central[0], z: GEO.points.central[1], district: '香港島' },
-  { id: 'tst', name: '尖沙咀', short: '尖沙咀', x: GEO.points.tst[0], z: GEO.points.tst[1], district: '九龍' },
-  { id: 'admiralty', name: '金鐘', short: '金鐘', x: GEO.points.admiralty[0], z: GEO.points.admiralty[1], district: '香港島' }
+  { id: 'hollywood', name: '荷李活道', short: '上環', x: TELEPORT_LOCATIONS.hollywood.x, z: TELEPORT_LOCATIONS.hollywood.z, district: '香港島' },
+  { id: 'lkf', name: '蘭桂坊', short: '蘭桂坊', x: TELEPORT_LOCATIONS.lkf.x, z: TELEPORT_LOCATIONS.lkf.z, district: '香港島' },
+  { id: 'central', name: '中環', short: '中環', x: TELEPORT_LOCATIONS.central.x, z: TELEPORT_LOCATIONS.central.z, district: '香港島' },
+  { id: 'garden', name: '花園道', short: '纜車', x: TELEPORT_LOCATIONS.garden.x, z: TELEPORT_LOCATIONS.garden.z, district: '香港島' },
+  { id: 'admiralty', name: '金鐘', short: '金鐘', x: TELEPORT_LOCATIONS.admiralty.x, z: TELEPORT_LOCATIONS.admiralty.z, district: '香港島' },
+  { id: 'wanchai', name: '灣仔', short: '灣仔', x: TELEPORT_LOCATIONS.wanchai.x, z: TELEPORT_LOCATIONS.wanchai.z, district: '香港島' },
+  { id: 'causeway', name: '銅鑼灣', short: '銅鑼灣', x: TELEPORT_LOCATIONS.causeway.x, z: TELEPORT_LOCATIONS.causeway.z, district: '香港島' },
+  { id: 'happy', name: '跑馬地', short: '跑馬地', x: TELEPORT_LOCATIONS.happy.x, z: TELEPORT_LOCATIONS.happy.z, district: '香港島' },
+  { id: 'northpoint', name: '北角', short: '北角', x: TELEPORT_LOCATIONS.northpoint.x, z: TELEPORT_LOCATIONS.northpoint.z, district: '香港島' },
+  { id: 'peak', name: '太平山', short: '山頂', x: TELEPORT_LOCATIONS.peak.x, z: TELEPORT_LOCATIONS.peak.z, district: '香港島' },
+  { id: 'aberdeen', name: '香港仔', short: '香港仔', x: TELEPORT_LOCATIONS.aberdeen.x, z: TELEPORT_LOCATIONS.aberdeen.z, district: '香港島' },
+  { id: 'repulse', name: '淺水灣', short: '淺水灣', x: TELEPORT_LOCATIONS.repulse.x, z: TELEPORT_LOCATIONS.repulse.z, district: '香港島' },
+  { id: 'stanley', name: '赤柱', short: '赤柱', x: TELEPORT_LOCATIONS.stanley.x, z: TELEPORT_LOCATIONS.stanley.z, district: '香港島' },
+  { id: 'tst', name: '尖沙咀', short: '尖沙咀', x: TELEPORT_LOCATIONS.tst.x, z: TELEPORT_LOCATIONS.tst.z, district: '九龍' },
+  { id: 'nathan', name: '尖沙咀彌敦道', short: '彌敦道', x: TELEPORT_LOCATIONS.nathan.x, z: TELEPORT_LOCATIONS.nathan.z, district: '九龍' },
+  { id: 'harbourcity', name: '海港城', short: '海港城', x: TELEPORT_LOCATIONS.harbourcity.x, z: TELEPORT_LOCATIONS.harbourcity.z, district: '九龍' },
+  { id: 'jordan', name: '佐敦', short: '佐敦', x: TELEPORT_LOCATIONS.jordan.x, z: TELEPORT_LOCATIONS.jordan.z, district: '九龍' },
+  { id: 'mongkok', name: '旺角', short: '旺角', x: TELEPORT_LOCATIONS.mongkok.x, z: TELEPORT_LOCATIONS.mongkok.z, district: '九龍' },
+  { id: 'prince', name: '太子', short: '太子', x: TELEPORT_LOCATIONS.prince.x, z: TELEPORT_LOCATIONS.prince.z, district: '九龍' },
+  { id: 'shamshuipo', name: '深水埗', short: '深水埗', x: TELEPORT_LOCATIONS.shamshuipo.x, z: TELEPORT_LOCATIONS.shamshuipo.z, district: '九龍' }
 ];
 
 function boundsOfRing(pts) {
