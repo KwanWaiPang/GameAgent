@@ -879,13 +879,24 @@ async function initApp() {
       }
     }
   };
-  renderer.setAnimationLoop(onFrame);
+  let reportedFrameError = false;
+  const safeFrame = (now) => {
+    try {
+      onFrame(now);
+    } catch (err) {
+      if (!reportedFrameError) {
+        reportedFrameError = true;
+        console.error(err);
+      }
+    }
+  };
+  renderer.setAnimationLoop(safeFrame);
   // A hidden document never receives animation frames, so the first frame never runs and
   // the streets stay empty. Keep the same loop going until the page is visible.
   const pumpHidden = () => {
     if (!document.hidden) return;
-    onFrame(performance.now());
-    if (!loadingOverlay || !loadingOverlay.classList.contains('hidden')) setTimeout(pumpHidden, 100);
+    safeFrame(performance.now());
+    setTimeout(pumpHidden, 100);
   };
   if (document.hidden) pumpHidden();
   document.addEventListener('visibilitychange', () => {
