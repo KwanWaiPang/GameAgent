@@ -7,8 +7,8 @@ import { getLocationLabel, isTypingInField, ROADS, PLACES, TELEPORT_LOCATIONS } 
 import { buildCityGrid } from './city-grid.js';
 import { buildBoroughs } from './boroughs.js';
 import { buildLandmarks } from './landmarks.js';
-import { buildCityBlocks } from './buildings.js';
-import { buildHkRoamCity } from './hk-roam-city.js';
+import { buildCityBlocks } from './buildings.js?v=roam2';
+import { buildHkRoamCity } from './hk-roam-city.js?v=roam2';
 import { buildHkSkyline } from './hk-skyline.js';
 import { createHkVisit } from './hk-visit.js';
 import { mountHkGltfBuildings, prepareHkGltfSheet, setLandsdAnisotropyLimit } from './hk-gltf.js';
@@ -119,7 +119,7 @@ async function initApp() {
   markInit('landmarks');
   const cityBlocks = buildCityBlocks(scene, gltfPlan);
   markInit('blocks');
-  if (loadingStatus) loadingStatus.textContent = '正在按地政樓面升起灣仔、銅鑼灣、尖沙咀與旺角…';
+  if (loadingStatus) loadingStatus.textContent = '正在按地政平面擠出全港樓宇…';
   await new Promise((resolve) => setTimeout(resolve, 0));
   const roamCity = buildHkRoamCity(scene);
   markInit('roam');
@@ -152,10 +152,14 @@ async function initApp() {
   const streetDetails = buildStreetDetails(scene, gltfPlan, allColliders);
   markInit('streetDetails');
   if (loadingStatus) loadingStatus.textContent = '正在鋪設車道與行人…';
-  // Hong Kong has no Manhattan curb grid. cityGrid.sidewalks is every building lot, and those boxes
-  // spill across the real carriageways, so the road graph would mark every lane blocked. Buildings stay
-  // in the player colliders; cars and people follow the street centrelines, as in the New York simulation.
-  const trafficSystem = createTrafficSystem(scene, [], [], streetDetails.signalIntersections);
+  // Same obstacle pass as slop-newyork: a lane or sidewalk that meets a building outline is not used.
+  // cityGrid.sidewalks here is every lot box, not a curb island, and those boxes cross the carriageway.
+  const trafficObstacles = [
+    ...cityGrid.footprints,
+    ...streetDetails.footprints,
+    ...allColliders.filter((c) => !c.obb && (c.minY ?? 0) < 3.5 && (c.polygon || c.maxX - c.minX < 50 || c.maxZ - c.minZ < 50))
+  ];
+  const trafficSystem = createTrafficSystem(scene, [], trafficObstacles, streetDetails.signalIntersections);
   if (streetDetails.mountSignals) streetDetails.mountSignals(trafficSystem.network);
   markInit('traffic');
   const highwayTraffic = createHighwayTraffic(scene, cityGrid.highwayLanes);

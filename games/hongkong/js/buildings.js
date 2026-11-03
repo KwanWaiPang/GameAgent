@@ -19,6 +19,7 @@ import {
   createPodiumMasonryMaterial,
   createRetailPodiumMaterial
 } from './tsl-materials.js';
+import { hkSolidColliders } from './hk-roam-city.js';
 
 // LandsD footprint ring extruded to TopHeight − BaseHeight. Same shape path as
 // createExtrudedPolygonMesh in city-grid.js: outline in (x, −z), depth along Y.
@@ -186,13 +187,15 @@ function buildHkFootprintBlocks(scene, gltfPlan = null) {
     if (hkLandmarkOwnsShaft(b)) {
       // Bank of China Tower is the triangular mesh on its LandsD corners (landmarks.js),
       // or the individualised glTF when that mesh covers the plate. A square extrude
-      // would hide either one.
+      // would hide either one. The outline still blocks the street.
+      if (b.poly && b.poly.length >= 3) colliders.push(...hkSolidColliders(b.poly, ISLAND_BOUNDS.sidewalkHeight + h));
       skippedOwned++;
       continue;
     }
     // PlanD donor: a corridor plate stays hidden. No belt slab is extruded
     // in its place, and the shopfront atlas is not hung on that hole.
     if (hiddenIds && hiddenIds.has(b.id)) {
+      if (b.poly && b.poly.length >= 3) colliders.push(...hkSolidColliders(b.poly, ISLAND_BOUNDS.sidewalkHeight + h));
       skippedGltf++;
       continue;
     }
@@ -249,7 +252,7 @@ function buildHkFootprintBlocks(scene, gltfPlan = null) {
     if (plan.parts.length > 1) podiumTowers++;
     extruded++;
     const ground = ISLAND_BOUNDS.sidewalkHeight;
-    colliders.push({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, maxY: ground + h });
+    if (b.poly && b.poly.length >= 3) colliders.push(...hkSolidColliders(b.poly, ground + h));
     allBlocks.push({
       id: b.name || `hk_${b.id}`,
       cx: b.cx,

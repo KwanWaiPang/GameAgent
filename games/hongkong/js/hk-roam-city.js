@@ -1,5 +1,4 @@
 import * as THREE from 'three/webgpu';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   BLOCKS,
   HK_CORE_WORLD,
@@ -7,14 +6,12 @@ import {
   ROADS,
   blockInHkCore,
   hkCoreUnproject,
-  hkFootprintHeight,
-  hkRetailSlices
+  hkFootprintHeight
 } from './city-config.js';
-import { createCurtainWallMaterial, createRetailPodiumMaterial } from './tsl-materials.js';
+import { createCurtainWallMaterial } from './tsl-materials.js';
 
-// Real LandsD footprints outside the Central sheet: Wan Chai through North Point,
-// Tsim Sha Tsui, Yau Ma Tei, Mong Kok, and West Kowloon. Tall plates keep their
-// ring. Lower plates become scaled boxes so the street wall can load with the page.
+// Every LandsD footprint outside the Central sheet, at its recorded outline and height.
+// Central keeps the sheet meshes. These extrusions are the same outline the colliders use.
 
 const ROAM_ZONES = Object.freeze([
   { id: 'sheungwan', south: 22.2838, west: 114.1445, north: 22.2892, east: 114.1502 },
@@ -27,17 +24,12 @@ const ROAM_ZONES = Object.freeze([
   { id: 'westkln', south: 22.2998, west: 114.1548, north: 22.3062, east: 114.1638 }
 ]);
 
-const SKIP_NAMES = new Set([
+const SKIP_MESH = new Set([
   'Former Kowloon-Canton Railway Clock Tower',
   'The Peak Tower'
 ]);
 
-const WIDE_NAMES = new Set([
-  'Hong Kong Convention and Exhibition Centre'
-]);
-
-const TOWER_CAP = 260;
-const BOX_CAP = 4800;
+const CHUNK = 640;
 
 const STREET_PLATES = new Map([
   ['NATHAN ROAD', '彌敦道'],
@@ -96,132 +88,148 @@ function ringForExtrude(poly) {
   return pts;
 }
 
-function extrudeRing(pts, height, lift) {
-  const shape = new THREE.Shape();
-  shape.moveTo(pts[0].x, -pts[0].z);
-  for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i].x, -pts[i].z);
-  shape.closePath();
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 1 });
-  geo.rotateX(-Math.PI / 2);
-  geo.translate(0, ISLAND_BOUNDS.sidewalkHeight + lift, 0);
-  return geo;
-}
-
-function tryExtrude(pts, height, lift) {
-  let geo = null;
-  try {
-    geo = extrudeRing(pts, height, lift);
-  } catch {
-    geo = null;
+// Same collider record as slop-newyork buildings.js: bounds plus the real outline.
+// A lot wider than 50 m on both axes is cut into strips. The road graph ignores an
+// obstacle that large, which is how a park box stays off the surrounding streets.
+// Each strip still carries the whole outline, so only the building itself blocks.
+function hkSolidColliders(ring, maxY, minY = 0) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const p of ring) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z > maxZ) maxZ = p.z;
   }
-  if (!geo || !geo.getAttribute('position') || geo.getAttribute('position').count < 3) {
-    if (geo) geo.dispose();
-    return null;
+  const polygon = { outer: ring, holes: [] };
+  const spanX = maxX - minX;
+  const spanZ = maxZ - minZ;
+  if (!(spanX > 0) || !(spanZ > 0)) return [];
+  if (spanX < 50 || spanZ < 50) {
+    return [{ minX, maxX, minZ, maxZ, minY, maxY, polygon }];
   }
-  return geo;
-}
-
-function colliderFor(block, height) {
-  return {
-    minX: block.minX,
-    maxX: block.maxX,
-    minZ: block.minZ,
-    maxZ: block.maxZ,
-    maxY: ISLAND_BOUNDS.sidewalkHeight + height
-  };
-}
-
-function shrunkBox(block, scale) {
-  const cx = (block.minX + block.maxX) / 2;
-  const cz = (block.minZ + block.maxZ) / 2;
-  const hx = (block.maxX - block.minX) * scale * 0.5;
-  const hz = (block.maxZ - block.minZ) * scale * 0.5;
-  return { cx, cz, hx, hz, minX: cx - hx, maxX: cx + hx, minZ: cz - hz, maxZ: cz + hz };
-}
-
-function buildFabric(group, blocks, material, colliders) {
-  if (!blocks.length) return 0;
-  const geo = new THREE.BoxGeometry(1, 1, 1);
-  geo.translate(0, 0.5, 0);
-  const mesh = new THREE.InstancedMesh(geo, material, blocks.length);
-  mesh.name = 'HkRoamFabric';
-  mesh.receiveShadow = true;
-  mesh.frustumCulled = false;
-  const dummy = new THREE.Object3D();
-  const ground = ISLAND_BOUNDS.sidewalkHeight;
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i];
-    const box = shrunkBox(block, 0.84);
-    const height = hkFootprintHeight(block);
-    dummy.position.set(box.cx, ground, box.cz);
-    dummy.scale.set(Math.max(4, box.hx * 2), height, Math.max(4, box.hz * 2));
-    dummy.rotation.set(0, 0, 0);
-    dummy.updateMatrix();
-    mesh.setMatrixAt(i, dummy.matrix);
-    colliders.push({
-      minX: box.minX,
-      maxX: box.maxX,
-      minZ: box.minZ,
-      maxZ: box.maxZ,
-      maxY: ground + height
+  const strips = Math.ceil(spanX / 48);
+  const width = spanX / strips;
+  const out = [];
+  for (let i = 0; i < strips; i++) {
+    out.push({
+      minX: minX + i * width,
+      maxX: minX + (i + 1) * width,
+      minZ,
+      maxZ,
+      minY,
+      maxY,
+      polygon
     });
   }
-  mesh.instanceMatrix.needsUpdate = true;
-  group.add(mesh);
-  return blocks.length;
+  return out;
 }
 
-function buildTowers(group, blocks, materials, colliders) {
-  const batches = { tower: [], retail: [] };
+function triangulateRing(pts, contour) {
+  const n = pts.length;
+  contour.length = n;
+  for (let i = 0; i < n; i++) {
+    const v = contour[i] || (contour[i] = new THREE.Vector2());
+    v.set(pts[i].x, -pts[i].z);
+  }
+  try {
+    const tris = THREE.ShapeUtils.triangulateShape(contour, []);
+    if (tris && tris.length) return tris;
+  } catch { /* A fan still covers a simple lot. */ }
+  const fan = [];
+  for (let i = 1; i < n - 1; i++) fan.push([0, i, i + 1]);
+  return fan;
+}
+
+function appendFootprint(chunk, pts, y0, y1, contour) {
+  const tris = triangulateRing(pts, contour);
+  if (!tris.length) return false;
+  const n = pts.length;
+  const base = chunk.n;
+  const pos = chunk.pos;
+  const uv = chunk.uv;
+  for (let i = 0; i < n; i++) {
+    pos.push(pts[i].x, y0, pts[i].z);
+    uv.push(pts[i].x, pts[i].z);
+  }
+  for (let i = 0; i < n; i++) {
+    pos.push(pts[i].x, y1, pts[i].z);
+    uv.push(pts[i].x, pts[i].z);
+  }
+  chunk.n += n * 2;
+  const idx = chunk.idx;
+  const top = base + n;
+  for (let t = 0; t < tris.length; t++) {
+    const a = tris[t][0];
+    const b = tris[t][1];
+    const c = tris[t][2];
+    if (a < 0 || b < 0 || c < 0 || a >= n || b >= n || c >= n) continue;
+    idx.push(base + a, base + c, base + b);
+    idx.push(top + a, top + b, top + c);
+  }
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    idx.push(base + i, base + j, top + j);
+    idx.push(base + i, top + j, top + i);
+  }
+  return true;
+}
+
+function flushChunk(group, material, chunk) {
+  if (chunk.n < 3 || !chunk.idx.length) return;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(chunk.pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(chunk.uv, 2));
+  geo.setIndex(new THREE.BufferAttribute(new Uint32Array(chunk.idx), 1));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.name = 'HkFootprint';
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+}
+
+function emptyChunk() {
+  return { pos: [], uv: [], idx: [], n: 0 };
+}
+
+function buildCityFootprints(group, material, colliders) {
+  const ground = ISLAND_BOUNDS.sidewalkHeight;
+  const chunks = new Map();
+  const contour = [];
   let built = 0;
-  const flush = (key) => {
-    const batch = batches[key];
-    if (!batch.length) return;
-    const merged = mergeGeometries(batch, false);
-    for (const geo of batch) geo.dispose();
-    batch.length = 0;
-    if (!merged) return;
-    merged.computeBoundingSphere();
-    const mesh = new THREE.Mesh(merged, materials[key]);
-    mesh.name = key === 'retail' ? 'HkRoamRetail' : 'HkRoamTower';
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-  };
-  for (const block of blocks) {
+  let outlined = 0;
+  let skipped = 0;
+  for (const block of BLOCKS) {
+    if (block.park > 0.6 || block.median) continue;
+    if (blockInHkCore(block)) continue;
     const height = hkFootprintHeight(block);
+    if (!(height > 0)) continue;
     const pts = ringForExtrude(block.poly);
-    if (!pts) continue;
-    const slices = hkRetailSlices(0, height, 'tower');
-    const geos = [];
-    let failed = false;
-    for (const slice of slices) {
-      const geo = tryExtrude(pts, slice.h, slice.y0);
-      if (!geo) {
-        failed = true;
-        break;
-      }
-      geos.push({ key: slice.style === 'retail' ? 'retail' : 'tower', geo });
-    }
-    if (failed) {
-      for (const item of geos) item.geo.dispose();
-      const box = shrunkBox(block, 0.96);
-      const geo = new THREE.BoxGeometry(Math.max(4, box.hx * 2), height, Math.max(4, box.hz * 2));
-      geo.translate(box.cx, ISLAND_BOUNDS.sidewalkHeight + height / 2, box.cz);
-      batches.tower.push(geo);
-      colliders.push(colliderFor(block, height));
-      built++;
+    if (!pts) {
+      skipped++;
       continue;
     }
-    for (const item of geos) batches[item.key].push(item.geo);
-    if (batches.tower.length >= 80) flush('tower');
-    if (batches.retail.length >= 80) flush('retail');
-    colliders.push(colliderFor(block, height));
+    colliders.push(...hkSolidColliders(pts, ground + height));
+    outlined++;
+    if (SKIP_MESH.has(block.name)) continue;
+    const key = `${Math.floor(block.cx / CHUNK)}:${Math.floor(block.cz / CHUNK)}`;
+    let chunk = chunks.get(key);
+    if (!chunk) chunks.set(key, (chunk = emptyChunk()));
+    if (!appendFootprint(chunk, pts, ground, ground + height, contour)) {
+      skipped++;
+      continue;
+    }
     built++;
+    if (chunk.n > 180000) {
+      flushChunk(group, material, chunk);
+      chunks.set(key, emptyChunk());
+    }
   }
-  flush('tower');
-  flush('retail');
-  return built;
+  for (const chunk of chunks.values()) flushChunk(group, material, chunk);
+  return { built, outlined, skipped };
 }
 
 function plateSites() {
@@ -347,39 +355,7 @@ function addPlates(group, sites) {
 function buildHkRoamCity(scene) {
   const group = new THREE.Group();
   group.name = 'HongKongRoam';
-  const towers = [];
-  const boxes = [];
-  const wides = [];
-  let outside = 0;
-  for (const block of BLOCKS) {
-    if (block.park > 0.6 || block.median) continue;
-    if (blockInHkCore(block)) continue;
-    if (!inRoamZone(block.cx, block.cz)) {
-      outside++;
-      continue;
-    }
-    const height = hkFootprintHeight(block);
-    if (!(height > 9)) continue;
-    if (SKIP_NAMES.has(block.name)) continue;
-    const spanX = block.maxX - block.minX;
-    const spanZ = block.maxZ - block.minZ;
-    const span = Math.max(spanX, spanZ);
-    const short = Math.min(spanX, spanZ);
-    if (short < 6) continue;
-    if (WIDE_NAMES.has(block.name)) {
-      wides.push(block);
-      continue;
-    }
-    if (height >= 64 && span >= 16 && span <= 150) towers.push(block);
-    else if (height >= 11 && span <= 96) boxes.push(block);
-  }
-  towers.sort((a, b) => b.height - a.height);
-  if (towers.length > TOWER_CAP) {
-    boxes.push(...towers.splice(TOWER_CAP));
-  }
-  boxes.sort((a, b) => b.height - a.height);
-  if (boxes.length > BOX_CAP) boxes.length = BOX_CAP;
-  const fabricMat = createCurtainWallMaterial({
+  const material = createCurtainWallMaterial({
     glassTint: 0x35586e,
     frameTint: 0xd5dee6,
     windowWidth: 2.4,
@@ -391,33 +367,17 @@ function buildHkRoamCity(scene) {
     boxLocal: false,
     quietGlass: true
   });
-  fabricMat.name = 'hkRoamFabric';
-  const towerMat = createCurtainWallMaterial({
-    glassTint: 0x1a4d68,
-    frameTint: 0xe7eef3,
-    windowWidth: 2.35,
-    floorHeight: 3.9,
-    litProbability: 0.68,
-    warmth: 0.4,
-    reflectivity: 0.9,
-    seed: 6.2,
-    boxLocal: false
-  });
-  towerMat.name = 'hkRoamTower';
+  material.name = 'hkFootprint';
+  material.side = THREE.DoubleSide;
   const colliders = [];
-  const fabric = buildFabric(group, boxes, fabricMat, colliders);
-  const towerCount = buildTowers(group, towers.concat(wides), {
-    tower: towerMat,
-    retail: createRetailPodiumMaterial()
-  }, colliders);
+  const footprints = buildCityFootprints(group, material, colliders);
   const plates = addPlates(group, plateSites());
   scene.add(group);
   console.info(
-    `[roam] zones ${ROAM_ZONES.map((zone) => zone.id).join(',')} ` +
-    `towers ${towerCount} fabric ${fabric} plates ${plates}; ` +
-    `lots outside the belts ${outside}`
+    `[roam] footprints ${footprints.built} outlines ${footprints.outlined} ` +
+    `skipped ${footprints.skipped} meshes ${group.children.length} plates ${plates}`
   );
   return { group, colliders };
 }
 
-export { ROAM_ZONES, buildHkRoamCity, inRoamZone };
+export { ROAM_ZONES, buildHkRoamCity, hkSolidColliders, inRoamZone };
