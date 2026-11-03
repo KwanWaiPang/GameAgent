@@ -1,0 +1,22 @@
+Battle Drones
+https://github.com/simonw/battledrones
+
+This directory is the Game Hub single-player edition of Battle Drones.
+Upstream revision: ca4f13b36013e1980289046e731a295d2bf02a3e
+
+The original work is licensed under the Apache License, Version 2.0.
+A copy of that license is LICENSE in this directory. The MIT License at
+the repository root does not apply here and does not relicense these files.
+
+Attribution for the upstream game: Simon Willison and the authors of
+simonw/battledrones. The Game Hub adaptation is by Kwan Wai-Pang, 2026.
+
+Changes in this edition:
+- Removed multiplayer source and entry points: src/versus, src/ffa,
+  src/link, src/net, the relay, and radio-probe.html.
+- Removed online-duel and free-for-all controls from the menu.
+- Added a link on the splash screen back to the Game Hub.
+- Kept the RTS simulation, AI opponents, maps, art, sound, operations,
+  and survival mode.
+
+Renderer: Three.js (MIT), as declared in package.json.

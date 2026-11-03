@@ -42,6 +42,10 @@ Copyright: Kwan Wai-Pang. License: MIT, the text above.
   `games/redcap/`, `games/wizard-chess-3d/`, `games/wizard-chess-sanctum/`,
   `games/3D_xiangqi/`, `games/richera/`, `games/Hulao_Gate/`
 
+`games/go/` in that list is the hub-authored board, rules, and local AI.
+Third-party problems and the KataGo port in that folder keep the terms in
+`THIRD_PARTY_NOTICES.md`.
+
 Third-party libraries named in `THIRD_PARTY_NOTICES.md` (Three.js, chess.js,
 Kenney CC0 assets, and others) keep their own terms even when used inside
 these folders.
@@ -56,9 +60,19 @@ these folders.
 | `games/pocket/` | Paulius, 2026; hub adaptation by Kwan Wai-Pang | MIT, `games/pocket/LICENSE` |
 | `games/sandline/` | authors of sandline-threejs-fps; hub adaptation by Kwan Wai-Pang | MIT, `games/sandline/LICENSE` |
 | `games/chess3d/` | the Chess3D authors | **GPL-3.0**, `games/chess3d/LICENSE.md` |
+| `games/hongkong/` | Mr.doob, 2026; hub adaptation by Kwan Wai-Pang | MIT, `games/hongkong/LICENSE` |
+| `games/BattleDrones/` | Simon Willison and the upstream authors; single-player adaptation by Kwan Wai-Pang | **Apache-2.0**, `games/BattleDrones/LICENSE` |
 
 `games/chess3d/` is GPL-3.0. Redistributing that game, or a work derived from
 it, follows GPL-3.0 for those files. The MIT grant above does not relicense
 them.
 
-Sources and trademarks: `THIRD_PARTY_NOTICES.md`.
+`games/BattleDrones/` is Apache-2.0. Redistributing that game, or a work
+derived from it, follows Apache-2.0 for those files: keep `LICENSE`, state
+that files changed, and keep the attribution in `games/BattleDrones/NOTICE`.
+The MIT grant above does not relicense them.
+
+Inside `games/go/`, weekly problems at levels 4–9 are CC BY-NC-SA 4.0 and
+are not covered by this MIT grant. KataGo and Web KaTrain stay under their
+own MIT notices. Map data inside `games/hongkong/` from OpenStreetMap stays
+under the ODbL. Details: `THIRD_PARTY_NOTICES.md`.

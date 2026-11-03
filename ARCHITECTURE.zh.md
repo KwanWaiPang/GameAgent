@@ -3,7 +3,7 @@
 
 # 项目架构
 
-本文说明「游戏馆」如何组织、部署，以及几款 3D 射击如何并存。
+本文说明「游戏馆」如何组织、部署，以及射击游戏和无人机战争如何并存。
 
 街战引擎合同见 [`games/street-duty/ARCHITECTURE.zh.md`](./games/street-duty/ARCHITECTURE.zh.md)。
 
@@ -39,7 +39,7 @@
 | **大厅**（`index.html`、`css/`、`js/hub-lobby.js`） | 品牌、Three.js 圆形展厅、卡片列表备用 |
 | **游戏壳** | 各游戏自有 `index.html` / CSS / JS；可选「← 游戏馆」返回 |
 | **共用资源**（`assets/`） | 少数跨游戏静态资源 |
-| **CI / Pages**（`.github/workflows/`） | 构建街战、沙线与口袋冒险、打包 `_site`、部署 |
+| **CI / Pages**（`.github/workflows/`） | 构建街战、沙线、口袋冒险、围棋 KataGo 包和无人机战争；打包 `_site`；部署 |
 
 大厅只用 Three.js 搭导航展厅，不加载各游戏运行时。点开展台或列表卡片即整页跳转。没有 WebGL 时退回卡片列表。
 
@@ -49,7 +49,7 @@
 
 ### 3.1 纯静态
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `pocket` · `redcap` · `Hulao_Gate` · `hongkong`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `redcap` · `Hulao_Gate` · `hongkong`
 
 - 打开即玩，无需 `npm`。
 - 可用任意静态服务器托管。
@@ -75,9 +75,11 @@ src/  +  index.source.html   →  vite build  →  dist/
 
 线上必须加载带哈希的 `assets/*.js`，不要把开发入口当成线上入口。
 
+无人机战争（`games/BattleDrones/`）是第四个 Vite 游戏。Node.js 24 写出 `dist/`，Actions 连同 `LICENSE` 和 `NOTICE` 一起发布。`dist/` 不提交进仓库。围棋的 KataGo 包也在 CI 里构建，输出到 `games/go/katago/`，然后才打包站点。引擎源码目录不会进站点。
+
 ---
 
-## 4. 三款射击的边界
+## 4. 射击与即时战略的边界
 
 | | 战术突击 `games/fps/` | 街战突击 `games/street-duty/` |
 |---|---|---|
@@ -91,6 +93,8 @@ src/  +  index.source.html   →  vite build  →  dist/
 二者目录互不引用、互不替换。改一款时不要动另一款。
 
 沙线行动 `games/sandline/` 是第三款射击，单独目录。规则改写自 sandline-threejs-fps（MIT）。沙漠旧城和雪地竞技场留在源码里；人物、枪和音效改为程序化，不携带 Counter-Strike 地图或模型。部署方式和街战一样，需要构建产物。
+
+无人机战争 `games/BattleDrones/` 是单机即时战略，许可证 Apache-2.0，源码引自 simonw/battledrones，单独目录，与三款射击并列。Node.js 24 执行 `npm run build`，产物在 `dist/`。Actions 把 `dist/` 连同 `LICENSE` 和 `NOTICE` 放上 Pages。`dist/` 不提交进仓库。在线对战、声波链路和中继不在这棵目录里。
 
 ---
 
@@ -120,9 +124,13 @@ main.js
 
 ```
 push main
-   → Actions: npm ci && npm run build（街战、沙线行动、口袋冒险）
+   → Actions: npm ci && npm run build
+     （街战、沙线、口袋冒险、围棋 KataGo 包；
+       无人机战争使用 Node.js 24）
    → 把大厅和游戏复制进 _site/
-   → 去掉街战、沙线行动、口袋冒险的 src/、tools/、node_modules/ 等
+   → 去掉街战、沙线、口袋冒险的 src/、tools/、node_modules/ 等
+   → 站点上的 games/BattleDrones 换成 dist/，并附上 LICENSE 与 NOTICE
+   → 从站点去掉 games/go/katago-engine
    → GitHub Pages
 ```
 
@@ -134,7 +142,7 @@ push main
 
 1. **新游戏**：在 `games/<slug>/` 自包含实现，并在根 `index.html` 加展台数据（卡片）。
 2. **改街战**：改 `src/` → `npm run build` → 提交同步后的 `index.html` 和 `assets/`。
-3. **不要**把 `games/fps/`、`games/street-duty/` 与 `games/sandline/` 混改或互相覆盖。
+3. **不要**把 `games/fps/`、`games/street-duty/`、`games/sandline/` 与 `games/BattleDrones/` 混改或互相覆盖。
 4. 第三方来源与许可变更时，同步 [中文说明](./THIRD_PARTY_NOTICES.zh.md) 与 [英文说明](./THIRD_PARTY_NOTICES.md)。
 5. 馆级说明放根目录，中英各一份；街战引擎合同放在 `games/street-duty/`。
 
@@ -147,6 +155,7 @@ push main
 - 街战引擎合同：[games/street-duty/ARCHITECTURE.zh.md](./games/street-duty/ARCHITECTURE.zh.md)
 - 战术突击：[games/fps/README.zh.md](./games/fps/README.zh.md)
 - 沙线行动：[games/sandline/README.zh.md](./games/sandline/README.zh.md)
+- 无人机战争：[games/BattleDrones/README.zh.md](./games/BattleDrones/README.zh.md)
 - 口袋冒险：[games/pocket/README.zh.md](./games/pocket/README.zh.md)
 - 红帽奇遇：[games/redcap/README.zh.md](./games/redcap/README.zh.md)
 - 虎牢关：[games/Hulao_Gate/README.zh.md](./games/Hulao_Gate/README.zh.md)

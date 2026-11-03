@@ -3,7 +3,7 @@
 
 # Game Hub
 
-A web game collection — board games, wizard chess, a Monopoly-style journey, Hulao Gate, a Hong Kong city roam, three 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
+A web game collection — board games, wizard chess, a Monopoly-style journey, Hulao Gate, a Hong Kong city roam, a drone RTS, three 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
 
 **Live:** https://kwanwaipang.github.io/GameAgent/
 
@@ -28,6 +28,7 @@ Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md).
 | [`games/fps/`](./games/fps/) | Tactical Assault | 3D FPS, red vs blue |
 | [`games/street-duty/`](./games/street-duty/) | Street Duty | Full procedural FPS |
 | [`games/sandline/`](./games/sandline/) | Sandline | Tactical round-based FPS |
+| [`games/BattleDrones/`](./games/BattleDrones/) | Battle Drones | 3D RTS, single-player |
 | [`games/pocket/`](./games/pocket/) | Pocket Adventure | First-person cartoon fan game |
 | [`games/Hulao_Gate/`](./games/Hulao_Gate/) | Hulao Gate | Third-person action |
 | [`games/hongkong/`](./games/hongkong/) | Hong Kong Roam | City exploration |
@@ -39,6 +40,7 @@ Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Tactical Assault** (`fps`): about five per side, assault or mini battle royale, weapon pickups.
 - **Street Duty** (`street-duty`): local port of Claude-of-Duty; the player, two allies, and hostile waves. The three shooters do not replace each other.
 - **Sandline** (`sandline`): a single-player tactical shooter adapted from sandline-threejs-fps. Desert and snow arenas, eight modes. Soldiers and guns are procedural. No Counter-Strike maps or models.
+- **Battle Drones** (`BattleDrones`): a single-player RTS vendored from simonw/battledrones. Skirmish, survival, and operations stay. Online duels, the audio link, and the relay are removed. It keeps its own folder beside the three shooters.
 - **Pocket Adventure** (`pocket`): first-person cartoon opening in Pallet Town; choose a starter and meet wild creatures in the grass.
 - **Gold City Chronicle** (`richera`): a 3D street market. One die, land, buildings, tools, and visiting gods. Original names; a nod to classic richman boards, not a commercial copy.
 - **Hulao Gate** (`Hulao_Gate`): a third-person battlefield. Guan Yu against the western army and Lu Bu. Procedural lamellar armor, the pass, and dusk light. Not a commercial musou copy.
@@ -66,6 +68,7 @@ Conventions:
 1. The hub is a Three.js ring gallery plus a card list. Each game owns `games/<name>/index.html`.
 2. Most games are static pages and need no build.
 3. **Street Duty, Sandline, and Pocket Adventure** commit their Vite output as `index.html` + `assets/`. Pages deploys from the repository root.
+4. **Battle Drones** is Vite too, on Node.js 24. `npm run build` writes `dist/`. Actions publishes that directory plus `LICENSE` and `NOTICE`. The repository does not commit `dist/`.
 
 ---
 
@@ -94,7 +97,16 @@ cd games/sandline && npm run build
 cd games/pocket && npm run build
 ```
 
-Details: [Street Duty](./games/street-duty/README.md) · [Sandline](./games/sandline/README.md) · [Pocket Adventure](./games/pocket/README.md)
+### Battle Drones
+
+Node.js 24. The dev server is Vite's default port 5173.
+
+```bash
+cd games/BattleDrones && npm ci && npm run dev
+cd games/BattleDrones && npm run build          # writes dist/
+```
+
+Details: [Street Duty](./games/street-duty/README.md) · [Sandline](./games/sandline/README.md) · [Pocket Adventure](./games/pocket/README.md) · [Battle Drones](./games/BattleDrones/README.md)
 
 ---
 
@@ -102,13 +114,14 @@ Details: [Street Duty](./games/street-duty/README.md) · [Sandline](./games/sand
 
 [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) on push to `main`:
 
-1. `npm ci && npm run build` for `games/street-duty`, `games/sandline`, and `games/pocket`
-2. Pack the static site (drop each game's `src/` / `tools/` and similar dev files)
-3. Publish to GitHub Pages
+1. `npm ci && npm run build` for `games/street-duty`, `games/sandline`, and `games/pocket`, plus the Go KataGo bundle
+2. On Node.js 24, `npm ci && npm run build` for `games/BattleDrones`, then publish `dist/` with `LICENSE` and `NOTICE`
+3. Pack the static site (drop each built game's `src/` / `tools/` and similar dev files)
+4. Publish to GitHub Pages
 
 Prefer Settings → Pages → Source: **GitHub Actions**.
 
-If Pages still serves the `main` root directly, the Vite build output must be committed or the live site will miss `assets/`.
+If Pages still serves the `main` root directly, the Vite build output for Street Duty, Sandline, and Pocket Adventure must be committed or the live site will miss `assets/`. Battle Drones reaches players through the Actions artifact: its playable files are `dist/`, and that directory is not stored on `main`.
 
 ---
 
@@ -116,11 +129,12 @@ If Pages still serves the `main` root directly, the Vite build output must be co
 
 | Doc | Contents |
 |---|---|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Hub layout, deploy flow, the three shooters |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Hub layout, deploy flow, shooters, and the drone RTS |
 | [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) | Sources and licenses |
 | [games/street-duty/ARCHITECTURE.md](./games/street-duty/ARCHITECTURE.md) | Street Duty engine contract |
 | [games/fps/README.md](./games/fps/README.md) | Tactical Assault |
 | [games/sandline/README.md](./games/sandline/README.md) | Sandline |
+| [games/BattleDrones/README.md](./games/BattleDrones/README.md) | Battle Drones |
 | [games/pocket/README.md](./games/pocket/README.md) | Pocket Adventure |
 | [games/richera/README.md](./games/richera/README.md) | Gold City Chronicle |
 | [games/redcap/README.md](./games/redcap/README.md) | Red Cap Quest |
@@ -150,6 +164,7 @@ Games written by other people stay under their copyright. The root MIT text does
 | Pocket Adventure | Paulius; hub adaptation by Kwan Wai-Pang | MIT |
 | Sandline | authors of sandline-threejs-fps; hub adaptation by Kwan Wai-Pang | MIT |
 | Chess 3D | the Chess3D authors | GPL-3.0 |
-| Hong Kong Roam | Mr.doob; adapted here as Hong Kong | MIT |
+| Hong Kong Roam | Mr.doob; hub adaptation by Kwan Wai-Pang | MIT |
+| Battle Drones | Simon Willison and the upstream authors; single-player adaptation by Kwan Wai-Pang | Apache-2.0 |
 
-Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. Inside Go, weekly problems at levels 4–9 are CC BY-NC-SA 4.0. Hong Kong Roam's map data from OpenStreetMap stays ODbL. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

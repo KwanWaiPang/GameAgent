@@ -1,0 +1,66 @@
+name: Vendor Battle Drones single-player source
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/vendor-battledrones.yml"
+      - ".github/scripts/prepare-battledrones.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vendor-battledrones-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vendor:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GameAgent branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout pinned upstream Battle Drones
+        uses: actions/checkout@v4
+        with:
+          repository: simonw/battledrones
+          ref: ca4f13b36013e1980289046e731a295d2bf02a3e
+          path: .battledrones-upstream
+          persist-credentials: false
+
+      - name: Prepare single-player source and vendor it into games/
+        run: |
+          node .github/scripts/prepare-battledrones.mjs .battledrones-upstream
+          mkdir -p games/BattleDrones
+          cp -a .battledrones-upstream/src games/BattleDrones/
+          cp -a .battledrones-upstream/public games/BattleDrones/
+          cp -a .battledrones-upstream/battles games/BattleDrones/
+          cp -a .battledrones-upstream/tools/arena games/BattleDrones/tools/
+          cp .battledrones-upstream/LICENSE games/BattleDrones/
+          cp .battledrones-upstream/index.html games/BattleDrones/
+          cp .battledrones-upstream/models.html games/BattleDrones/
+          cp .battledrones-upstream/vehicles.html games/BattleDrones/
+          cp .battledrones-upstream/record-viewer.html games/BattleDrones/
+          cp .battledrones-upstream/package.json games/BattleDrones/
+          cp .battledrones-upstream/package-lock.json games/BattleDrones/
+          cp .battledrones-upstream/tsconfig.json games/BattleDrones/
+          cp .battledrones-upstream/vite.config.ts games/BattleDrones/
+          # README.md, README.zh.md, and NOTICE are maintained in git.
+          test -f games/BattleDrones/README.md
+          test -f games/BattleDrones/README.zh.md
+          test -f games/BattleDrones/NOTICE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/BattleDrones
+          if git diff --cached --quiet; then
+            echo "Battle Drones source is already vendored."
+          else
+            git commit -m "Vendor Battle Drones single-player source and assets"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi

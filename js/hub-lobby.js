@@ -17,6 +17,7 @@ const KIND = {
   xiangqi3d: { felt: 0x6e3428, glow: 0xe7c27a, plaque: "#2a1814", ink: "#f6e6d0" },
   mono: { felt: 0x2f8f62, glow: 0x8ee0b0, plaque: "#163028", ink: "#e7fff2" },
   richera: { felt: 0x6e2430, glow: 0xe2b56a, plaque: "#2a1614", ink: "#f8e7cf" },
+  battledrones: { felt: 0x18374f, glow: 0x53c7e8, plaque: "#0b1d2c", ink: "#e7faff" },
   fps: { felt: 0x3e4650, glow: 0x9eb0c4, plaque: "#1a1e24", ink: "#e6eef6" },
   street: { felt: 0x8a6844, glow: 0xf0c48a, plaque: "#2a2118", ink: "#f8e6cc" },
   sandline: { felt: 0xc4a574, glow: 0xf0e2c0, plaque: "#2a2116", ink: "#f8edd8" },
@@ -597,6 +598,20 @@ function buildDiorama(kind, dio, ped) {
     const tower = put(box, 0xf4efe4, 0.16, 0.28, -0.14, 0.1, 0.42, 0.1);
     put(box, 0xe2b56a, 0, 0.12, 0, 0.08, 0.08, 0.08);
     ped.userData.tick = (t) => { tower.position.y = 0.28 + Math.sin(t * 2) * 0.01; };
+  } else if (kind === "battledrones") {
+    put(box, 0x324a58, 0, 0.035, 0, 0.6, 0.055, 0.48);
+    const rotor = new THREE.Group();
+    rotor.position.set(0, 0.23, 0);
+    dio.add(rotor);
+    put(box, 0x2776a2, 0, 0.14, 0, 0.23, 0.07, 0.14, { metalness: 0.6 });
+    for (const [x, z] of [[-0.19,-0.16],[0.19,-0.16],[-0.19,0.16],[0.19,0.16]]) {
+      put(box, 0x9bb5c5, x, 0.16, z, 0.16, 0.018, 0.02);
+      const prop = new THREE.Mesh(new THREE.BoxGeometry(0.14,0.008,0.025),
+        new THREE.MeshStandardMaterial({color:0xd1e9ef,metalness:0.65,roughness:0.25}));
+      prop.position.set(x,0,z);
+      rotor.add(prop);
+    }
+    ped.userData.tick = (t) => { rotor.children.forEach((p) => { p.rotation.y = t * 12; }); };
   } else if (kind === "fps") {
     put(box, 0x6a7068, 0, 0.08, 0, 0.5, 0.08, 0.16);
     put(box, 0x8b2a2a, -0.12, 0.22, 0.04, 0.1, 0.26, 0.08);
