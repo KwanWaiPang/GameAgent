@@ -164,7 +164,7 @@ Games written by other people stay under their copyright. The root MIT text does
 | Pocket Adventure | Paulius; hub adaptation by Kwan Wai-Pang | MIT |
 | Sandline | authors of sandline-threejs-fps; hub adaptation by Kwan Wai-Pang | MIT |
 | Chess 3D | the Chess3D authors | GPL-3.0 |
-| Hong Kong Roam | Mr.doob; hub adaptation by Kwan Wai-Pang | MIT |
+| Hong Kong Roam | Mr.doob and the slop-hongkong authors; hub adaptation by Kwan Wai-Pang | MIT for the code; map data is ODbL |
 | Battle Drones | Simon Willison and the upstream authors; single-player adaptation by Kwan Wai-Pang | Apache-2.0 |
 
-Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. Inside Go, weekly problems at levels 4–9 are CC BY-NC-SA 4.0. Hong Kong Roam's map data from OpenStreetMap stays ODbL. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. Inside Go, weekly problems at levels 4–9 are CC BY-NC-SA 4.0, so that part of `games/go/` is not in the MIT grant. `games/Dragon_Ball/` is a private fan page, not a hub card, and is not released under this MIT text. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

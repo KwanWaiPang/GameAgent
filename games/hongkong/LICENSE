@@ -1,6 +1,12 @@
 MIT License
 
 Copyright (c) 2026 Mr.doob
+Copyright (c) the authors of keithligh/slop-hongkong
+Copyright (C) 2026 Kwan Wai-Pang, for the Game Hub adaptation
+
+Street code is adapted from https://github.com/mrdoob/slop-newyork
+and https://github.com/keithligh/slop-hongkong, both MIT.
+Map data from OpenStreetMap stays under the ODbL and is not MIT.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

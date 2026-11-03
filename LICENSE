@@ -72,6 +72,10 @@ derived from it, follows Apache-2.0 for those files: keep `LICENSE`, state
 that files changed, and keep the attribution in `games/BattleDrones/NOTICE`.
 The MIT grant above does not relicense them.
 
+`games/Dragon_Ball/` is a private fan page. It is not a hub card and is not
+covered by the MIT grant above. Copyright in that folder stays with Kwan
+Wai-Pang and is not offered as open source by this file.
+
 Inside `games/go/`, weekly problems at levels 4–9 are CC BY-NC-SA 4.0 and
 are not covered by this MIT grant. KataGo and Web KaTrain stay under their
 own MIT notices. Map data inside `games/hongkong/` from OpenStreetMap stays

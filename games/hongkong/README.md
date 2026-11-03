@@ -3,7 +3,7 @@
 
 # Hong Kong Roam
 
-Adapted from [Mr.doob's Slop New York](https://github.com/mrdoob/slop-newyork). The code license is this folder's [LICENSE](./LICENSE) (MIT, copyright Mr.doob). Geographic data remains NYC Open Data and OpenStreetMap (ODbL).
+Adapted from [Mr.doob's Slop New York](https://github.com/mrdoob/slop-newyork), with the Hong Kong street city from [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong). The code license is this folder's [LICENSE](./LICENSE): MIT for Mr.doob, the slop-hongkong authors, and Kwan Wai-Pang's hub adaptation. OpenStreetMap data stays under the ODbL and is not MIT.
 
 The hub lists it under City.
 

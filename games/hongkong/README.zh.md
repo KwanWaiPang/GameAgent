@@ -3,7 +3,7 @@
 
 # 香港漫游
 
-改编自 [Mr.doob 的 Slop New York](https://github.com/mrdoob/slop-newyork)。代码许可见本目录 [LICENSE](./LICENSE)（MIT，版权 Mr.doob）。地理数据仍来自纽约市开放数据与 OpenStreetMap（ODbL）。
+改编自 [Mr.doob 的 Slop New York](https://github.com/mrdoob/slop-newyork)，香港街道数据来自 [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong)。代码许可见本目录 [LICENSE](./LICENSE)（MIT：Mr.doob、slop-hongkong 的作者，以及 Kwan Wai-Pang 的馆内改编）。地图数据仍是 OpenStreetMap（ODbL），不是 MIT。
 
 已挂在游戏馆「城市」分类。
 

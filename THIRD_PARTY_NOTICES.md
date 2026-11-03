@@ -142,6 +142,12 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 - Renderer: [Three.js](https://github.com/mrdoob/three.js) r160 (MIT), loaded at runtime from jsDelivr
 - Note: an original third-person action game suggested by the Hulao Gate episode. It does not copy Dynasty Warriors trademarks, art, models, music, or assets.
 
+## Dragon Ball fan page (`games/Dragon_Ball/`)
+
+- Not a hub card. The page is marked `noindex` and titled as a private fan edition.
+- Not covered by the root MIT grant. Copyright stays with Kwan Wai-Pang and this file does not offer that folder as open source.
+- It is a fan work and is not a licensed Dragon Ball product.
+
 ---
 
 This repository is an aggregate. The hub and original static pages are MIT. A game folder with its own license keeps that license. `games/chess3d/` is **GPL-3.0** and `games/BattleDrones/` is **Apache-2.0**. The root MIT text does not relicense either folder. Weekly Go problems at levels 4–9 are CC BY-NC-SA 4.0. OpenStreetMap data in Hong Kong Roam stays ODbL.

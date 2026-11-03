@@ -165,7 +165,7 @@ cd games/BattleDrones && npm run build          # 写出 dist/
 | 口袋冒险 | Paulius；馆内改编为 Kwan Wai-Pang | MIT |
 | 沙线行动 | sandline-threejs-fps 的作者；馆内改编为 Kwan Wai-Pang | MIT |
 | 国际象棋 · 3D | Chess3D 的作者 | GPL-3.0 |
-| 香港漫游 | Mr.doob；馆内改编为香港 | MIT |
+| 香港漫游 | Mr.doob 与 slop-hongkong 的作者；馆内改编为 Kwan Wai-Pang | 代码为 MIT；地图数据为 ODbL |
 | 无人机战争 | Simon Willison 与上游作者；单机改编为 Kwan Wai-Pang | Apache-2.0 |
 
-Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。围棋每周一题（四到九级）是 CC BY-NC-SA 4.0。香港漫游里的 OpenStreetMap 地图数据仍是 ODbL。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
+Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。围棋每周一题（四到九级）是 CC BY-NC-SA 4.0，所以 `games/go/` 的这一部分不在 MIT 许可里。`games/Dragon_Ball/` 是私人同人页，没有挂上大厅，也不按这份 MIT 文本开放。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。

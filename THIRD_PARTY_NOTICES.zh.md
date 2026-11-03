@@ -142,6 +142,12 @@
 - 渲染库：[Three.js](https://github.com/mrdoob/three.js) r160（MIT），运行时经 jsDelivr 加载
 - 说明：原创第三人称动作游戏，取材虎牢关传说。不是商业无双游戏的复制品，未使用其商标、美术、模型、音乐或素材。
 
+## 龙珠同人页（`games/Dragon_Ball/`）
+
+- 没有挂上大厅。页面标了 `noindex`，标题写明是私人同人版。
+- 不适用根目录 MIT。版权仍归 Kwan Wai-Pang，本文件不把这个目录当作开源代码提供。
+- 这是同人作品，不是获授权的龙珠产品。
+
 ---
 
 本仓库为聚合：大厅与原创静态页为 MIT；各子目录若自带许可则从其许可。`games/chess3d/` 为 **GPL-3.0**，`games/BattleDrones/` 为 **Apache-2.0**。根目录 MIT 文本不能改掉这两个目录的许可证。围棋每周一题（四到九级）为 CC BY-NC-SA 4.0。香港漫游中的 OpenStreetMap 数据仍为 ODbL。
