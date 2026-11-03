@@ -1,13 +1,12 @@
 import {
   ALL_AVENUES,
   ALL_STREETS,
-  AVENUES,
-  STREETS,
   ISLAND_BOUNDS,
   isOnHongKongLand,
   BLOCKS
 } from './city-config.js';
 import { GEO } from './geo-source.js';
+import { polygonBoxOverlaps } from './building-collision.js';
 
 // js/road-network.js
 // Drivable road graph derived from the ground layout that city-grid.js actually builds: avenue corridors
@@ -24,7 +23,7 @@ const Z_MAX = Math.ceil(ISLAND_BOUNDS.maxZ) + 20;
 const LANE_CLEAR = 1.2; // half width each lane keeps free of obstacles
 const CROSSWALK = 2.5; // depth between an intersection box and its stop lines
 
-function buildRoadNetwork(sidewalks, obstacles) {
+function buildRoadNetwork(sidewalks, obstacles, signalIntersections = []) {
   // 1. Spatial hash of ground footprints: curbs bound the roads, everything else also blocks pedestrians
   const hash = new Map();
   const cellKey = (ix, iz) => (ix + 512) * 1024 + iz + 512;
@@ -48,7 +47,8 @@ function buildRoadNetwork(sidewalks, obstacles) {
         const list = hash.get(cellKey(ix, iz));
         if (!list) continue;
         for (const r of list) {
-          if (r.minX < maxX && r.maxX > minX && r.minZ < maxZ && r.maxZ > minZ && fn(r)) return true;
+          if (r.minX < maxX && r.maxX > minX && r.minZ < maxZ && r.maxZ > minZ && fn(r)
+            && (!r.polygon || polygonBoxOverlaps(r.polygon, (minX + maxX) / 2, (minZ + maxZ) / 2, (maxX - minX) / 2, (maxZ - minZ) / 2))) return true;
         }
       }
     }
@@ -61,7 +61,7 @@ function buildRoadNetwork(sidewalks, obstacles) {
     return isOnHongKongLand((minX + maxX) * 0.5, (minZ + maxZ) * 0.5);
   }
 
-  const blocked = (minX, maxX, minZ, maxZ) => !onLand(minX, maxX, minZ, maxZ) || query(minX, maxX, minZ, maxZ, () => true);
+  const blocked = (minX, maxX, minZ, maxZ) => !onLand(minX, maxX, minZ, maxZ) || query(minX, maxX, minZ, maxZ, (r) => !r.pedestrianOnly);
   const walkable = (minX, maxX, minZ, maxZ) => onLand(minX, maxX, minZ, maxZ) && !query(minX, maxX, minZ, maxZ, (r) => !r.curb);
   const onSidewalk = (x, z) => query(x, x, z, z, (r) => r.curb);
   // The same test for the centreline streets (4b), which follow the real streets: the rectangles standing in for
@@ -101,7 +101,7 @@ function buildRoadNetwork(sidewalks, obstacles) {
   const blockedOnStreet = (x, z, clear) => !onLand(x - clear, x + clear, z - clear, z + clear) ||
     query(x - 0.3, x + 0.3, z - 0.3, z + 0.3, (r) => r.curb) ||
     nearMedian(x, z, clear) ||
-    query(x - clear, x + clear, z - clear, z + clear, (r) => !r.curb && (r.maxX - r.minX < 50 || r.maxZ - r.minZ < 50) && !medianBox(r));
+    query(x - clear, x + clear, z - clear, z + clear, (r) => !r.curb && !r.pedestrianOnly && (r.maxX - r.minX < 50 || r.maxZ - r.minZ < 50) && !medianBox(r));
 
   // 2. Avenue corridors: the most common curb-to-curb gap around each avenue's nominal x along its own stretches
   //    (CSCL: an avenue only exists between its ends, e.g. Irving Pl 14th-20th St, so it never claims a neighbour's
@@ -1072,11 +1072,9 @@ function buildRoadNetwork(sidewalks, obstacles) {
   nodes.forEach((n, i) => (n.id = i));
 
   // 8. Signalized intersections are exactly the ones with signal heads (street-details.js)
-  for (const a of AVENUES) {
-    for (const s of STREETS) {
-      const n = nodes.find((m) => Math.abs(m.x - a.x) < 4 && Math.abs(m.z - s.z) < 4);
-      if (n) n.signal = true;
-    }
+  for (const s of signalIntersections) {
+    const n = nodes.find((m) => Math.abs(m.x - s.x) < 6 && Math.abs(m.z - s.z) < 6);
+    if (n) n.signal = true;
   }
 
   // 9. Sides & right of way at each node, for traffic.js. Its arms are its sides (one crosswalk and approach each): a

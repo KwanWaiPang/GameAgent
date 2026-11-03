@@ -312,10 +312,10 @@ async function initApp() {
 
   // Keyboard guide for each mode: [keys, action]
   const controlHints = {
-    person: [[['W', 'S'], '步行／跑步'], [['A', 'D'], '轉向'], [['Space'], '跳躍'], [['Drag'], '環視']],
-    car: [[['W', 'S'], '前進／倒車'], [['A', 'D'], '轉向'], [['B'], '響號'], [['Drag'], '環視']],
-    cyclist: [[['W', 'S'], '踩踏／煞車'], [['A', 'D'], '傾斜轉向'], [['Drag'], '環視']],
-    helicopter: [[['W', 'S'], '俯仰'], [['A', 'D'], '偏航'], [['Space', 'E'], '上升'], [['Q', 'C'], '下降']]
+    person: [[['W', 'S'], 'Walk / Run'], [['A', 'D'], 'Turn'], [['Space'], 'Jump'], [['Drag'], 'Orbit']],
+    car: [[['W', 'S'], 'Drive / Reverse'], [['A', 'D'], 'Steer'], [['B'], 'Horn'], [['Drag'], 'Orbit']],
+    cyclist: [[['W', 'S'], 'Pedal / Brake'], [['A', 'D'], 'Lean & Turn'], [['Drag'], 'Orbit']],
+    helicopter: [[['W', 'S'], 'Pitch'], [['A', 'D'], 'Yaw'], [['Space', 'E'], 'Ascend'], [['Q', 'C'], 'Descend']]
   };
   // Top speeds in mph (controllers.js caps them at 8.2, 36, 19 & 52 m/s): full scale of the speed meter
   const topSpeedMph = { person: 18, car: 81, cyclist: 43, helicopter: 116 };
@@ -657,15 +657,19 @@ async function initApp() {
     const culled = [];
     const jobs = [];
     const jobByMaterial = new Map();
+    const pipelines = new Set();
     scene.traverseVisible((o) => {
       if (o.frustumCulled) {
         culled.push(o);
         o.frustumCulled = false;
       }
       if (!o.isMesh && !o.isLine && !o.isPoints && !o.isSprite) return;
-      // chunks of one mesh share its pipeline (the first one compiles it) and the shadow stand-ins only ever draw in
-      // the shadow maps (the warm-up frame compiles those)
-      if (o.userData.sharesPipelineWith || o.userData.shadowProxy) return;
+      // Use the first visible chunk: the original representative may be in an inactive tree cell. Shadow stand-ins
+      // only draw in the shadow maps (the warm-up frame compiles those).
+      if (o.userData.shadowProxy) return;
+      const pipeline = o.userData.sharesPipelineWith || o;
+      if (pipelines.has(pipeline)) return;
+      pipelines.add(pipeline);
       if (o.isInstancedMesh || Array.isArray(o.material)) {
         jobs.push([o]);
         return;
@@ -766,8 +770,12 @@ async function initApp() {
       // map passes): with frustum culling off, every visible material's pipelines compile now instead of stalling the
       // first time the camera turns towards it (one chunk / shadow stand-in per shared pipeline is enough)
       const culled = [];
-      scene.traverse((o) => {
-        if (o.frustumCulled && !o.userData.sharesPipelineWith) {
+      const pipelines = new Set();
+      scene.traverseVisible((o) => {
+        const pipeline = o.userData.sharesPipelineWith || o;
+        if (pipelines.has(pipeline)) return;
+        pipelines.add(pipeline);
+        if (o.frustumCulled) {
           culled.push(o);
           o.frustumCulled = false;
         }

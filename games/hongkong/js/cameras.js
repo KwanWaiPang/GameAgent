@@ -5,9 +5,9 @@ import * as THREE from 'three/webgpu';
 // Low-Angle Action Cam, POV/Cockpit Cam, scenic Hong Kong cameras, and Auto-Director Drone.
 
 const CAMERA_PRESETS = [
-  { id: 'chase',       name: '第三人稱',   short: '跟隨',   category: 'follow', fov: 56 },
-  { id: 'action',      name: '低角度',     short: '低角度', category: 'follow', fov: 60 },
-  { id: 'pov',         name: '第一人稱',   short: '第一人稱', category: 'follow', fov: 68 },
+  { id: 'chase',       name: '3rd-Person Chase',         category: 'follow', fov: 56 },
+  { id: 'action',      name: 'Low-Angle Action',         category: 'follow', fov: 60 },
+  { id: 'pov',         name: 'First-Person / Cockpit',   category: 'follow', fov: 68 },
   { id: 'harbourfront',  name: '中環海濱',   short: '海濱',   category: 'scenic', fov: 52 },
   { id: 'statueSquare',  name: '皇后像廣場', short: '中環',   category: 'scenic', fov: 48 },
   { id: 'admiralty',     name: '金鐘',       short: '金鐘',   category: 'scenic', fov: 58 },
@@ -15,7 +15,7 @@ const CAMERA_PRESETS = [
   { id: 'observatory',   name: '高空俯瞰',   short: '高空',   category: 'scenic', fov: 52 },
   { id: 'exchangeSquare', name: '交易廣場',  short: '交易廣場', category: 'scenic', fov: 52 },
   { id: 'waterfront',  name: '維多利亞港', short: '維港',   category: 'scenic', fov: 46 },
-  { id: 'drone',       name: '航拍',       short: '航拍',   category: 'scenic', fov: 50 }
+  { id: 'drone',       name: 'Auto-Director Aerial',     category: 'scenic', fov: 50 }
 ];
 
 class CameraSystem {
@@ -311,15 +311,16 @@ class CameraSystem {
       }
 
       case 'drone': {
+        // Same orbit as the source aerial camera, centred on Central instead of Midtown.
         const angle = elapsed * 0.07 + 0.65;
         const radius = 720.0 + Math.sin(elapsed * 0.23) * 140.0;
-        const alt = 280.0 + Math.cos(elapsed * 0.19) * 70.0;
+        const alt = 330.0 + Math.cos(elapsed * 0.19) * 90.0;
         desiredPos.set(
           Math.cos(angle) * radius,
           alt,
           Math.sin(angle) * radius
         );
-        desiredLook.set(0.0, 30.0, -200.0);
+        desiredLook.set(0.0, 160.0, -200.0);
         break;
       }
     }
