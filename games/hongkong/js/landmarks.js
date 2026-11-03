@@ -381,6 +381,244 @@ function addPeakTram(group, site, colliders, green, ground) {
   });
 }
 
+function addHkuBoxes(parent, geometry, material, poses, name) {
+  if (!poses.length) return;
+  const mesh = new THREE.InstancedMesh(geometry, material, poses.length);
+  mesh.name = name;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < poses.length; i++) {
+    const pose = poses[i];
+    dummy.position.set(pose.x, pose.y, pose.z);
+    dummy.rotation.set(0, pose.ry || 0, 0);
+    dummy.scale.set(pose.sx || 1, pose.sy || 1, pose.sz || 1);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  parent.add(mesh);
+}
+
+function hkuClockMaterial() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 256);
+  ctx.fillStyle = '#f3ecda';
+  ctx.beginPath();
+  ctx.arc(128, 128, 118, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#1b1712';
+  ctx.lineWidth = 8;
+  ctx.stroke();
+  ctx.fillStyle = '#1b1712';
+  ctx.font = '700 26px "Times New Roman", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const romans = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+  for (let i = 0; i < 12; i++) {
+    const angle = -Math.PI / 2 + i * Math.PI / 6;
+    ctx.fillText(romans[i], 128 + Math.cos(angle) * 86, 128 + Math.sin(angle) * 86);
+  }
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(128, 136);
+  ctx.lineTo(128, 62);
+  ctx.moveTo(128, 128);
+  ctx.lineTo(176, 128);
+  ctx.stroke();
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshBasicNodeMaterial({ map, transparent: true });
+}
+
+// 1912 Main Building: red brick, white stone arcade, central clock tower and dome,
+// with the lower Pok Fu Lam red wall in front. Local +Z faces the street.
+function addHkuRedWalls(parent, colliders, ground) {
+  const road = { x: -2124.5, z: -454.5 };
+  const inward = { x: -0.80, z: 0.61 };
+  const faceYaw = Math.atan2(-inward.x, -inward.z);
+  const site = new THREE.Group();
+  site.name = 'HkuRedWalls';
+  site.position.set(road.x + inward.x * 18, 0, road.z + inward.z * 18);
+  site.rotation.y = faceYaw;
+
+  const brick = hkMat(0x9a3428, { metalness: 0.02, roughness: 0.9 });
+  const brickDeep = hkMat(0x7a241c, { metalness: 0.02, roughness: 0.92 });
+  const stone = hkMat(0xf0e6d2, { metalness: 0.03, roughness: 0.58 });
+  const domeGrey = hkMat(0xb9bbb4, { metalness: 0.12, roughness: 0.48 });
+  const opening = hkMat(0x14181c, { metalness: 0.05, roughness: 0.7 });
+  const lawn = hkMat(0x4a7340, { metalness: 0, roughness: 0.96 });
+  const clockMat = hkuClockMaterial();
+
+  const y0 = ground;
+  const wingZ = -30;
+  const wingD = 15;
+  const frontZ = wingZ + wingD / 2;
+
+  const grass = new THREE.Mesh(new THREE.BoxGeometry(96, 0.06, 22), lawn);
+  grass.name = 'HkuLawn';
+  grass.position.set(0, y0 + 0.03, -10);
+  grass.receiveShadow = true;
+  site.add(grass);
+
+  const wallH = 3.35;
+  const wallPoses = [];
+  const pierPoses = [];
+  const panelPoses = [];
+  for (const side of [-1, 1]) {
+    wallPoses.push({ x: side * 24.6, y: y0 + wallH / 2, z: 1.2, sx: 42, sy: wallH, sz: 0.55 });
+  }
+  for (let x = -44; x <= 44; x += 4.15) {
+    if (Math.abs(x) < 3.6) continue;
+    pierPoses.push({ x, y: y0 + wallH / 2 + 0.15, z: 1.2, sx: 0.48, sy: wallH + 0.35, sz: 0.82 });
+    if (Math.abs(x) > 42) continue;
+    panelPoses.push({ x: x + 2.05, y: y0 + wallH / 2, z: 1.46, sx: 3.15, sy: wallH - 0.7, sz: 0.08 });
+  }
+  pierPoses.push(
+    { x: -2.7, y: y0 + 2.35, z: 1.2, sx: 1.05, sy: 4.7, sz: 1.05 },
+    { x: 2.7, y: y0 + 2.35, z: 1.2, sx: 1.05, sy: 4.7, sz: 1.05 }
+  );
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), brick, wallPoses, 'HkuRedWall');
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), brickDeep, pierPoses, 'HkuRedWallPiers');
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), brickDeep, panelPoses, 'HkuWallPanels');
+  const coping = [];
+  for (const side of [-1, 1]) coping.push({ x: side * 24.6, y: y0 + wallH + 0.12, z: 1.2, sx: 42, sy: 0.22, sz: 0.78 });
+  for (const pose of pierPoses) {
+    coping.push({ x: pose.x, y: pose.y + pose.sy / 2 + 0.08, z: pose.z, sx: pose.sx + 0.16, sy: 0.16, sz: pose.sz + 0.12 });
+  }
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), stone, coping, 'HkuWallCoping');
+
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(68, 11.2, wingD), brick);
+  wing.name = 'HkuMainBuilding';
+  wing.position.set(0, y0 + 5.6, wingZ);
+  wing.castShadow = true;
+  wing.receiveShadow = true;
+  site.add(wing);
+  const courses = [
+    { y: y0 + 4.55, sy: 0.28, sx: 68.4, sz: wingD + 0.35 },
+    { y: y0 + 11.15, sy: 0.42, sx: 68.8, sz: wingD + 0.5 }
+  ];
+  for (const course of courses) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(course.sx, course.sy, course.sz), stone);
+    band.position.set(0, course.y, wingZ);
+    band.castShadow = true;
+    site.add(band);
+  }
+
+  const arcade = [];
+  const archRings = [];
+  const upperWindows = [];
+  const balusters = [];
+  for (let x = -30.5; x <= 30.5; x += 4.05) {
+    if (Math.abs(x) < 5.2) continue;
+    arcade.push({ x, y: y0 + 2.15, z: frontZ + 0.16, sx: 1.7, sy: 3.15, sz: 0.2 });
+    archRings.push({ x, y: y0 + 3.55, z: frontZ + 0.28 });
+    upperWindows.push({ x, y: y0 + 7.7, z: frontZ + 0.12, sx: 1.55, sy: 2.45, sz: 0.16 });
+    upperWindows.push({ x, y: y0 + 7.7, z: frontZ + 0.22, sx: 1.05, sy: 1.9, sz: 0.08 });
+  }
+  for (let x = -33.5; x <= 33.5; x += 0.85) {
+    if (Math.abs(x) < 4.6) continue;
+    balusters.push({ x, y: y0 + 11.7, z: frontZ - 0.15, sx: 0.16, sy: 0.72, sz: 0.16 });
+  }
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), opening, arcade, 'HkuArcade');
+  const archGeo = new THREE.TorusGeometry(1.15, 0.13, 8, 14, Math.PI);
+  const arches = new THREE.InstancedMesh(archGeo, stone, archRings.length);
+  arches.name = 'HkuArchRings';
+  arches.castShadow = true;
+  const dummy = new THREE.Object3D();
+  archRings.forEach((ring, index) => {
+    dummy.position.set(ring.x, ring.y, ring.z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    arches.setMatrixAt(index, dummy.matrix);
+  });
+  site.add(arches);
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), stone, upperWindows.filter((_, i) => i % 2 === 0), 'HkuWindowFrames');
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), opening, upperWindows.filter((_, i) => i % 2 === 1), 'HkuWindowGlass');
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), stone, balusters, 'HkuBalustrade');
+
+  const towerX = 0;
+  const towerZ = frontZ - 3.6;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(8.6, 16.4, 7.4), brick);
+  shaft.name = 'HkuClockTower';
+  shaft.position.set(towerX, y0 + 8.2, towerZ);
+  shaft.castShadow = true;
+  site.add(shaft);
+  const quoins = [];
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      quoins.push({ x: sx * 4.05, y: y0 + 8.2, z: towerZ + sz * 3.45, sx: 0.55, sy: 16.4, sz: 0.55 });
+    }
+  }
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), stone, quoins, 'HkuTowerQuoins');
+  const clockPanel = new THREE.Mesh(new THREE.BoxGeometry(5.4, 5.4, 0.18), stone);
+  clockPanel.position.set(0, y0 + 13.2, towerZ + 3.8);
+  site.add(clockPanel);
+  const face = new THREE.Mesh(new THREE.CircleGeometry(1.85, 28), clockMat);
+  face.name = 'HkuClockFace';
+  face.position.set(0, y0 + 13.2, towerZ + 3.92);
+  site.add(face);
+
+  const belfry = new THREE.Mesh(new THREE.BoxGeometry(7.2, 4.6, 6.2), stone);
+  belfry.position.set(0, y0 + 18.6, towerZ);
+  belfry.castShadow = true;
+  site.add(belfry);
+  const belfryVents = [
+    { x: 0, y: y0 + 18.7, z: towerZ + 3.15, sx: 2.2, sy: 3.1, sz: 0.2 },
+    { x: -3.65, y: y0 + 18.7, z: towerZ, sx: 0.2, sy: 3.1, sz: 2.2 },
+    { x: 3.65, y: y0 + 18.7, z: towerZ, sx: 0.2, sy: 3.1, sz: 2.2 }
+  ];
+  addHkuBoxes(site, new THREE.BoxGeometry(1, 1, 1), opening, belfryVents, 'HkuBelfry');
+  const domeBase = new THREE.Mesh(new THREE.CylinderGeometry(3.15, 3.45, 0.7, 16), stone);
+  domeBase.position.set(0, y0 + 21.2, towerZ);
+  site.add(domeBase);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(3.05, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), domeGrey);
+  dome.position.set(0, y0 + 21.45, towerZ);
+  dome.castShadow = true;
+  site.add(dome);
+  const finial = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.16, 2.4, 6), stone);
+  finial.position.set(0, y0 + 25.4, towerZ);
+  site.add(finial);
+
+  for (const side of [-1, 1]) {
+    const hall = new THREE.Mesh(new THREE.BoxGeometry(16, 9.2, 12), brick);
+    hall.name = side < 0 ? 'HkuWestHall' : 'HkuEastHall';
+    hall.position.set(side * 46, y0 + 4.6, wingZ - 2);
+    hall.castShadow = true;
+    site.add(hall);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(16.4, 0.32, 12.4), stone);
+    band.position.set(side * 46, y0 + 9.3, wingZ - 2);
+    site.add(band);
+    const lid = new THREE.Mesh(new THREE.ConeGeometry(9.2, 3.2, 4), domeGrey);
+    lid.rotation.y = Math.PI / 4;
+    lid.position.set(side * 46, y0 + 10.8, wingZ - 2);
+    lid.castShadow = true;
+    site.add(lid);
+  }
+
+  parent.add(site);
+
+  const sin = Math.sin(faceYaw);
+  const cos = Math.cos(faceYaw);
+  const world = (lx, lz) => ({
+    x: site.position.x + lx * cos + lz * sin,
+    z: site.position.z - lx * sin + lz * cos
+  });
+  const pushHall = (lx, lz, hx, hz, top) => {
+    const center = world(lx, lz);
+    colliders.push(yawAabb(center.x, center.z, hx, hz, faceYaw, top));
+  };
+  pushHall(0, 1.2, 46, 0.8, y0 + 4.8);
+  pushHall(0, wingZ, 35, 8, y0 + 28);
+  pushHall(-46, wingZ - 2, 8, 6, y0 + 13);
+  pushHall(46, wingZ - 2, 8, 6, y0 + 13);
+}
+
 function buildHkLandmarks(scene, gltfPlan = null) {
   const { placed, deferred } = hkResolveLandmarks();
   const gltfMeshes = gltfPlan?.selected || [];
@@ -435,6 +673,7 @@ function buildHkLandmarks(scene, gltfPlan = null) {
       }
     }
   }
+  addHkuRedWalls(group, colliders, ground);
   scene.add(group);
   console.info(
     `[landmarks] ${placed.map((site) => `${site.label} ${site.lat.toFixed(5)},${site.lon.toFixed(5)}`).join('; ')}` +

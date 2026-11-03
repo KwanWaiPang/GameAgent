@@ -898,7 +898,7 @@ const LANDMARK_SITES = GEO.landmarks;
 // centreline nearest that place, so a teleport does not drop inside a lot or the harbour.
 // Heading 0 faces south (+z), PI north.
 const TELEPORT_LOCATIONS = {
-  hku: { x: -2124.5, z: -454.5, heading: 2.513 },
+  hku: { x: -2124.5, z: -454.5, heading: -0.918 },
   hollywood: { x: -979.0, z: -353.9, heading: -1.920 },
   lkf: { x: -444.0, z: -21.5, heading: 0.686 },
   central: { x: GEO.points.central[0], z: GEO.points.central[1], heading: Math.PI },
