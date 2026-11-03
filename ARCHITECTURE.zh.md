@@ -49,7 +49,7 @@
 
 ### 3.1 纯静态
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `redcap` · `Hulao_Gate` · `hongkong`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `redcap` · `Hulao_Gate` · `hongkong` · `Dragon_Ball`
 
 - 打开即玩，无需 `npm`。
 - 可用任意静态服务器托管。

@@ -49,7 +49,7 @@ The hub draws a Three.js gallery only. It does not boot any game runtime. Choosi
 
 ### 3.1 Static
 
-`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `redcap` · `Hulao_Gate` · `hongkong`
+`go` · `xiangqi` · `3D_xiangqi` · `gomoku` · `junqi` · `monopoly` · `richera` · `chess3d` · `wizard-chess-3d` · `wizard-chess-sanctum` · `fps` · `redcap` · `Hulao_Gate` · `hongkong` · `Dragon_Ball`
 
 Open and play. No `npm`. Any static file server is enough.
 

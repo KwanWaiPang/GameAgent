@@ -3,7 +3,7 @@
 
 # 游戏馆
 
-中文网页游戏集合：棋类、巫师棋、大富翁、虎牢关、香港漫游、无人机即时战略、三款 3D 射击、口袋冒险与红帽奇遇。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
+中文网页游戏集合：棋类、巫师棋、大富翁、虎牢关、香港漫游、无人机即时战略、三款 3D 射击、口袋冒险、红帽奇遇与龙珠同人冒险。统一大厅入口，纯前端运行，可部署到 GitHub Pages。
 
 **在线地址：** https://kwanwaipang.github.io/GameAgent/
 
@@ -33,6 +33,7 @@
 | [`games/Hulao_Gate/`](./games/Hulao_Gate/) | 乱世无双 · 虎牢关 | 第三人称动作 |
 | [`games/hongkong/`](./games/hongkong/) | 香港漫游 | 城市探索 |
 | [`games/redcap/`](./games/redcap/) | 红帽奇遇 | 网页平台跳跃（马里奥式致敬） |
+| [`games/Dragon_Ball/`](./games/Dragon_Ball/) | 龙珠 · 七星冒险 | 第三人称同人冒险 |
 
 - **巫师棋**（`wizard-chess-3d`）：哥特圣殿中的程序化石甲棋子；`chess.js` 规则，人机 / 本地双人 / 自动演示。运行时从 CDN 加载 Three.js 与 chess.js。
 - **巫师棋 2**（`wizard-chess-sanctum`）：另一座圣殿式巫师棋，同样使用国际象棋规则。
@@ -46,6 +47,7 @@
 - **虎牢关**（`Hulao_Gate`）：第三人称动作战场。关羽对西凉军与吕布。程序化甲片、关城和暮色光照，不是商业无双的复刻。
 - **香港漫游**（`hongkong`）：由 [Slop New York](https://github.com/mrdoob/slop-newyork) 改编。步行、红色的士、单车或直升机。灯光、车流和画面保持原模拟；地名、路牌、地图和的士改为香港。
 - **红帽奇遇**（`redcap`）：八关原创程序像素。玩法向超级马里奥致敬，不是任天堂产品，未使用官方素材或关卡。
+- **龙珠 · 七星冒险**（`Dragon_Ball`）：单页第三人称同人冒险。扮演孙悟空，用龙珠雷达集齐七颗龙珠，打倒拉蒂兹，再召唤神龙。挂在大厅「冒险」分类。不是获授权的龙珠产品，也不按根目录 MIT 文本开放。
 
 ---
 
@@ -168,4 +170,4 @@ cd games/BattleDrones && npm run build          # 写出 dist/
 | 香港漫游 | Mr.doob 与 slop-hongkong 的作者；馆内改编为 Kwan Wai-Pang | 代码为 MIT；地图数据为 ODbL |
 | 无人机战争 | Simon Willison 与上游作者；单机改编为 Kwan Wai-Pang | Apache-2.0 |
 
-Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。围棋每周一题（四到九级）是 CC BY-NC-SA 4.0，所以 `games/go/` 的这一部分不在 MIT 许可里。`games/Dragon_Ball/` 是私人同人页，没有挂上大厅，也不按这份 MIT 文本开放。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。
+Three.js、chess.js，以及金城纪使用的 Kenney CC0 素材，各自保留原许可。围棋每周一题（四到九级）是 CC BY-NC-SA 4.0，所以 `games/go/` 的这一部分不在 MIT 许可里。`games/Dragon_Ball/` 已挂在大厅「冒险」分类，但仍是私人同人页，不按这份 MIT 文本开放。完整名单见 [THIRD_PARTY_NOTICES.zh.md](./THIRD_PARTY_NOTICES.zh.md)。

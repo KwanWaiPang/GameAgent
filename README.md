@@ -3,7 +3,7 @@
 
 # Game Hub
 
-A web game collection — board games, wizard chess, a Monopoly-style journey, Hulao Gate, a Hong Kong city roam, a drone RTS, three 3D shooters, a fan-style adventure, and a Mario-like platformer — served from one static hub for GitHub Pages.
+A web game collection — board games, wizard chess, a Monopoly-style journey, Hulao Gate, a Hong Kong city roam, a drone RTS, three 3D shooters, a fan-style adventure, a Mario-like platformer, and a Dragon Ball fan adventure — served from one static hub for GitHub Pages.
 
 **Live:** https://kwanwaipang.github.io/GameAgent/
 
@@ -33,6 +33,7 @@ Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md).
 | [`games/Hulao_Gate/`](./games/Hulao_Gate/) | Hulao Gate | Third-person action |
 | [`games/hongkong/`](./games/hongkong/) | Hong Kong Roam | City exploration |
 | [`games/redcap/`](./games/redcap/) | Red Cap Quest | Mario-like platformer |
+| [`games/Dragon_Ball/`](./games/Dragon_Ball/) | Dragon Ball · Seven-Star Quest | Third-person fan adventure |
 
 - **Wizard Chess** (`wizard-chess-3d`): procedural stone pieces in a Gothic hall. `chess.js` rules, human vs AI, local two-player, and auto-demo. Three.js and chess.js load from a CDN.
 - **Wizard Chess 2** (`wizard-chess-sanctum`): a second sanctum with the same chess rules.
@@ -46,6 +47,7 @@ Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Hulao Gate** (`Hulao_Gate`): a third-person battlefield. Guan Yu against the western army and Lu Bu. Procedural lamellar armor, the pass, and dusk light. Not a commercial musou copy.
 - **Hong Kong Roam** (`hongkong`): adapted from [Slop New York](https://github.com/mrdoob/slop-newyork). Walk, drive a red taxi, cycle, or fly. Lighting, traffic, and rendering stay with the original simulation; place names, signs, the map, and the taxi are Hong Kong.
 - **Red Cap Quest** (`redcap`): eight original procedural stages. A Mario-like tribute, not a Nintendo product, and it does not use official assets or levels.
+- **Dragon Ball · Seven-Star Quest** (`Dragon_Ball`): a single-page third-person fan adventure. Play as Son Goku, follow the Dragon Radar, collect seven Dragon Balls, defeat Raditz, and summon Shenron. It is listed in the hub Adventure section. It is not a licensed Dragon Ball product, and it is not released under the root MIT text.
 
 ---
 
@@ -167,4 +169,4 @@ Games written by other people stay under their copyright. The root MIT text does
 | Hong Kong Roam | Mr.doob and the slop-hongkong authors; hub adaptation by Kwan Wai-Pang | MIT for the code; map data is ODbL |
 | Battle Drones | Simon Willison and the upstream authors; single-player adaptation by Kwan Wai-Pang | Apache-2.0 |
 
-Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. Inside Go, weekly problems at levels 4–9 are CC BY-NC-SA 4.0, so that part of `games/go/` is not in the MIT grant. `games/Dragon_Ball/` is a private fan page, not a hub card, and is not released under this MIT text. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Libraries such as Three.js and chess.js, and the CC0 Kenney board-game assets, keep their own terms. Inside Go, weekly problems at levels 4–9 are CC BY-NC-SA 4.0, so that part of `games/go/` is not in the MIT grant. `games/Dragon_Ball/` is listed in the hub Adventure section, but it remains a private fan page and is not released under this MIT text. The full list is [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

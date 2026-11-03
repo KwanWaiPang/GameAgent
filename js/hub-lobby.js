@@ -25,6 +25,7 @@ const KIND = {
   redcap: { felt: 0x3d74c8, glow: 0xf07068, plaque: "#1a2740", ink: "#ffe4e0" },
   hulao: { felt: 0x3a2a22, glow: 0xc4a574, plaque: "#1c1410", ink: "#f3e6d0" },
   hongkong: { felt: 0x8e1d2a, glow: 0xf0c14a, plaque: "#2a1216", ink: "#ffe8ea" },
+  dragon: { felt: 0x16325a, glow: 0xffb43a, plaque: "#102038", ink: "#ffe7b0" },
 };
 
 function showFlat() {
@@ -673,6 +674,20 @@ function buildDiorama(kind, dio, ped) {
     put(sph, 0xf8c090, 0.08, 0.16, 0.08, 0.05, 0.05, 0.05);
     const hat = put(sph, 0xe52521, 0.08, 0.22, 0.08, 0.07, 0.05, 0.07);
     ped.userData.tick = (t) => { hat.position.y = 0.22 + Math.sin(t * 3) * 0.02; };
+  } else if (kind === "dragon") {
+    const ball = put(sph, 0xff9c1c, -0.06, 0.18, 0.02, 0.13, 0.13, 0.13, {
+      emissive: 0xff8a1c,
+      emissiveIntensity: 0.45,
+      roughness: 0.32,
+    });
+    put(sph, 0xd4141c, -0.02, 0.22, 0.1, 0.028, 0.028, 0.018);
+    const cloud = put(box, 0xfff6d8, 0.14, 0.08, 0.02, 0.24, 0.045, 0.12, { roughness: 0.92 });
+    put(box, 0x2f6fe8, 0.16, 0.18, 0, 0.07, 0.16, 0.06);
+    put(box, 0x1a140c, 0.16, 0.3, 0, 0.11, 0.07, 0.08);
+    ped.userData.tick = (t) => {
+      ball.position.y = 0.18 + Math.sin(t * 2) * 0.02;
+      cloud.position.y = 0.08 + Math.sin(t * 1.5 + 1) * 0.012;
+    };
   } else {
     put(sph, 0xe2b56a, 0, 0.12, 0, 0.1, 0.1, 0.1, { metalness: 0.6, roughness: 0.3 });
   }

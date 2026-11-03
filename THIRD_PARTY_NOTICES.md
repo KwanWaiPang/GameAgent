@@ -144,7 +144,7 @@ The Game Hub aggregates several open-source games under a shared shell. Use the 
 
 ## Dragon Ball fan page (`games/Dragon_Ball/`)
 
-- Not a hub card. The page is marked `noindex` and titled as a private fan edition.
+- Listed in the hub Adventure section. The page stays `noindex` and is still titled as a private fan edition. The link back to the hub is a local adaptation.
 - Not covered by the root MIT grant. Copyright stays with Kwan Wai-Pang and this file does not offer that folder as open source.
 - It is a fan work and is not a licensed Dragon Ball product.
 
