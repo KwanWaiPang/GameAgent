@@ -725,8 +725,13 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   // Mostly straight on, sometimes a turn (buses keep to wide roads). Routes don't follow the camera;
   // distant vehicles are recycled instead. With `fromLane`, only moves the current lane allows.
   const weights = [];
+  // A kept dead-end has no onward move. Stay on it instead of leaving the driver with no plan.
+  function nowhere(e) {
+    return { to: e, turn: 'S', out: (e && e.lanes ? e.lanes : []).map(() => -1), cross: 0 };
+  }
   function chooseMove(v, fromLane) {
     const e = v.edge;
+    if (!e || !e.moves.length) return nowhere(e);
     let total = 0;
     for (let k = 0; k < e.moves.length; k++) {
       const m = e.moves[k];
@@ -750,7 +755,7 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
     }
     // No move from this lane (a lane the road graph couldn't lead anywhere): take any move, changing lanes for it
     if (!pick && fromLane) return chooseMove(v, false);
-    return pick || e.moves[0] || null;
+    return pick || e.moves[0] || nowhere(e);
   }
 
   // Could the vehicle of lane entry o, approaching the end of edge a, still stop easily before its line? Vehicles
@@ -933,6 +938,8 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   // May v, its front bumper d metres before the stop line, enter the intersection now? Sets the exit lane.
   // Once too close to stop, v is committed: it goes, and holds the intersection from then on.
   function mayEnter(v, d) {
+    if (!v.move) v.move = chooseMove(v, false);
+    if (!v.move) return false;
     const e = v.edge;
     const n = e.to;
     const phase = n.signal ? phaseOf(e) : 'green';
@@ -990,11 +997,13 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   // pulling out of an intersection or dodging the player, nor in the last 12 m before the next.
   function changeLanes(v) {
     const e = v.edge;
-    if (v.conn || v.commit || clock < v.panicUntil) return;
+    if (!v.move || v.conn || v.commit || clock < v.panicUntil) return;
     if (Math.abs(v.dl) > 0.5 || v.s < v.half || e.len - v.s - v.half < 12) return;
     let target = -1;
     if (v.move.out[v.lane] < 0) {
-      const t = v.lane + Math.sign(nearestLane(v.move, v.lane) - v.lane);
+      const near = nearestLane(v.move, v.lane);
+      if (near < 0) return;
+      const t = v.lane + Math.sign(near - v.lane);
       if (laneSafe(v, t, -4)) target = t;
     } else if (v.speed > 2) {
       let best = laneAcc(v, v.lane) + 0.6;
@@ -1364,7 +1373,7 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   function pose(v, dt) {
     v.steer = v.delta;
 
-    const turn = v.move.turn;
+    const turn = v.move ? v.move.turn : 'S';
     if (v.evade) v.blink = 0; // no time to signal a swerve
     else if (Math.abs(v.dl) > 0.3 && Math.abs(v.dlv) > 0.05) v.blink = v.dl > 0 ? -1 : 1;
     else if (turn !== 'S' && (v.conn || v.edge.len - v.s < 35)) v.blink = turn === 'R' ? 1 : -1;
@@ -1553,7 +1562,7 @@ function createTrafficSystem(scene, sidewalks, obstacles, signalIntersections) {
   function spawnVehicle(v, rMin, rMax, protectView) {
     for (let attempt = 0; attempt < 12; attempt++) {
       const e = nearEdges[Math.floor(Math.random() * nearEdges.length)];
-      if (!e || (v.bus && e.axis !== 'ave') || e.len < 2 * v.half + 10) continue;
+      if (!e || !e.moves.length || (v.bus && e.axis !== 'ave') || e.len < 2 * v.half + 10) continue;
       const lane = Math.floor(Math.random() * e.lanes.length);
       const along = (focusX - e.sx) * e.dx + (focusZ - e.sz) * e.dz;
       const minS = Math.max(v.half + 5, along - rMax);
