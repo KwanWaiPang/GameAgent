@@ -898,6 +898,7 @@ const LANDMARK_SITES = GEO.landmarks;
 // centreline nearest that place, so a teleport does not drop inside a lot or the harbour.
 // Heading 0 faces south (+z), PI north.
 const TELEPORT_LOCATIONS = {
+  hku: { x: -2124.5, z: -454.5, heading: 2.513 },
   hollywood: { x: -979.0, z: -353.9, heading: -1.920 },
   lkf: { x: -444.0, z: -21.5, heading: 0.686 },
   central: { x: GEO.points.central[0], z: GEO.points.central[1], heading: Math.PI },
@@ -920,6 +921,7 @@ const TELEPORT_LOCATIONS = {
   shamshuipo: { x: 378.9, z: -5513.9, heading: -2.266 }
 };
 const PLACES = [
+  { id: 'hku', name: '香港大學', short: '港大', x: TELEPORT_LOCATIONS.hku.x, z: TELEPORT_LOCATIONS.hku.z, district: '香港島' },
   { id: 'hollywood', name: '荷李活道', short: '上環', x: TELEPORT_LOCATIONS.hollywood.x, z: TELEPORT_LOCATIONS.hollywood.z, district: '香港島' },
   { id: 'lkf', name: '蘭桂坊', short: '蘭桂坊', x: TELEPORT_LOCATIONS.lkf.x, z: TELEPORT_LOCATIONS.lkf.z, district: '香港島' },
   { id: 'central', name: '中環', short: '中環', x: TELEPORT_LOCATIONS.central.x, z: TELEPORT_LOCATIONS.central.z, district: '香港島' },
