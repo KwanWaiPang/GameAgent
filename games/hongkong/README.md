@@ -19,7 +19,7 @@ Open it through a local HTTP server or GitHub Pages, not `file://`.
 
 This is the street-level Hong Kong port of [Slop New York](https://github.com/mrdoob/slop-newyork), using the city data from [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong) (MIT). Walking, driving, cycling, and flying stay, along with traffic, pedestrians, and buildings.
 
-The detailed area is Hong Kong Island, Kowloon, and Victoria Harbour, with the origin at Central. Without the Lands Department mesh pack, buildings are extruded from the street data. The New Territories and outlying islands are not in this street map.
+The playable coast is Hong Kong Island, Kowloon, and Victoria Harbour, with the origin at Central. Central keeps its sheet meshes. Wan Chai, Causeway Bay, North Point, Tsim Sha Tsui, Yau Ma Tei, Mong Kok, and West Kowloon extrude Lands Department footprints. The clock tower, Peak Tower terrace, convention-centre wing, Central Plaza crown, HSBC truss, and Lippo pods sit on those real anchors. The New Territories and outlying islands are not in this street map. Press F beside a landmark to read it, cross the harbour from a Star Ferry pier, or ride the Peak Tram from Garden Road.
 
 ## Controls
 
@@ -32,3 +32,4 @@ The detailed area is Hong Kong Island, Kowloon, and Victoria Harbour, with the o
 | M | Street map |
 | H | Hide the HUD |
 | N | Sound |
+| F | Read a landmark, board the Star Ferry, or ride the Peak Tram |

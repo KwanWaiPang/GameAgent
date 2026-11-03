@@ -19,7 +19,7 @@ https://kwanwaipang.github.io/GameAgent/games/hongkong/
 
 这是 [Slop New York](https://github.com/mrdoob/slop-newyork) 的香港街道版，城市数据来自 [keithligh/slop-hongkong](https://github.com/keithligh/slop-hongkong)（MIT）。玩法仍是步行、驾车、骑行和直升机，街道、车流、行人和楼宇都在。
 
-范围是香港岛、九龙和维多利亚港，原点在中环。没有地政总署单体模型时，楼用街道数据挤出。新界和离岛不在这版街道图里。
+范围是香港岛、九龙和维多利亚港，原点在中环。中环用街道轮廓和地政总署单体；湾仔、铜锣湾、北角、尖沙咀、油麻地、旺角和西九龙按地政楼面高度挤出。钟楼、凌霄阁、会展弧顶、中环广场金顶、汇丰桁架和力宝中心的外凸体是按真实落点加的轮廓。新界和离岛不在这版街道图里。走近地标按 F 可以读说明，天星码头可以渡海，花园道可以乘缆车上凌霄阁。
 
 ## 操作
 
@@ -32,3 +32,4 @@ https://kwanwaipang.github.io/GameAgent/games/hongkong/
 | M | 街道图 |
 | H | 隐藏界面 |
 | N | 声音 |
+| F | 走近地标后查看、乘天星小轮或山顶缆车 |

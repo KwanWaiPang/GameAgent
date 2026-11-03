@@ -26,6 +26,7 @@ import {
 import { PersonCrowd, PersonRig } from './pedestrians.js';
 import { HEADLIGHTS, createVehicleHeadlight, placeVehicleHeadlight } from './vehicle-lights.js';
 import { bryantParkLawn } from './landmarks.js';
+import { peakGround } from './hk-skyline.js';
 import { polygonContact } from './building-collision.js';
 
 // Player models, animation and movement for walking, driving, cycling and flying.
@@ -871,10 +872,33 @@ class ThirdPersonControllerManager {
     if (lawn && x > lawn.minX && x < lawn.maxX && z > lawn.minZ && z < lawn.maxZ) {
       return lawn.top;
     }
-    if (mode === 'person') {
-      return this.isPointOnSidewalk(x, z) ? ISLAND_BOUNDS.sidewalkHeight : 0.0;
+    if (mode === 'person' || mode === 'cyclist') {
+      const street = mode === 'person' && this.isPointOnSidewalk(x, z) ? ISLAND_BOUNDS.sidewalkHeight : 0.0;
+      const hill = peakGround(x, z);
+      return hill > street ? hill : street;
     }
     return 0.0;
+  }
+
+  // Stand the walker still on a moving deck (Star Ferry, Peak Tram). The rig is reset
+  // each frame so the body does not sprint across the harbour.
+  placeScripted(x, y, z, heading) {
+    const ent = this.entities.person;
+    ent.position.set(x, y, z);
+    ent.heading = heading;
+    ent.speed = 0;
+    ent.verticalVel = 0;
+    ent._charHidden = false;
+    if (ent.mesh) {
+      ent.mesh.visible = true;
+      ent.mesh.position.set(x, y, z);
+      ent.mesh.rotation.y = heading;
+    }
+    const deck = () => y;
+    ent.rig.reset(x, z, heading, deck, this);
+    ent.crowd.begin();
+    ent.crowd.add(ent.rig, 0);
+    ent.crowd.end();
   }
 
   // Static colliders within `r` of (x, z), kept in their original order and indexed once into 48 m cells.
@@ -1152,7 +1176,8 @@ class ThirdPersonControllerManager {
     }
     p.verticalVel -= 14.5 * dt;
     p.position.y += p.verticalVel * dt;
-    if (p.position.y < groundY) {
+    const onPeak = peakGround(p.position.x, p.position.z) > 1;
+    if (p.position.y < groundY || (onPeak && p.verticalVel <= 0 && p.position.y - groundY < 3)) {
       p.position.y = groundY;
       p.verticalVel = 0;
     }

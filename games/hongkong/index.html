@@ -45,6 +45,9 @@
   <link rel="modulepreload" href="./js/boroughs.js" />
   <link rel="modulepreload" href="./js/buildings.js" />
   <link rel="modulepreload" href="./js/landmarks.js" />
+  <link rel="modulepreload" href="./js/hk-roam-city.js" />
+  <link rel="modulepreload" href="./js/hk-skyline.js" />
+  <link rel="modulepreload" href="./js/hk-visit.js" />
   <link rel="modulepreload" href="./js/street-details.js" />
   <link rel="modulepreload" href="./js/road-network.js" />
   <link rel="modulepreload" href="./js/road-paint.js" />
@@ -69,12 +72,12 @@
   <link rel="modulepreload" href="./js/hk-pland-frame.js" />
   <link rel="modulepreload" href="./js/hk-pland.js" />
   <link rel="modulepreload" href="./js/main.js" />
-  <script type="module" src="./js/main.js?v=walk6"></script>
+  <script type="module" src="./js/main.js?v=roam1"></script>
   <!-- Inter (UI), Noto Sans TC (繁體 shop signs and chrome), Overpass (map street labels) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&amp;family=Noto+Sans+TC:wght@400;600;700&amp;family=Overpass:wght@600;700&amp;display=swap" />
-  <link rel="stylesheet" href="./css/style.css?v=20261024-hk-only" />
+  <link rel="stylesheet" href="./css/style.css?v=roam1" />
 </head>
 <body>
   <!-- Icon sprite (24 × 24 stroke icons, drawn in currentColor) -->
@@ -196,6 +199,18 @@
     <button id="tp-mongkok" class="pop-item tp-btn" data-teleport="mongkok" type="button"><span class="pop-name">旺角</span><span class="pop-sub">彌敦道 · 亞皆老街</span></button>
     <button id="tp-prince" class="pop-item tp-btn" data-teleport="prince" type="button"><span class="pop-name">太子</span><span class="pop-sub">彌敦道</span></button>
     <button id="tp-shamshuipo" class="pop-item tp-btn" data-teleport="shamshuipo" type="button"><span class="pop-name">深水埗</span><span class="pop-sub">福華街</span></button>
+    <div class="pop-title">地標</div>
+    <button id="tp-clock" class="pop-item tp-btn" data-teleport="clock" type="button"><span class="pop-name">尖沙咀鐘樓</span><span class="pop-sub">梳士巴利道 · 按 F 查看</span></button>
+    <button id="tp-peninsula" class="pop-item tp-btn" data-teleport="peninsula" type="button"><span class="pop-name">半島酒店</span><span class="pop-sub">梳士巴利道</span></button>
+    <button id="tp-icc" class="pop-item tp-btn" data-teleport="icc" type="button"><span class="pop-name">環球貿易廣場</span><span class="pop-sub">西九龍</span></button>
+    <button id="tp-ferry" class="pop-item tp-btn" data-teleport="central-ferry" type="button"><span class="pop-name">中環天星碼頭</span><span class="pop-sub">按 F 渡海</span></button>
+    <button id="tp-tst-ferry" class="pop-item tp-btn" data-teleport="tst-ferry" type="button"><span class="pop-name">尖沙咀天星碼頭</span><span class="pop-sub">按 F 渡海</span></button>
+    <button id="tp-peak-tram" class="pop-item tp-btn" data-teleport="peak-tram" type="button"><span class="pop-name">山頂纜車</span><span class="pop-sub">花園道總站</span></button>
+    <button id="tp-peak-tower" class="pop-item tp-btn" data-teleport="peak-tower" type="button"><span class="pop-name">凌霄閣</span><span class="pop-sub">太平山平台</span></button>
+    <button id="tp-hcec" class="pop-item tp-btn" data-teleport="hcec" type="button"><span class="pop-name">會議展覽中心</span><span class="pop-sub">灣仔海濱</span></button>
+    <button id="tp-plaza" class="pop-item tp-btn" data-teleport="central-plaza" type="button"><span class="pop-name">中環廣場</span><span class="pop-sub">灣仔</span></button>
+    <button id="tp-times" class="pop-item tp-btn" data-teleport="times-square" type="button"><span class="pop-name">時代廣場</span><span class="pop-sub">銅鑼灣</span></button>
+    <button id="tp-langham" class="pop-item tp-btn" data-teleport="langham" type="button"><span class="pop-name">朗豪坊</span><span class="pop-sub">旺角</span></button>
   </div>
 
   <!-- Bottom-Left: Street-Name Signs & Live GPS Radar Minimap -->
@@ -287,6 +302,8 @@
     <button id="cam-observatory" class="pop-item cam-btn" data-camera="observatory" type="button"><span class="pop-name">高空俯瞰</span></button>
     <button id="cam-exchangeSquare" class="pop-item cam-btn" data-camera="exchangeSquare" type="button"><span class="pop-name">交易廣場</span></button>
     <button id="cam-waterfront" class="pop-item cam-btn" data-camera="waterfront" type="button"><span class="pop-name">維多利亞港</span></button>
+    <button id="cam-peakTower" class="pop-item cam-btn" data-camera="peakTower" type="button"><span class="pop-name">凌霄閣</span></button>
+    <button id="cam-iccHarbour" class="pop-item cam-btn" data-camera="iccHarbour" type="button"><span class="pop-name">西九龍</span></button>
     <button id="cam-drone" class="pop-item cam-btn" data-camera="drone" type="button"><span class="pop-name">航拍</span></button>
   </div>
 
@@ -306,7 +323,7 @@
       </div>
       <label class="panel fullmap-search-wrap">
         <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-        <input id="fullmap-search" class="fullmap-search" type="text" placeholder="搜尋街道與地標 — 中環、旺角、銅鑼灣、赤柱…" aria-label="搜尋街道或地標" autocomplete="off" spellcheck="false" />
+        <input id="fullmap-search" class="fullmap-search" type="text" placeholder="搜尋街道與地標 — 鐘樓、凌霄閣、會展、ICC…" aria-label="搜尋街道或地標" autocomplete="off" spellcheck="false" />
       </label>
       <button id="close-fullmap-btn" class="panel tool-btn fullmap-close" type="button" title="關閉地圖 [M / Esc]">
         <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><span class="tool-label">關閉</span><kbd>Esc</kbd>
@@ -345,6 +362,16 @@
       <span class="legend-item"><span class="legend-swatch gps-swatch"></span>路線</span>
       <span class="legend-item"><span class="legend-swatch bridge-swatch"></span>橋樑</span>
       <span id="fullmap-counts" class="legend-counts"></span>
+    </div>
+  </section>
+
+  <button id="visit-prompt" class="visit-prompt" type="button" hidden></button>
+  <section id="visit-card" class="visit-card" hidden aria-label="地標">
+    <h2 id="visit-title"></h2>
+    <p id="visit-text"></p>
+    <div class="visit-actions">
+      <button id="visit-go" class="visit-go" type="button" hidden></button>
+      <button id="visit-close" class="visit-close" type="button">關閉</button>
     </div>
   </section>
 

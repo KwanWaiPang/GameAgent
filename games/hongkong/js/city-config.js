@@ -941,7 +941,16 @@ const PLACES = [
   { id: 'jordan', name: '佐敦', short: '佐敦', x: TELEPORT_LOCATIONS.jordan.x, z: TELEPORT_LOCATIONS.jordan.z, district: '九龍' },
   { id: 'mongkok', name: '旺角', short: '旺角', x: TELEPORT_LOCATIONS.mongkok.x, z: TELEPORT_LOCATIONS.mongkok.z, district: '九龍' },
   { id: 'prince', name: '太子', short: '太子', x: TELEPORT_LOCATIONS.prince.x, z: TELEPORT_LOCATIONS.prince.z, district: '九龍' },
-  { id: 'shamshuipo', name: '深水埗', short: '深水埗', x: TELEPORT_LOCATIONS.shamshuipo.x, z: TELEPORT_LOCATIONS.shamshuipo.z, district: '九龍' }
+  { id: 'shamshuipo', name: '深水埗', short: '深水埗', x: TELEPORT_LOCATIONS.shamshuipo.x, z: TELEPORT_LOCATIONS.shamshuipo.z, district: '九龍' },
+  { id: 'clock', name: '尖沙咀鐘樓', short: '鐘樓', x: 1004.6, z: -1407.7, district: '九龍' },
+  { id: 'peak-tower', name: '凌霄閣', short: '凌霄閣', x: -1012.5, z: 1067.8, district: '香港島' },
+  { id: 'icc', name: '環球貿易廣場', short: 'ICC', x: 44.6, z: -2491.2, district: '九龍' },
+  { id: 'central-plaza', name: '中環廣場', short: '中環廣場', x: 1416, z: 92.7, district: '香港島' },
+  { id: 'hcec', name: '香港會議展覽中心', short: '會展', x: 1366.6, z: -235.7, district: '香港島' },
+  { id: 'peninsula', name: '半島酒店', short: '半島', x: 1235.1, z: -1588.5, district: '九龍' },
+  { id: 'times-square', name: '時代廣場', short: '時代廣場', x: 2340.8, z: 280.9, district: '香港島' },
+  { id: 'langham', name: '朗豪坊', short: '朗豪坊', x: 897.2, z: -4202.6, district: '九龍' },
+  { id: 'star-ferry', name: '中環天星碼頭', short: '天星', x: 145.4, z: -684.8, district: '香港島' }
 ];
 
 function boundsOfRing(pts) {
@@ -997,11 +1006,18 @@ function hkRetailSlices(y0, h, style, ground = ISLAND_BOUNDS.sidewalkHeight) {
 const LANDMARK_BLOCKS = new Set();
 
 function getLocationLabel(x, z) {
+  let best = null;
+  let bestD = 160;
   for (const lm of PLACES) {
-    if (Math.hypot(x - lm.x, z - lm.z) < 160) {
-      const near = nearestRoads(x, z, 90);
-      return near.length ? `${lm.name} · ${near[0].road.name}` : lm.name;
+    const d = Math.hypot(x - lm.x, z - lm.z);
+    if (d < bestD) {
+      bestD = d;
+      best = lm;
     }
+  }
+  if (best) {
+    const near = nearestRoads(x, z, 90);
+    return near.length ? `${best.name} · ${near[0].road.name}` : best.name;
   }
   const near = nearestRoads(x, z, 40);
   if (near.length && near[0].dist < near[0].road.w) return near[0].road.name;

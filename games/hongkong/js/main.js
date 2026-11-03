@@ -8,6 +8,9 @@ import { buildCityGrid } from './city-grid.js';
 import { buildBoroughs } from './boroughs.js';
 import { buildLandmarks } from './landmarks.js';
 import { buildCityBlocks } from './buildings.js';
+import { buildHkRoamCity } from './hk-roam-city.js';
+import { buildHkSkyline } from './hk-skyline.js';
+import { createHkVisit } from './hk-visit.js';
 import { mountHkGltfBuildings, prepareHkGltfSheet, setLandsdAnisotropyLimit } from './hk-gltf.js';
 import { DIGIT1_PROBE_SAMPLES, isPaleRgb, ndcToReadPixel, parseDigit1ProbeRequest } from './digit1-probe-frame.js';
 import { runDigit1Probe } from './digit1-probe.js';
@@ -116,6 +119,12 @@ async function initApp() {
   markInit('landmarks');
   const cityBlocks = buildCityBlocks(scene, gltfPlan);
   markInit('blocks');
+  if (loadingStatus) loadingStatus.textContent = '正在按地政樓面升起灣仔、銅鑼灣、尖沙咀與旺角…';
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const roamCity = buildHkRoamCity(scene);
+  markInit('roam');
+  const skyline = buildHkSkyline(scene);
+  markInit('skyline');
   const gltfBuildings = plandPlan?.mode === 'compare'
     ? { colliders: [], loaded: 0, failed: 0, group: null }
     : await mountHkGltfBuildings(scene, gltfPlan);
@@ -130,7 +139,15 @@ async function initApp() {
     if (plandPlan.capture) plandCredit.title = plandPlan.capture;
   }
   markInit('pland');
-  const allColliders = [...landmarkColliders, ...cityBlocks.colliders, ...gltfBuildings.colliders, ...boroughs.colliders, ...(cityGrid.colliders || [])];
+  const allColliders = [
+    ...landmarkColliders,
+    ...cityBlocks.colliders,
+    ...roamCity.colliders,
+    ...skyline.colliders,
+    ...gltfBuildings.colliders,
+    ...boroughs.colliders,
+    ...(cityGrid.colliders || [])
+  ];
 
   const streetDetails = buildStreetDetails(scene, gltfPlan, allColliders);
   markInit('streetDetails');
@@ -312,7 +329,7 @@ async function initApp() {
 
   // Keyboard guide for each mode: [keys, action]
   const controlHints = {
-    person: [[['W', 'S'], 'Walk / Run'], [['A', 'D'], 'Turn'], [['Space'], 'Jump'], [['Drag'], 'Orbit']],
+    person: [[['W', 'S'], 'Walk / Run'], [['A', 'D'], 'Turn'], [['Space'], 'Jump'], [['F'], 'Visit'], [['Drag'], 'Orbit']],
     car: [[['W', 'S'], 'Drive / Reverse'], [['A', 'D'], 'Steer'], [['B'], 'Horn'], [['Drag'], 'Orbit']],
     cyclist: [[['W', 'S'], 'Pedal / Brake'], [['A', 'D'], 'Lean & Turn'], [['Drag'], 'Orbit']],
     helicopter: [[['W', 'S'], 'Pitch'], [['A', 'D'], 'Yaw'], [['Space', 'E'], 'Ascend'], [['Q', 'C'], 'Descend']]
@@ -535,12 +552,20 @@ async function initApp() {
     onTeleport: teleportTo
   });
 
+  const visitSystem = createHkVisit(controllerManager, skyline.visits, {
+    mapOpen: () => mapSystem.isFullMapOpen
+  });
+
   teleportButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const key = btn.getAttribute('data-teleport');
       const loc = TELEPORT_LOCATIONS[key];
-      if (loc) {
-        teleportTo(loc.x, loc.z, loc.heading);
+      if (loc) teleportTo(loc.x, loc.z, loc.heading);
+      else if (visitSystem.teleportSite(key)) {
+        touchControls.reset();
+        gamepadControls.reset();
+        cameraSystem.resetForTeleport();
+        selectCamera('chase', true);
       }
       closePopovers();
     });
@@ -605,6 +630,10 @@ async function initApp() {
         break;
       case 'KeyB':
         if (!e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !mapSystem.isFullMapOpen) audioSystem.honk(controllerManager.getActiveEntity());
+        break;
+      case 'KeyF':
+      case 'Escape':
+        if (!e.repeat && visitSystem.onKey(e.code)) e.preventDefault();
         break;
     }
   });
@@ -737,7 +766,8 @@ async function initApp() {
 
     // Update 3rd-person controllers, camera, signals, traffic & vehicle collisions, building LODs, and dynamic shadow focus
     gamepadControls.update(dt);
-    controllerManager.update(dt, elapsed, cameraSystem.initialized ? cameraSystem.currentPos : null);
+    const scripted = visitSystem.update(dt);
+    if (!scripted) controllerManager.update(dt, elapsed, cameraSystem.initialized ? cameraSystem.currentPos : null);
     cameraSystem.update(dt, elapsed);
     streetDetails.signalClock.value = elapsed;
     trafficSystem.update(

@@ -15,6 +15,8 @@ const CAMERA_PRESETS = [
   { id: 'observatory',   name: '高空俯瞰',   short: '高空',   category: 'scenic', fov: 52 },
   { id: 'exchangeSquare', name: '交易廣場',  short: '交易廣場', category: 'scenic', fov: 52 },
   { id: 'waterfront',  name: '維多利亞港', short: '維港',   category: 'scenic', fov: 46 },
+  { id: 'peakTower',   name: '凌霄閣',     short: '凌霄閣', category: 'scenic', fov: 48 },
+  { id: 'iccHarbour',  name: '西九龍',     short: 'ICC',    category: 'scenic', fov: 42 },
   { id: 'drone',       name: 'Auto-Director Aerial',     category: 'scenic', fov: 50 }
 ];
 
@@ -307,6 +309,20 @@ class CameraSystem {
         const drift = Math.sin(elapsed * 0.15) * 40.0;
         desiredPos.set(700.0, 48.0, -620.0 + drift);
         desiredLook.set(180.0, 16.0, 40.0);
+        break;
+      }
+
+      case 'peakTower': {
+        const sway = Math.sin(elapsed * 0.18) * 6;
+        desiredPos.set(-1012 + sway, 438, 1148);
+        desiredLook.set(280, 70, -720);
+        break;
+      }
+
+      case 'iccHarbour': {
+        const sway = Math.sin(elapsed * 0.16) * 10;
+        desiredPos.set(220 + sway, 70, -2280);
+        desiredLook.set(45, 240, -2491);
         break;
       }
 
