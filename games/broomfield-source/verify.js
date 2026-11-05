@@ -1,0 +1,21 @@
+const {chromium}=require('/opt/npm-tools/node_modules/playwright');
+(async()=>{
+ const br=await chromium.launch({args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+ const url='file:///home/claude/broomfield/index.html',errs=[];
+ const pg=await br.newPage({viewport:{width:1440,height:900}});
+ pg.on('console',m=>{if(m.type()==='error')errs.push(m.text())});pg.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+ await pg.goto(url);await pg.waitForTimeout(2500);
+ await pg.screenshot({path:'preview-desktop.png'});
+ await pg.click('[data-lt=night]');await pg.waitForTimeout(2500);await pg.screenshot({path:'preview-night.png'});
+ await pg.click('[data-lt=day]');
+ const res=[];
+ for(const kn of [0,10,30])for(let i=0;i<3;i++)res.push(await pg.evaluate(k=>window.__run(k),kn));
+ console.log(JSON.stringify(res.map(r=>({w:r.wind,t:r.t,end:r.ended,sc:r.score.join('-'),by:r.caught,g:r.st.map(s=>s.g).join('/'),shots:r.st.map(s=>s.s).join('/'),pass:r.st.map(s=>s.p).join('/'),sv:r.st.map(s=>s.sv).join('/'),bs:r.st.map(s=>s.b).join('/'),h:r.st.map(s=>s.h).join('/')}))));
+ const ph=await br.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+ ph.on('pageerror',e=>errs.push('PHONE '+e.message));
+ await ph.goto(url);await ph.waitForTimeout(2500);
+ console.log('phone hscroll',await ph.evaluate(()=>document.documentElement.scrollWidth>innerWidth));
+ await ph.screenshot({path:'preview-phone.png'});
+ console.log('errors',JSON.stringify(errs));
+ await br.close();
+})();
